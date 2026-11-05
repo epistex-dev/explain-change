@@ -880,6 +880,9 @@ MUTATIONS += [
     ('cursor-ide: error status is a failure', CIX, "FAILED = frozenset(('error', 'cancelled'))", "FAILED = frozenset(('cancelled',))", IT + 'Fixture.test_error_and_cancelled_status_is_a_failure'),
     ('cursor-ide: cancelled status is a failure', CIX, "FAILED = frozenset(('error', 'cancelled'))", "FAILED = frozenset(('error',))", IT + 'Fixture.test_error_and_cancelled_status_is_a_failure'),
     ('cursor-ide: the error text stands in for a missing output', CIX, "if status == 'error' and output is None:", 'if False:', IT + 'Fixture.test_error_and_cancelled_status_is_a_failure'),
+    ('cursor-ide: header pages are ordered by number', CIX, "return (0, int(page), '') if", "return (0, 0, page) if", IT + 'Records.test_pages_are_ordered_by_number_whether_or_not_they_are_zero_padded'),
+    ('cursor-ide: header pages are ordered', CIX, "for _, page in sorted(pages, key=lambda p: p[0]):", "for _, page in pages:", IT + 'Records.test_pages_are_ordered_by_number_whether_or_not_they_are_zero_padded'),
+    ('cursor-ide: a non-numeric page follows the numbered ones', CIX, "else (1, 0, page)", "else (0, 0, page)", IT + 'Records.test_pages_are_ordered_by_number_whether_or_not_they_are_zero_padded'),
     ('cursor-ide: the visible error message is preferred', CIX, "return msg or text", 'return text', IT + 'Fixture.test_error_and_cancelled_status_is_a_failure'),
     ('cursor-ide: a message-less error is shown as recorded', CIX, "return msg or text", 'return msg', IT + 'Records.test_the_error_text_is_the_visible_message_or_else_the_error_as_recorded'),
 ]

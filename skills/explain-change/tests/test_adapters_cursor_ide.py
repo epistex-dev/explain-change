@@ -296,6 +296,15 @@ class Records(Store):
         self.finish(con)
         self.assertEqual(self.read('c').events, [])
 
+    def test_pages_are_ordered_by_number_whether_or_not_they_are_zero_padded(self):
+        con = self.con()
+        composer(con, 'c')
+        for page in ('2', '10', '1', '000003', 'zz', '0'):
+            put(con, 'composerConvHeaders:c:%s' % page, [header('p' + page, 1)])
+            bubble(con, 'c', 'p' + page, 1, 'page ' + page)
+        self.finish(con)
+        self.assertEqual([e.text for e in self.read('c').events], ['page 0', 'page 1', 'page 2', 'page 000003', 'page 10', 'page zz'])
+
     def test_the_inline_manifest_wins_over_paged_headers(self):
         con = self.con()
         composer(con, 'c', fullConversationHeadersOnly=[header('a', 1)])

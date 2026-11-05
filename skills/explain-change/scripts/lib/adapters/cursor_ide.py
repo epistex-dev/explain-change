@@ -203,6 +203,12 @@ def _slim(bubble, bubble_id):
             'tool': tool if isinstance(tool, dict) else None}
 
 
+def _page_order(key):
+    """Sort key of a `composerConvHeaders:<id>:<page>` key: numeric pages by number, then any other suffix as text."""
+    page = key.rsplit(':', 1)[-1]
+    return (0, int(page), '') if page.isascii() and page.isdigit() and len(page) <= 18 else (1, 0, page)
+
+
 def _error_text(error):
     """The message a failed call shows: `clientVisibleErrorMessage` of the error JSON when it has one (SpecStory's
     `formatToolError`), else the error as recorded."""
@@ -249,12 +255,16 @@ class _Reader:
         inline = composer.get('fullConversationHeadersOnly')
         heads = [h for h in inline if isinstance(h, dict)] if isinstance(inline, list) else []
         if not heads:
-            for _, raw in self.rows('composerConvHeaders:%s:' % cid, MAX_PAGES):
+            pages = []
+            for key, raw in self.rows('composerConvHeaders:%s:' % cid, MAX_PAGES):
                 try:
                     page = json.loads(raw) if isinstance(raw, str) else None
                 except ValueError:
                     page = None
-                heads += [h for h in page if isinstance(h, dict)] if isinstance(page, list) else []
+                if isinstance(page, list):
+                    pages.append((_page_order(key), [h for h in page if isinstance(h, dict)]))
+            for _, page in sorted(pages, key=lambda p: p[0]):          # SpecStory sorts the page suffixes as text and relies on Cursor's zero padding; page 10 follows page 2 here too
+                heads += page
         return [h['bubbleId'] for h in heads if isinstance(h.get('bubbleId'), str)]
 
     def bubbles(self, cid):
