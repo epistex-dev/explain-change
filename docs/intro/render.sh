@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Re-renders the intro: docs/media/intro.mp4, docs/images/intro.webp and docs/images/intro.avif (and a GIF with GIF=1).
+# Re-renders the intro: docs/media/intro.mp4 and docs/images/intro.avif (and a GIF with GIF=1).
 #   bash docs/intro/render.sh [workdir]        default workdir /tmp/explain-change-intro
 # Needs node >= 22, ffmpeg, avifenc (libavif) and (for the page crops only) chromium. Installs HyperFrames and GSAP under <workdir>/tools (nothing global).
 set -euo pipefail
@@ -16,11 +16,10 @@ node "$HERE/stage.mjs" "$W/proj" "$TOOLS/node_modules/gsap/dist/gsap.min.js"
 (cd "$W/proj" && hyperframes lint)
 (cd "$W/proj" && systemd-run --user --scope -p MemoryMax=3G -- hyperframes render . --output "$OUT/raw.mp4" --fps 30 --workers 1 --quality delivery)
 ffmpeg -v error -y -i "$OUT/raw.mp4" -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p -r 30 -movflags +faststart -an "$OUT/intro.mp4"
-# README image: animated AVIF (small, smooth glows) with an animated WebP fallback (quality 91: lower qualities show 8 px blocks in the dark glows)
-ffmpeg -v error -y -i "$OUT/intro.mp4" -vf "fps=15,scale=800:-2:flags=lanczos" -c:v libwebp_anim -lossless 0 -q:v 91 -compression_level 6 -loop 0 "$OUT/intro.webp"
+# README image: animated AVIF (small, smooth glows)
 ffmpeg -v error -y -i "$OUT/intro.mp4" -vf "fps=15,scale=800:-2:flags=lanczos" -pix_fmt yuv420p -strict -1 "$OUT/intro.y4m"
 avifenc -s 6 -j 4 --min 0 --max 8 --autotiling "$OUT/intro.y4m" "$OUT/intro.avif" >/dev/null && rm -f "$OUT/intro.y4m"   # avifenc (libavif) needed
 if [ "${GIF:-0}" = 1 ]; then   # for comparison only: a GIF under 5 MB bands (see NOTES.md)
   ffmpeg -v error -y -i "$OUT/intro.mp4" -vf "fps=5,scale=800:-2:flags=lanczos,split[a][b];[a]palettegen=max_colors=48:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle" -loop 0 "$OUT/intro.gif"
 fi
-ls -l "$OUT"; echo "copy: cp $OUT/intro.mp4 $REPO/docs/media/intro.mp4; cp $OUT/intro.webp $OUT/intro.avif $REPO/docs/images/"
+ls -l "$OUT"; echo "copy: cp $OUT/intro.mp4 $REPO/docs/media/intro.mp4; cp $OUT/intro.avif $REPO/docs/images/"

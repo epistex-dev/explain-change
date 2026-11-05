@@ -12,6 +12,14 @@ All notable changes to this project are documented here. The format follows
 ### Changed
 - `midnight` is now the theme a page opens in when `render.py` gets no `--theme` and the reader has no stored pick. A stored pick still wins, and the five earlier themes stay in the Appearance picker. The README screenshots show midnight.
 - The error for an unknown `--theme` now names six ids.
+- The two reference folders are one: `skills/explain-change/reference/examples` and `reference/ui` moved to `skills/explain-change/references/examples` and `references/ui`. The duplicate `reference/ui/LICENSES.txt` is gone (`assets/ui/LICENSES.txt` stays).
+- The test suite (`tests/`, with `red_check.py`) and the design notes (`docs/design.md`, was `DESIGN.md`) moved out of `skills/explain-change/`, so an install ships only the skill. Run the tests with `python3 -m unittest discover -s tests`.
+- A test pins the text colour of the flow page's error code (`E1`) on its red pill at 4.5:1 or better in every theme.
+
+### Removed
+- The v1 report page and Mermaid (`mermaid.min.js`, 5.5 MB). A change doc with `version` 1 or no `version` now makes `validate.py` and `render.py` exit 1 with `error: explain-change v1 docs are no longer supported; write version 2 (references/explain-schema.md)`. Docs with `version: 2` are unaffected.
+- `docs/images/intro.webp` (7.6 MB). The README intro is the AVIF, linked to the mp4.
+- Seven README screenshots that were byte-identical copies of ones in `docs/images/themes/` (2.8 MB): `hero.png`, `session-1440x900.png`, `session-800x900.png` and the folder `no-transcript/`.
 
 ## [0.1.0] - 2026-11-05
 
