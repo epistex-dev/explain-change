@@ -19,9 +19,9 @@ Done when you hold `RUN_DIR` and can say which module each changed file belongs 
 
 ## 2. Read the session
 
-A transcript of any harness below grounds the doc. `collect.py` lists the sessions recorded in the repo's folder, labelled by harness; pick the one whose first user message and time span match this task (each harness lists its 3 newest; when none fits, list the harness's folder by time and open the likely files), then rerun with `--transcript <file>` (the digest lists the user's messages, test-like tool calls and worker ids). The format is detected from the file; `--format auto|claude|copilot|codex|opencode|gemini|cursor-cli|cursor-ide` names it. A file in none of these formats exits 1 with one line naming them. Open the code behind each module that changed.
+A transcript of any harness below grounds the doc. `collect.py` lists the sessions recorded in the repo's folder, labelled by harness; pick the one whose first user message and time span match this task (each harness lists its 3 newest; when none fits, list the harness's folder by time and open the likely files), then rerun with `--transcript <file>` (the digest lists the user's messages, test-like tool calls and worker ids). The format is detected from the file; `--format auto|claude|copilot|codex|opencode|gemini|cursor-cli|cursor-ide` names it. A file in none of these formats exits 1 with one line naming them when it lies outside every folder in the table; a text file inside the Claude Code folder is read as a Claude Code transcript (skipped lines are warned about, exit 0), and a directory exits 2 ("transcript not found"). Open the code behind each module that changed.
 
-| Harness | Official transcript folder | `--format` |
+| Harness | Transcript folder | `--format` |
 |---|---|---|
 | Claude Code | `~/.claude/projects` | `claude` |
 | GitHub Copilot CLI | `~/.copilot/session-state` | `copilot` |
@@ -31,7 +31,7 @@ A transcript of any harness below grounds the doc. `collect.py` lists the sessio
 | Cursor CLI | `~/.cursor/projects` | `cursor-cli` |
 | Cursor IDE | `~/.config/Cursor/User/globalStorage` on Linux (the same folder of Cursor's user data on macOS and Windows) | `cursor-ide` |
 
-A transcript is read only under its harness's folder, after resolving symlinks; no environment variable or flag moves that folder. A shell call whose output or exit code the harness did not record has an unknown result (every Cursor CLI and Cursor IDE call, an OpenCode call still running): it can back a `mixed` run or a quote, never a `passed` run or a `done`, and the validator says so in one line.
+A transcript is read only under its harness's folder, after resolving symlinks: a file outside it, or reached through a symlink that leaves it, is refused. The folder is fixed per harness under your home directory (`$HOME`); for Claude Code `EXPLAIN_PROJECTS_DIR` also moves it. No command-line flag, `--format` included, moves it. A shell call whose output or exit code the harness did not record has an unknown result (every Cursor CLI and Cursor IDE call, an OpenCode call still running): it can back a `mixed` run or a quote, never a `passed` run or a `done`, and the validator says so in one line.
 
 No transcript (none matches, or the harness is not listed): write `"transcript_unavailable": "<reason>"` and take the user's words and the commands you ran from your own context. Steps 4 and 5 then run without `--transcript`, and the page says it was not checked against the session.
 

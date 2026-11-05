@@ -7,7 +7,7 @@ MAX_LINE = 32 * 1024 * 1024      # a line longer than this is skipped, not buffe
 
 
 class RootError(ValueError):
-    """A transcript path outside the harness's official root, or not a plain file."""
+    """A transcript path outside the harness's root, or not a plain file."""
 
 
 class StoreError(ValueError):

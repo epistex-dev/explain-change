@@ -75,7 +75,7 @@ def detect(path):
 
 
 def load(path, harness):
-    """The NPath of a transcript the adapter of `harness` reads under its official root. Raises ExplainError."""
+    """The NPath of a transcript the adapter of `harness` reads under its root. Raises ExplainError."""
     mod = adapters.get(harness)
     p = os.path.expanduser(path)
     root = mod.default_root()

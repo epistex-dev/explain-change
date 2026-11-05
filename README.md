@@ -51,9 +51,9 @@ Details: [`references/explain-schema.md`](skills/explain-change/references/expla
 
 ### Transcript readers
 
-The skill reads the session of seven harnesses (readers in `skills/explain-change/scripts/lib/adapters/`). Each reader turns its harness's records into one model (user messages, tool calls with their exit codes, outputs), and `collect.py`, `validate.py` and `render.py` ground a change doc or a session doc in any of them. Pass `--transcript <file>`; the format is detected, and `--format` names it. A transcript is read only under the harness's own folder after resolving symlinks, so a file the agent wrote itself cannot ground a claim, and no environment variable or flag moves that folder.
+The skill reads the session of seven harnesses (readers in `skills/explain-change/scripts/lib/adapters/`). Each reader turns its harness's records into one model (user messages, tool calls with their exit codes, outputs), and `collect.py`, `validate.py` and `render.py` ground a change doc or a session doc in any of them. Pass `--transcript <file>`; the format is detected, and `--format` names it. A transcript is read only under the harness's own folder after resolving symlinks, so a file the agent wrote itself cannot ground a claim. That folder is fixed per harness under your home directory (`$HOME`); for Claude Code `EXPLAIN_PROJECTS_DIR` also moves it. No command-line flag, `--format` included, moves it.
 
-| Harness | Official transcript folder | `--format` |
+| Harness | Transcript folder | `--format` |
 |---|---|---|
 | Claude Code | `~/.claude/projects` | `claude` |
 | GitHub Copilot CLI | `~/.copilot/session-state` | `copilot` |

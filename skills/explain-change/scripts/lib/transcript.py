@@ -47,7 +47,7 @@ def projects_root():
 
 def safe_path(path, fmt='auto'):
     """Real path of a transcript, refused unless it lies under ~/.claude/projects. A transcript of another harness (fmt auto detects it, or
-    names it) is read by its adapter under that harness's official root and comes back as a neutral.NPath, a str holding its parsed session."""
+    names it) is read by its adapter under that harness's root and comes back as a neutral.NPath, a str holding its parsed session."""
     if isinstance(path, neutral.NPath):
         return path
     rp = os.path.realpath(os.path.expanduser(path))

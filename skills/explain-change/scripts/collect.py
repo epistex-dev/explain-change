@@ -8,9 +8,9 @@ usage: collect.py [<base>..<head> | <commit>] [--repo PATH] [--v2] [--transcript
 Default range: uncommitted changes vs HEAD when there are any, else the last commit.
 --v2 (implied by --transcript) adds what schema v2 needs: changed files mapped to modules (floorplan/architecture.json
 or top directories), and the session transcripts that could ground the page (3 newest listed; with --transcript, a digest
-of the user's messages and the test-like tool calls). A transcript is read only under the official folder of its harness:
+of the user's messages and the test-like tool calls). A transcript is read only under the folder of its harness (under $HOME; EXPLAIN_PROJECTS_DIR also moves the Claude Code one):
 ~/.claude/projects (Claude Code), or that of Copilot CLI, Codex, OpenCode, Gemini CLI, Cursor CLI and Cursor IDE (see SKILL.md). The format is
-detected from the file; --format names it. A file no supported format recognises exits 1 with one line naming the formats.
+detected from the file; --format names it. A file outside every harness folder that no supported format recognises exits 1 with one line naming the formats; a directory exits 2.
 --session prints a digest of a whole session (numbered user turns, tool calls by turn, repos touched, outward actions) for an
 explain-session/1 doc; it writes nothing and needs no diff. Without --transcript it lists the candidate sessions.
 Creates <repo>/.explain/<YYYYMMDD-HHMM>-<slug>/ with summary.json and diff.patch, prints a summary plus
