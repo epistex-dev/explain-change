@@ -291,7 +291,7 @@ MUTATIONS += [
     ('v2 B4b: the sweep reaches every field (snippet included)', 'scripts/lib/ground.py', "        if transcript.contains_learned(node):\n", "        if transcript.contains_learned(node) and not in_snippet:\n",
      HX + 'SecretsRound2.test_the_bare_value_is_rejected_in_every_text_field_and_in_a_snippet'),
     ('v2 B4b: values come from workers too', TR, '    for path in files.values():', "    for path in [files['main']]:", HX + 'SecretsRound2.test_a_value_learned_from_a_worker_transcript_counts_too'),
-    ('v2 B4b: code after a label is not a credential', TR, "    return m.group('val') is None or not code_shaped(m.group('val'))", '    return True', HX + 'SecretsRound2.test_code_is_not_flagged'),
+    ('v2 B4b: code after a label is not a credential', TR, "    return not code_shaped(m.group('val')) and not _css_name(m)", '    return True', HX + 'SecretsRound2.test_code_is_not_flagged'),
     ('v2 B4b: a bare word with a digit is still a secret', TR, "    return bool(re.search(r'[.(\\[]', v)) or not re.search(r'\\d', v)", '    return True', HX + 'SecretsRound2.test_a_bare_word_with_a_digit_after_a_label_is_still_a_secret'),
     ('v2 B4b: a label needs a word boundary', TR, "_LABEL = r'(?<![A-Za-z0-9])(?:pass", "_LABEL = r'(?:pass", HX + 'SecretsRound2.test_a_word_that_merely_contains_pass_is_not_a_label'),
     ('v2 B4b: a token prefix needs a word boundary', TR, "|(?<![A-Za-z0-9])(?P<pre>", "|(?P<pre>", HX + 'SecretsRound2.test_a_word_that_merely_contains_pass_is_not_a_label'),
