@@ -122,10 +122,21 @@ def _heredoc_body(text, i, delim, strip):
     return body, i
 
 
+def _arith_end(s, i):
+    """Index after the `))` of the `$((` that starts at s[i]; len(s) when it never closes. A `<<` before it is a shift, not a heredoc."""
+    depth, j, n = 0, i + 1, len(s)
+    while j < n:
+        depth += (s[j] == '(') - (s[j] == ')')
+        j += 1
+        if depth == 0:
+            return j
+    return n
+
+
 def _matching(s, i):
     """Index of the `)` that closes the `$(` or `(` before position i (s[i] is the first char inside); len(s) when there is none. Reads like the shell:
     single and double quotes, backslashes, nested `$(...)` and `(...)`, comments and heredoc bodies (a quote or paren in a body does not count)."""
-    stack, n, pend = ['p'], len(s), []  # 'p': inside (...) in command text; 'q': inside "..."
+    stack, n, pend, arith = ['p'], len(s), [], 0  # arith: the index until which `<<` is arithmetic;  'p': inside (...) in command text; 'q': inside "..."
     while i < n:
         c = s[i]
         if c == '\\':
@@ -135,6 +146,8 @@ def _matching(s, i):
                 stack.pop()
             elif c == '$' and s[i + 1:i + 2] == '(':
                 stack.append('p')
+                if s[i + 2:i + 3] == '(':
+                    arith = max(arith, _arith_end(s, i))
                 i += 1
             i += 1
         elif c == "'":
@@ -143,6 +156,10 @@ def _matching(s, i):
         elif c == '"':
             stack.append('q')
             i += 1
+        elif c == '$' and s.startswith('$((', i):
+            arith = max(arith, _arith_end(s, i))
+            stack.append('p')
+            i += 2
         elif c == '(':
             stack.append('p')
             i += 1
@@ -154,7 +171,7 @@ def _matching(s, i):
         elif c == '#' and s[i - 1] in ' \t\n;&|()':
             j = s.find('\n', i)
             i = n if j < 0 else j
-        elif c == '<' and s.startswith('<<', i) and not s.startswith('<<<', i):
+        elif c == '<' and s.startswith('<<', i) and not s.startswith('<<<', i) and i >= arith:
             delim, strip, i = _heredoc_delim(s, i + 2)
             pend.append((delim, strip))
         elif c == '\n':
@@ -177,6 +194,7 @@ def _split(text, depth):
     hd_for = {}  # id(words list) -> heredoc body
     skip_next = False  # the next word is a redirect target
     cur_hd = []
+    arith = 0  # the index until which `<<` is arithmetic, not a heredoc
 
     def end_word():
         nonlocal inword, skip_next
@@ -259,7 +277,7 @@ def _split(text, depth):
             if text.startswith('<<<', i):
                 i += 3
                 skip_next = True
-            elif text.startswith('<<', i) and not text.startswith('<<<', i):
+            elif text.startswith('<<', i) and not text.startswith('<<<', i) and i >= arith:
                 delim, strip, i = _heredoc_delim(text, i + 2)
                 pend_hd.append((delim, strip))
                 cur_hd.append(None)
@@ -284,6 +302,7 @@ def _split(text, depth):
             end_word()
             i += 2
             if text[i:i + 1] == '(':  # $(( arithmetic ))
+                arith = max(arith, _arith_end(text, i - 2))
                 continue
             k = _matching(text, i)
             sub(text[i:k])

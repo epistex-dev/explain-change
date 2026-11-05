@@ -137,6 +137,12 @@ class AfterAHeredoc(unittest.TestCase):
         self.assertEqual(self.kinds("echo \"$(cat <<'EOF'\nbody\nEOF\n; git push)\""), ['push'])
         self.assertEqual(self.kinds("x=$(git push; cat <<'EOF'\nit's\nEOF\n)"), ['push'])
 
+    def test_a_shift_in_arithmetic_is_not_a_heredoc(self):
+        for cmd in ('x=$((1<<2))\ngit push', 'x=$(echo $((1<<2)))\ngit push', 'git commit -m "$(echo $((1<<2)))" && git push', 'echo "$((a<<2))"; git push',
+                    'x=$(echo "$((1<<2))")\ngit push', 'x=$((1<<2))\n2\ngit push', 'git commit -m "$(echo $((1<<2))\necho x)" && git push'):
+            with self.subTest(cmd=cmd):
+                self.assertEqual(self.kinds(cmd), ['push'], cmd)
+
     def test_a_comment_inside_the_substitution_hides_its_quote(self):
         self.assertEqual(self.kinds("x=$(ls # it's\n) && git push"), ['push'])
         self.assertEqual(outward.classify('x=$(ls # ) && git push\n)'), [])
