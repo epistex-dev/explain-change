@@ -43,6 +43,18 @@ class SkillFormat(unittest.TestCase):
         self.assertLessEqual(len(fm['name']), 64)
         self.assertTrue(0 < len(fm['description']) <= 1024)
 
+    def test_the_description_triggers_in_each_mode_and_each_language(self):
+        d = frontmatter()['description']
+        for want in ('explain this change', 'giải thích thay đổi', 'mình không hiểu code vừa sửa', 'summarize this session', 'how does X work', 'luồng này chạy thế nào', 'diff, commit or PR'):
+            self.assertIn(want, d)
+
+    def test_every_reference_is_one_link_from_the_skill(self):
+        with open(os.path.join(SKILL, 'SKILL.md'), encoding='utf-8') as fh:
+            body = fh.read()
+        for name in sorted(os.listdir(os.path.join(SKILL, 'references'))):
+            if name.endswith('.md'):
+                self.assertIn('references/' + name, body, name)
+
     def test_the_steps_do_not_assume_one_harness(self):
         with open(os.path.join(SKILL, 'SKILL.md'), encoding='utf-8') as fh:
             body = fh.read()

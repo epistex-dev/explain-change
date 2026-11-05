@@ -189,11 +189,11 @@ class UnvalidatedRender(V2Case):
 
 
 class Docs(unittest.TestCase):
-    def test_skill_md_has_the_no_transcript_path_for_each_harness_without_a_reader(self):
-        with open(os.path.join(SKILL, 'SKILL.md'), encoding='utf-8') as fh:
+    def test_transcripts_md_has_the_no_transcript_path_for_each_harness_without_a_reader(self):
+        with open(os.path.join(SKILL, 'references', 'transcripts.md'), encoding='utf-8') as fh:
             text = fh.read()
-        self.assertIn('### No transcript', text)
-        body = text.split('### No transcript', 1)[1].split('\n## ', 1)[0]
+        self.assertIn('## No transcript', text)
+        body = text.split('## No transcript', 1)[1].split('\n## ', 1)[0]
         for h in ('Windsurf', 'Cline', 'Roo', 'Kiro', 'Aider', 'transcript_unavailable', 'Not checked against the session', "agent's own"):
             self.assertIn(h, body, h)
 
