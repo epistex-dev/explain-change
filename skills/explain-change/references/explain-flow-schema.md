@@ -1,8 +1,19 @@
 # explain-flow/1
 
-A flow doc explains how an existing piece of code runs, for a reader who did not write it: what the parts of the system are, the steps in order, what each step takes in and gives back, where the flow branches, and what happens when it goes wrong. It needs no diff and no agent session. It is about the code at one commit: it shows no code, diff or file:line, but every step and every error is tied to the lines it was read from, and `validate.py` reads those lines.
+Read this when the user asks how existing code works ("how does X work", "luồng này chạy thế nào"), with no change to explain and no agent session to read. Set `S` (the folder of SKILL.md) as in [SKILL.md](../SKILL.md).
 
-Workflow: `collect.py --flow [--path <dir or file>]... [--slug <text>]` prints the full SHA of HEAD, the modules (`floorplan/architecture.json`, else one per directory, as `--v2` does) and the files under each `--path`, and `RUN_DIR=…`; it writes `summary.json` there, needs no diff and never exits 3. Write the doc by reading the code; `validate.py <doc>` checks it. The example `references/examples/claim-check.flow.json` explains how a claim is checked before the page renders.
+## Workflow
+
+1. Collect: `python3 $S/scripts/collect.py --flow [--path <dir or file>]... [--slug <text>]`. It prints the full SHA of HEAD, the modules (`floorplan/architecture.json`, else one per directory) and the files under each `--path`, and `RUN_DIR=…`, and writes `summary.json` there. It needs no diff and never exits 3. Commit or stash first: the doc is about HEAD, and a warning says when the working copy differs.
+2. Write `$RUN_DIR/flow.json` by reading the code, not from memory: put the user's question in `question` as asked, then every part, step, branch and error, each with the lines you read. The example `examples/claim-check.flow.json` explains how a claim is checked before the page renders.
+3. Validate: `python3 $S/scripts/validate.py $RUN_DIR/flow.json`. Each source is checked against `git show <commit>:<path>`; fix the claim or the lines until it prints `ok`.
+4. Render: `python3 $S/scripts/render.py $RUN_DIR/flow.json --text [--theme <id>]` (themes as in [session-schema.md](session-schema.md)). It dispatches on `kind`, validates the doc again (a problem prints the lines, writes nothing, exits 1; an unknown `kind` exits 1 with one line), and writes `$RUN_DIR/index.html` and `index.html.txt`. Every step is in the HTML, so print and a browser without JS show the whole flow; `#step-N` opens step N. The footer says which commit it was checked against. `--no-validate` renders an archived doc whose commit is gone, with no footer.
+5. Cold-read gate: same reader choice, same fix-and-rerun loop as step 6 of SKILL.md. The reader holds only `index.html.txt` and answers these four from the page alone: what the flow does; in what order the steps run and where it branches; what happens when error X occurs; what step N takes in and gives back. Pick X and N yourself, one error from a step with several and a step with a branch. Compare each answer with the doc; where one is wrong, rewrite that field, rerun steps 3 and 4, and use a new fresh reader. Done when all four match.
+6. Show the page as in step 7 of SKILL.md.
+
+## What a flow doc is
+
+A flow doc explains how an existing piece of code runs, for a reader who did not write it: what the parts of the system are, the steps in order, what each step takes in and gives back, where the flow branches, and what happens when it goes wrong. It needs no diff and no agent session. It is about the code at one commit: it shows no code, diff or file:line, but every step and every error is tied to the lines it was read from, and `validate.py` reads those lines.
 
 ## Top level
 

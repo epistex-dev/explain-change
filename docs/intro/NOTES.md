@@ -1,6 +1,6 @@
 # explain-change intro clip
 
-30 s, 1280x720, 30 fps, English, dark navy ("style A"). Built with [HyperFrames](https://github.com/heygen-com/hyperframes) 0.9.15: `index.html` is one composition with one paused, seekable GSAP timeline, so every render is identical. Design record: [DESIGN.md](DESIGN.md).
+30 s, 1280x720, 30 fps, English, dark navy ("style A"). Built with [HyperFrames](https://github.com/heygen-com/hyperframes) 0.9.15: `index.html` is one composition with one paused, seekable GSAP timeline, so every render is identical. Design record: [brief.md](brief.md).
 
 | Time | Scene |
 |---|---|

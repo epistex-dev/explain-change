@@ -369,7 +369,7 @@ class RunFolderName(V2Case):
 
 
 class NoV1Hints(V2Case):
-    def test_v2_output_has_no_explain_in_hint_and_v1_keeps_it(self):
+    def test_v2_collect_output_has_no_v1_hints(self):
         r1 = self.script('collect.py', '%s..%s' % (self.base, self.head), '--repo', self.repo)
         self.assertIn('Logic bên trong', r1.stdout)
         r2 = self.script('collect.py', '%s..%s' % (self.base, self.head), '--repo', self.repo, '--v2')
