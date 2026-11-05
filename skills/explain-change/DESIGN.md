@@ -191,3 +191,50 @@ Case: Extend. Both pages and their tokens exist (`page2.css`, `session.css`); th
 | Quotes, commands and file:line stay off both pages | "Không cần code" |
 
 Screenshots (bundled fixtures with the reason set, 1440 x 900 and 800 x 900): `docs/images/no-transcript/`. Every README and DESIGN image is captured from the README's own render commands (`--no-validate`), after animations end, twice, and kept only when both captures are byte-identical. Tests: `NoSessionLayout` in `tests/test_page_session.py` (last lane's markers end at or above y = 900 and the note adds no height; header height is the same with no reason and with a 200-character one, at 1440 and 800, en and vi).
+
+## Flow page (`explain-flow/1`: `scripts/lib/page_flow.py`, `assets/ui/flow.{css,js}`)
+
+Case: Extend. The change page and the session page and their tokens exist (`page2.css`, five themes), so their look binds; the page adds one layout and no token. The approved mockup is layout A of `design/explain-flow/` on the branch `mockups/explain-flow` (map first, step panel on the side). The skill's catalog has no "explaining page" row; the closest, Docs, is used only for its rule that headings are anchors and the reader finds the section from the contents (the route).
+
+Steps that do not apply, and why: the question round (the brief and the approved mockup answer every gap: audience, content, layout, sizes), Persuade and Operate patterns (a page to read), tokens "as found" (done from `page2.css`; nothing new), the checker's `--dark` switch (the page has five themes; navy and pearl were rendered, in both languages), `--budget landing` (not a landing page), and the charts reference (no chart).
+
+| Item | Value |
+| --- | --- |
+| Subject | How an existing flow of the code runs: the parts, the steps in order, what each takes in and gives back, the branches, what goes wrong |
+| Primary action | Pick a step and read it: from the route, from a part on the map, or with the arrow keys |
+| Audience and device | The repo owner who did not write the code; 1440 x 900 first, 800 x 900 second; 390 px must still work |
+| Shown | `title`, `question`, `summary`, `lang`; parts (`name`, `where`, `role`); steps (`name`, `part`, `takes_in`, `gives_back`, `branches`, `errors`) |
+| Never shown | `sources`, `excerpt`, file:line, code. The one use of `commit` is the footer line with its short form and date |
+| Language | `vi` (default) or `en` from `lang`; the doc's own text is never translated |
+
+| Decision | Rationale |
+| --- | --- |
+| Layout A as approved: question and summary, four count chips, the numbered route, the map, then the panel on the right (below the map at 1100 px and under) | the user chose "A · Bản đồ trước"; at 800 px the panel sits below the map and never covers it |
+| The tokens, the five `[data-theme]` blocks, the `Appearance` / `Giao diện` picker, and the key `explain-change-theme` are reused; the page adds only `flow.css` | a pick made on any page opens the others; the contract test pins the other two pages byte for byte |
+| The panel of every step is in the HTML; `.js` (set by the head script) collapses it to one; print shows all | no JS and print show the whole flow in order, as the brief asks |
+| `#step-N` opens step N; clicking a route pill, a map pill, a map part or a branch link selects; `ArrowLeft` and `ArrowRight` and the two buttons move; the URL follows with `replaceState` | one selection state, shareable; the part of the selected step is lit on the map |
+| Route pills and map pills are `<button>`; the selected ones carry `aria-current="step"`; a part on the map is not a button (its step pills are), so the click on the part is a mouse shortcut and the keyboard path goes through the pills | no nested interactive elements |
+| A branch target is a link `<a href="#step-N">`; `problems` and `end` are drawn as two terminals on the map ("Problem list" in red with an alert icon, "Ends well" in green with a check) and as plain words in the branch row | colour is always paired with an icon and a word |
+| The map edges come from the steps: a hand-off between two parts of consecutive steps or a branch, drawn only at 1100 px and wider; the edges of the selected step are heavier; red dashed lines go to "Problem list" | the doc carries no edge list, so none is invented |
+| A step with no `branches` shows one "Next" row (the step after it, or "The flow ends well"); a step with branches shows "Branches" | the schema says a step with no branches goes to the next one |
+| Error exits are numbered E1 to E12 in page order | the doc's own ids differ in style (`e1`, `E1`); the number is stable |
+| Part icons: `file-code` for a part inside the system, `globe` for one outside; the tint cycles through four tokens inside | the doc has no part kind; a meaningful icon per part would be a guess |
+| Section headings are `h2` of the same quiet size ("The route", "Where each step runs"); the panel title is `h2`; error cards are `h3` | landmarks `header`, `nav` (the route), `main`, `aside`, `footer`; the heading order has no gap |
+| Footer: "Checked against the code at commit <7 characters>, <commit date>" in the page language; left out with `--no-validate` | it states what was checked and against what; with no validation there is nothing to state |
+| Vietnamese words: `thành phần` for a part, `lỗi` for an error, `nhánh` for a branch, `bước` for a step; each has one name on the page | one name per concept |
+
+### Content structure (rubric item 8), the bundled example (`claim-check.flow.json`)
+
+| Section (its question) | Opens with | Counts against the doc |
+| --- | --- | --- |
+| Summary (what is the conclusion) | the first sentence of `summary` in bold | 1 of 1; the `question` sits above it as asked |
+| Count chips (how big is it) | four numbers | steps 11/11, branch points 5/5, error exits 12/12, parts 7/7 |
+| The route (in what order) | the step names, numbered | steps 11/11, each name once |
+| Where each step runs (which part) | the zone labels | parts 7/7, each with its role in one line; step numbers on their part 11/11 |
+| Step panel (what does one step take in, give back, and how does it fail) | its name and part | steps 11/11 panels; steps with branches 5/5 ("Branches"), the other 6 show "Next"; error exits 12/12 |
+
+A fact is written once: a step's text, branches and errors live only in its panel; the route and the map carry names and numbers; the counts appear once, in the chips.
+
+### Checks run
+
+`check.mjs` at 390, 800 and 1440 px on the pearl English page and the navy Vietnamese page: 0 failures, 0 warnings; the NOTE lines are contrast over the gradient (read in the tiles), and one at 1440 px that Tab reached 27 stops. JS behaviour measured in headless Chrome over CDP: `#step-7`, `#step-99` (clamps to 11), `#nope` (step 1), a map pill, a part, a branch link, the arrow keys, the two buttons, the scroll to the panel at 800 px, and no script (11 articles visible, the panel header hidden). Screenshots: pearl and navy, `en` and `vi`, at 1440 x 900, 800 x 900, 800 full page, and step 7 at 1440.

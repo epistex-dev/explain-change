@@ -1349,6 +1349,33 @@ MUTATIONS += [
      'test_page_session.NoSessionLayout.test_session_page_with_the_note_keeps_every_lane_on_a_1440_x_900_screen'),
 ]
 
+PF, FP = 'scripts/lib/page_flow.py', 'test_flow_page.'
+MUTATIONS += [
+    ('flow page: dispatch by kind', RJ, '        if kind == check_flow.KIND:\n            return render_flow(a, out)', '        if False:\n            return render_flow(a, out)',
+     FP + 'Dispatch.test_a_flow_doc_renders_by_its_kind'),
+    ('flow page: an unknown kind is one line', RJ, 'if kind is not None and kind != check_flow.KIND:', 'if False:',
+     FP + 'Dispatch.test_an_unknown_kind_exits_with_one_line'),
+    ('flow page: the question shows no file:line', PF, "esc(t['fl_asked']), txt(d['question'])", "esc(t['fl_asked']), esc(d['question'])",
+     FP + 'Leaks.test_no_source_excerpt_or_file_line_reaches_the_page'),
+    ('flow page: every step has its panel in the HTML', PF, "''.join(self.article(i) for i in range(len(self.steps)))", 'self.article(0)',
+     FP + 'NoScript.test_every_step_and_error_is_in_the_html_without_js'),
+    ('flow page: a branch target is a link', PF, '<a href="#step-%d" data-step="%d">%s</a>', '<span id="%d" data-step="%d">%s</span>',
+     FP + 'Links.test_a_branch_target_is_a_link_to_that_step'),
+    ('flow page: the head script holds the theme allowlist', PF, "'head_js': head_script()", "'head_js': ''",
+     FP + 'Themes.test_the_theme_allowlist_holds'),
+    ('flow page: the renderer refuses an unknown theme', PF, '    if theme not in THEMES:\n        raise ValueError', '    if False:\n        raise ValueError',
+     FP + 'Themes.test_the_theme_allowlist_holds'),
+    ('flow page: both languages have every string', 'scripts/lib/i18n2.py', "'fl_no_err': 'Bước này không có lỗi riêng của nó.'", "'fl_no_err_x': 'Bước này không có lỗi riêng của nó.'",
+     FP + 'Language.test_both_languages_have_every_key_and_the_page_shows_none_raw'),
+    ('flow page: the route marks the current step', PF, """' aria-current="step"' if i == 0 else ''""", "''",
+     FP + 'Landmarks.test_landmarks_and_the_current_step'),
+    ('flow page: the session page stays byte-identical', PS, '<a class="skip" href="#journey">', '<a class="skip" href="#main">',
+     FP + 'Contract.test_existing_pages_render_byte_identical_html'),
+    ('flow page: the change page stays byte-identical', P2, """'<article class="%s" data-id="%s" data-real""", """'<article class="%s" data-id="%s" data-x="1" data-real""",
+     FP + 'Contract.test_existing_pages_render_byte_identical_html'),
+]
+
+
 def main():
     bad = 0
     only = sys.argv[1] if len(sys.argv) > 1 else ''  # optional: run only the guards whose name contains this text
