@@ -239,6 +239,14 @@ class HostileReason(V2Case):
         d['transcript_unavailable'] = 'gone, token: %s' % CRED
         self.assertNotIn(CRED, page_session.render(d, {}))
 
+    def test_a_credential_cut_by_the_length_cap_leaves_no_piece(self):
+        transcript.learn_quotes({'quote': 'pass: %s' % CRED})
+        reason = 'x' * (MAX_REASON - 6) + CRED
+        self.assertNotIn(CRED[:4], page2.render(self.doc(off(reason)), self.repo, validated=False))
+        d = good_doc()
+        d['transcript_unavailable'] = reason
+        self.assertNotIn(CRED[:4], page_session.render(d, {}))
+
     def test_a_page_rendered_without_validation_still_caps_the_reason(self):
         html = page2.render(self.doc(off('y' * 5000)), self.repo, validated=False)
         self.assertLessEqual(html.count('y' * 50), 4)

@@ -1222,6 +1222,8 @@ _NO_TRANSCRIPT = [
          'ChangePageNote.test_a_checked_page_has_no_note'),
         ('no transcript: the session page gives the note and the reason', PS, "        if self.session_checked:\n            return ''\n        r = self.doc.get", "        if True:\n            return ''\n        r = self.doc.get",
          'SessionPage.test_the_note_has_the_reason_in_both_languages'),
+        ('no transcript: the session page hides a credential before it cuts', PS, "        r = redact(' '.join(r.split())) if isinstance(r, str) else ''  # hide a credential first", "        r = ' '.join(r.split()) if isinstance(r, str) else ''  # hide a credential first",
+         'HostileReason.test_a_credential_cut_by_the_length_cap_leaves_no_piece'),
         ('no transcript: the session page cuts a long reason', PS, "        r = r[:MAX_REASON - 1] + '…' if len(r) > MAX_REASON else r\n        return '<p class=\"nt\">", "        return '<p class=\"nt\">",
          'HostileReason.test_a_page_rendered_without_validation_still_caps_the_reason'),
         ("no transcript: outward counts are the agent's own", PS, "t['ses_out_hint'] if self.session_checked else t['nt_out_hint']", "t['ses_out_hint']",

@@ -131,9 +131,9 @@ class Builder:
         if self.session_checked:
             return ''
         r = self.doc.get('transcript_unavailable')
-        r = ' '.join(r.split()) if isinstance(r, str) else ''
+        r = redact(' '.join(r.split())) if isinstance(r, str) else ''  # hide a credential first: a cut through it would leave a piece the mask no longer matches
         r = r[:MAX_REASON - 1] + '…' if len(r) > MAX_REASON else r
-        return '<p class="nt">%s<span>%s</span></p>' % (ic('triangle-alert'), esc(self.t['unchecked'] + (': ' + redact(r) if r else '')))
+        return '<p class="nt">%s<span>%s</span></p>' % (ic('triangle-alert'), esc(self.t['unchecked'] + (': ' + r if r else '')))
 
     def needs(self):
         t, items = self.t, self.doc.get('needs_you', [])
