@@ -10,7 +10,7 @@
 ![license](https://img.shields.io/badge/license-MIT-blue)
 ![python](https://img.shields.io/badge/python-3%20stdlib%20only-3776ab)
 
-<img src="docs/images/hero.png" alt="The explain-change page for a sample change: a system map in the centre, a side panel with the Requests tab open" width="900">
+<img src="docs/images/hero.png" alt="The explain-change page for a sample change, in the pearl (light) theme: a system map in the centre, a side panel with the Requests tab open" width="900">
 
 <sub>Sample page rendered from the bundled fixture <code>reference/examples/password-autofill.v2.json</code>. The change is synthetic.</sub>
 
@@ -36,7 +36,7 @@ Five blocks, in this order. Each opens with its one-sentence conclusion, and eac
 
 The map is the centre of the page. Click a box to filter the other four blocks to that part of the system.
 
-<img src="docs/images/logic.png" alt="The same sample page with the Logic tab open and one map node selected" width="900">
+<img src="docs/images/logic.png" alt="The same sample page in pearl with the Logic tab open and one map node selected" width="900">
 
 ## How claims are grounded
 
@@ -160,26 +160,26 @@ python3 skills/explain-change/scripts/render.py \
 
 After a long session, one task or many, ask for "explain this session". The agent runs `collect.py --session --transcript <file>`, writes an `explain-session/1` doc, checks it with `validate.py <doc> --transcript <file>` and renders it with `render.py <doc> --transcript <file>`. The page opens with a band: what is done, and what waits on you. Below it, one lane per theme shows the events in order, next to a side panel that lists what the agent decided for you (each marked reversible or not) and what left the working copy (pushes, force pushes, real deletes, pull requests). Select a marker to read that theme's journey in the same panel, and open the theme's change page when it has one. It shows no code, diff or file:line.
 
-![The session page at 1440 x 900](docs/images/session-1440x900.png)
+![The session page in the pearl (light) theme at 1440 x 900](docs/images/session-1440x900.png)
 
 #### Colour themes
 
-The session page comes in five colour themes: navy (the default), ocean, plum, graphite and pearl (light). The reader picks one with the "Appearance" control in the header and the page remembers it; `render.py --theme <id>` sets the theme the page opens in. Every theme keeps the text at 4.5:1 or better and the marker rings at 3:1 or better.
+The session page and the change page come in the same five colour themes: navy (the default), ocean, plum, graphite and pearl (light); the screenshots here show pearl. The reader picks one with the "Appearance" control in the header and both pages remember it, so a pick made on one opens the other; `render.py --theme <id>` sets the theme a page opens in. Every theme keeps the text at 4.5:1 or better and the marker rings at 3:1 or better. The change page in each theme, at 1440 and 800 px wide, is in [`docs/images/themes`](docs/images/themes) (`change-<theme>-<width>x900.png`).
 
-| navy | ocean | plum |
+| pearl | navy | ocean |
 | --- | --- | --- |
-| ![navy](docs/images/themes/navy-1440x900.png) | ![ocean](docs/images/themes/ocean-1440x900.png) | ![plum](docs/images/themes/plum-1440x900.png) |
+| ![pearl](docs/images/themes/pearl-1440x900.png) | ![navy](docs/images/themes/navy-1440x900.png) | ![ocean](docs/images/themes/ocean-1440x900.png) |
 
-| graphite | pearl |
+| plum | graphite |
 | --- | --- |
-| ![graphite](docs/images/themes/graphite-1440x900.png) | ![pearl](docs/images/themes/pearl-1440x900.png) |
+| ![plum](docs/images/themes/plum-1440x900.png) | ![graphite](docs/images/themes/graphite-1440x900.png) |
 
 To render the bundled sample:
 
 ```bash
 python3 skills/explain-change/scripts/render.py \
   skills/explain-change/reference/examples/portal-day.session.json \
-  --no-validate --theme ocean --out /tmp/session/index.html
+  --no-validate --theme pearl --out /tmp/session/index.html
 ```
 
 The schema is in [`references/session-schema.md`](skills/explain-change/references/session-schema.md).

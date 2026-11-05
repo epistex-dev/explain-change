@@ -222,8 +222,9 @@ class Copy(unittest.TestCase):
     def test_every_session_key_is_used(self):
         with open(os.path.join(SKILL, 'scripts', 'lib', 'page_session.py'), encoding='utf-8') as fh:
             src = fh.read()
-        with open(os.path.join(SKILL, 'assets', 'ui', 'session.js'), encoding='utf-8') as fh:
-            src += fh.read()
+        for rel in (('assets', 'ui', 'session.js'), ('scripts', 'lib', 'themes.py')):
+            with open(os.path.join(SKILL, *rel), encoding='utf-8') as fh:
+                src += fh.read()
         families = ('ses_st_', 'ses_k_', 'ses_o_', 'ses_theme_')  # looked up as 'ses_st_' + status, and so on
         for k in (k for k in STR2['en'] if k.startswith('ses_') and not k.endswith('_1')):
             self.assertTrue("'%s'" % k in src or k.startswith(families) and any("'%s'" % f in src for f in families if k.startswith(f)), k)

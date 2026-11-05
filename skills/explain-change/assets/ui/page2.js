@@ -2,6 +2,15 @@
 const $=(s,r=document)=>r.querySelector(s),qa=(s,r=document)=>[...r.querySelectorAll(s)];
 const D=JSON.parse($('#data').textContent),T=D.t;
 const root=document.documentElement,mq=matchMedia('(min-width:1000px)');
+/* colour theme: the head script already applied the stored pick; the picker changes it and stores it (a blocked storage only skips the store) */
+const skin=$('#skin');
+if(skin){
+  skin.value=root.getAttribute('data-theme');
+  skin.addEventListener('change',()=>{
+    root.setAttribute('data-theme',skin.value);
+    try{localStorage.setItem('explain-change-theme',skin.value)}catch(e){}
+  });
+}
 const TABS=['req','logic','why','evidence'];
 let tab='req',node=null;
 
@@ -76,7 +85,7 @@ function sync(){
   hash();
 }
 function hash(){const h=[tab!=='req'?'tab='+tab:'',node?'node='+encodeURIComponent(info[node].real):''].filter(Boolean).join('&');history.replaceState(null,'',h?'#'+h:location.pathname+location.search)}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&node)setNode(null)});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&node&&e.target!==skin)setNode(null)});
 $('#fb-clear').onclick=()=>setNode(null);
 
 /* edges: routed by EdgeRouter (route.js) through the gaps between boxes, drawn here */

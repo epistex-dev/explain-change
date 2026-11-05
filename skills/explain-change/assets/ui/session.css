@@ -1,11 +1,8 @@
 /* explain-session/1 page. Tokens, fonts and the base reset come from page2.css (inlined before this file); layout and the colour themes are added here.
    --mk (marker size) and --mk-gap (space between markers): session.js reads both, so the CSS stays the single source.
-   Colour themes: page2.css :root is navy, the default. Every other theme is one [data-theme] block at the end of this file that overrides the same custom
-   properties, so no rule below holds a literal colour. The *-rgb helpers feed rgba(var(--x-rgb),a) where an alpha of a status colour is needed. */
-:root{--mk:32px;--mk-gap:8px;--lane-h:48px;
-  --glow-a:rgba(187,62,149,.17);--glow-b:rgba(70,90,230,.2);
-  --ok-rgb:95,217,174;--accent-rgb:240,138,208;--bad-rgb:255,138,154;--ui-rgb:143,180,255;--ring-rgb:150,175,255;
-  --on-fill:#fff;--kdot-ring:55%;--mk-ring:60%}
+   Colour themes: page2.css :root is navy, the default, and the other four themes are [data-theme] blocks right after it, shared with the change page. No rule here
+   holds a literal colour. The *-rgb helpers there feed rgba(var(--x-rgb),a) where an alpha of a status colour is needed. */
+:root{--mk:32px;--mk-gap:8px;--lane-h:48px}
 @media (pointer:coarse){:root{--mk:40px}}
 
 body{display:block;
@@ -21,12 +18,6 @@ body{display:block;
 .jump{display:flex;flex-wrap:wrap;gap:0 var(--s4);font-size:var(--fs-sm)}
 .jump a{color:var(--text-2);text-decoration:none;padding:6px 0;border-bottom:1px solid transparent}
 @media (hover:hover){.jump a:hover{color:var(--text);border-bottom-color:var(--ring-strong)}}
-.picker{display:none;align-items:center;gap:var(--s2);font-size:var(--fs-sm);color:var(--text-3)}
-.js .picker{display:inline-flex}
-.picker select{appearance:none;-webkit-appearance:none;height:30px;padding:0 28px 0 12px;border:0;border-radius:var(--r-pill);background-color:var(--raised-a);color:var(--text);font:600 var(--fs-sm)/1 var(--font);cursor:pointer;
-  box-shadow:0 0 0 1px var(--ring-strong);
-  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 15px) 13px,calc(100% - 10px) 13px;background-size:5px 5px;background-repeat:no-repeat}
-.picker select option{background:var(--surface-solid);color:var(--text)}
 
 /* surfaces */
 .card{background:var(--surface);border-radius:var(--r-card);box-shadow:0 0 0 1px var(--ring),var(--shadow);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);padding:var(--s5);min-width:0}
@@ -193,70 +184,4 @@ h1.sum{font-size:22px;line-height:1.25;margin:var(--s2) 0 var(--s4);max-width:34
   .lane .lh{grid-template-columns:24px minmax(0,1fr) auto}
   .lane .lh .chip{grid-column:3;grid-row:1}
 }
-@media (max-width:640px){.jump a{padding:12px 0}.picker select{height:44px}.page{padding:12px 14px 40px}h1.sum{font-size:20px}.card{padding:var(--s4)}.b-need .stack{grid-template-columns:minmax(0,1fr)}}
-
-/* colour themes: navy is :root above (the default); each block below overrides the same properties */
-/* Deep ocean / aurora / Đại dương sâu / cực quang */
-[data-theme="ocean"]{
-  color-scheme:dark;
-  --bg-0:#041a24; --bg-1:#08303d; --bg-2:#0d4150; --dot:rgba(130,215,235,.14);
-  --surface:rgba(11,49,64,.72); --surface-solid:#0b3140; --raised:#0f4558; --raised-a:rgba(15,69,88,.62); --hl:#164860;
-  --ring:rgba(130,215,235,.22); --ring-strong:rgba(130,215,235,.42);
-  --text:#effcff; --text-2:#c3e6ef; --text-3:#a8d2de;
-  --accent:#b83a78; --accent-bar:#d4528f; --accent-text:#ff9cc6; --accent-soft:rgba(255,156,198,.14);
-  --ok-fill:#1b7d62; --ok-fill-hover:#17715a; --ok:#74ead0; --ok-soft:rgba(116,234,208,.14);
-  --warn:#f7cb7a; --bad:#ff9a9a; --bad-soft:rgba(255,154,154,.14);
-  --n-ui:#8fd0ff; --n-service:#c8b2ff;
-  --shadow:0 1px 0 rgba(255,255,255,.04) inset,0 14px 34px -14px rgba(1,12,20,.7);
-  --glow-a:rgba(34,211,238,.17); --glow-b:rgba(120,100,240,.2);
-  --ok-rgb:116,234,208; --accent-rgb:255,156,198; --bad-rgb:255,154,154; --ui-rgb:143,208,255; --ring-rgb:130,215,235;
-}
-
-/* Dusk plum / Hoàng hôn tím mận */
-[data-theme="plum"]{
-  color-scheme:dark;
-  --bg-0:#170d2b; --bg-1:#2a1645; --bg-2:#3a1d52; --dot:rgba(225,175,235,.13);
-  --surface:rgba(45,26,73,.72); --surface-solid:#2d1a49; --raised:#40256a; --raised-a:rgba(64,37,106,.62); --hl:#4d2a66;
-  --ring:rgba(225,175,235,.22); --ring-strong:rgba(225,175,235,.42);
-  --text:#fff6fb; --text-2:#ecd3ea; --text-3:#cfaecb;
-  --accent:#b83a6e; --accent-bar:#d9577f; --accent-text:#ff9dbd; --accent-soft:rgba(255,157,189,.14);
-  --ok-fill:#1f7d62; --ok-fill-hover:#1a7058; --ok:#6fe0b2; --ok-soft:rgba(111,224,178,.14);
-  --warn:#f2c46d; --bad:#ff8585; --bad-soft:rgba(255,133,133,.14);
-  --n-ui:#a5b8ff; --n-service:#cfa8ff;
-  --shadow:0 1px 0 rgba(255,255,255,.04) inset,0 14px 34px -14px rgba(14,4,26,.7);
-  --glow-a:rgba(255,150,125,.19); --glow-b:rgba(168,85,247,.2);
-  --ok-rgb:111,224,178; --accent-rgb:255,157,189; --bad-rgb:255,133,133; --ui-rgb:165,184,255; --ring-rgb:225,175,235;
-}
-
-/* Graphite / Than chì */
-[data-theme="graphite"]{
-  color-scheme:dark;
-  --bg-0:#0e1116; --bg-1:#161a22; --bg-2:#1d222c; --dot:rgba(170,185,215,.1);
-  --surface:rgba(26,31,41,.72); --surface-solid:#1a1f29; --raised:#252c39; --raised-a:rgba(37,44,57,.62); --hl:#323c50;
-  --ring:rgba(170,185,215,.22); --ring-strong:rgba(170,185,215,.42);
-  --text:#f3f5f9; --text-2:#cdd3df; --text-3:#a3acbf;
-  --accent:#a8458a; --accent-bar:#c25da4; --accent-text:#e8a0d2; --accent-soft:rgba(232,160,210,.14);
-  --ok-fill:#237d63; --ok-fill-hover:#1e7058; --ok:#69d6b2; --ok-soft:rgba(105,214,178,.14);
-  --warn:#eec574; --bad:#f48c98; --bad-soft:rgba(244,140,152,.14);
-  --n-ui:#8fb0f0; --n-service:#b8a8f0;
-  --shadow:0 1px 0 rgba(255,255,255,.04) inset,0 14px 34px -14px rgba(0,2,8,.7);
-  --glow-a:rgba(90,140,255,.12); --glow-b:rgba(130,150,255,.11);
-  --ok-rgb:105,214,178; --accent-rgb:232,160,210; --bad-rgb:244,140,152; --ui-rgb:143,176,240; --ring-rgb:170,185,215;
-}
-
-/* Pearl (light) / Ngọc trai (sáng) */
-[data-theme="pearl"]{
-  color-scheme:light;
-  --bg-0:#f7f4fd; --bg-1:#ecf0fd; --bg-2:#f9eef7; --dot:rgba(88,78,160,.12);
-  --surface:rgba(255,255,255,.66); --surface-solid:#ffffff; --raised:#efeafb; --raised-a:rgba(255,255,255,.72); --hl:#e8e1fb;
-  --ring:rgba(88,78,160,.22); --ring-strong:rgba(88,78,160,.42);
-  --text:#1c1a3b; --text-2:#3d3965; --text-3:#575288;
-  --accent:#a82a74; --accent-bar:#c4439a; --accent-text:#8f1a62; --accent-soft:rgba(143,26,98,.14);
-  --ok-fill:#1b7a5e; --ok-fill-hover:#16694f; --ok:#0a6a51; --ok-soft:rgba(10,106,81,.14);
-  --warn:#7a4d08; --bad:#a81d34; --bad-soft:rgba(168,29,52,.14);
-  --n-ui:#244fc2; --n-service:#6238b8;
-  --shadow:0 1px 0 rgba(255,255,255,.9) inset,0 14px 34px -14px rgba(70,60,140,.28);
-  --glow-a:rgba(196,170,255,.45); --glow-b:rgba(255,184,220,.35);
-  --ok-rgb:10,106,81; --accent-rgb:143,26,98; --bad-rgb:168,29,52; --ui-rgb:36,79,194; --ring-rgb:88,78,160;
-  --kdot-ring:85%; --mk-ring:85%;
-}
+@media (max-width:640px){.jump a{padding:12px 0}.picker select{height:44px;background-position:calc(100% - 15px) 19px,calc(100% - 10px) 19px}.page{padding:12px 14px 40px}h1.sum{font-size:20px}.card{padding:var(--s4)}.b-need .stack{grid-template-columns:minmax(0,1fr)}}

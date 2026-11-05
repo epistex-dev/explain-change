@@ -28,7 +28,7 @@ motion:
 
 # explain-change page design
 
-Design tokens live in `reference/ui/theme.css`; the renderer carries the same values in `assets/ui/page2.css`. Contrast numbers are in that file's comments.
+Design tokens live in `reference/ui/theme.css`; the renderer carries the same values in `assets/ui/page2.css`, which also holds the four other colour themes (see "Colour themes on the change page"). Contrast numbers are in that file's comments.
 
 ## Brief
 | Item | Value |
@@ -40,7 +40,7 @@ Design tokens live in `reference/ui/theme.css`; the renderer carries the same va
 | Audience and device | The repo owner, desktop first, must still work at 800 and 390 px |
 | Color tone | Dark indigo gradient with a dot pattern, translucent rounded panels, thin light-blue rings, magenta accent, green for the positive action |
 | Page language | `vi` or `en`, set by the doc's `lang` |
-| Dark or light | Dark only |
+| Dark or light | Four dark themes (navy is the default) and one light theme (pearl); the reader picks |
 
 ## Direction
 A calm, night-time reading room for a short report: an indigo ground and translucent panels so the blocks read as one family. Magenta marks only what changed or what to look at (changed map nodes, the chosen option's bar); green means done or passed. Signature element: the system map, where changed parts glow magenta and untouched parts recede.
@@ -140,7 +140,7 @@ Case: Improve, scope Refresh. The page exists and the user likes its look ("màu
 
 | Item | Value |
 | --- | --- |
-| Themes | `navy` (default, `:root` of `page2.css`), `ocean`, `plum`, `graphite`, `pearl` (light). Each is one `[data-theme="id"]` block at the end of `session.css` that overrides the same custom properties |
+| Themes | `navy` (default, `:root` of `page2.css`), `ocean`, `plum`, `graphite`, `pearl` (light). Each is one `[data-theme="id"]` block, now in `page2.css` right after `:root` (shared with the change page), that overrides the same custom properties |
 | Hard-coded colours | every literal in the rules became a property: `--glow-a/-b` (body glows), `--ok-rgb`, `--accent-rgb`, `--bad-rgb`, `--ui-rgb`, `--ring-rgb` (used as `rgba(var(--x-rgb),a)`), `--on-fill` (white on fills), `--kdot-ring` and `--mk-ring` (ring strength; pearl 85%). A test fails on any `#hex` or `rgba(` outside `:root` and the theme blocks |
 | Navy fidelity | computed colour, background, shadow and border of 56 selectors compared old and new on the sample page: no difference except elements that moved (first `.dec`, the lane that is no longer pre-selected) and new ones |
 | Contrast (measured from the tokens, `tests/test_themes.py`) | min text / min status text / min ring: navy 4.98 / 4.87 / 3.32, ocean 6.07 / 4.85 / 3.29, plum 5.75 / 4.87 / 3.26, graphite 4.85 / 4.77 / 3.41, pearl 5.59 / 5.20 / 4.73. White on the accent and green fills is 4.79 or more in every theme. Text is measured on the surface, raised, highlight and the page gradient; a status ring is its colour at the ring alpha over the surface |
@@ -155,6 +155,25 @@ Case: Improve, scope Refresh. The page exists and the user likes its look ("màu
 Content structure (rubric item 8), sample page: sources needs_you 3, decided 6, outward 5 kinds (plus a count of scratch deletes), themes 8 with 28 events. Page: 3 Needs you cards (band), 6 decided rows (panel, default view), 5 outward cards (panel, default view), 8 lanes with 28 markers, 8 theme sections with 28 events (panel, on selection). Each section answers one question: what waits on me (Needs you), what happened per work theme (Journey), what did the agent choose alone (Decided), what left my machine (Outward). A needs-you or decided item is told in full once; a theme section links to it with a chip instead of repeating it. Each section opens with its conclusion as the h2. The concept names are fixed: theme (a work theme), event, marker (its lane glyph), count bubble (a group of markers), colour theme only in the picker.
 
 Checker (`check.mjs`, 390 / 800 / 1440 px) on the sample page rendered in each theme: 0 failures in all five; the WARNs left are tap targets under 44 px at 390 px (markers 32 px, theme chips 26 px, lane headers 28 px) and "text over a gradient, check visually" notes, which the token measurement above covers. Tiles opened for every theme at 1440 and for navy and pearl at 390 and 800. Screenshots: `docs/images/themes/`.
+
+## Colour themes on the change page (round 3)
+
+Case: Improve, scope Refresh. The change page shipped dark only; the session page already has five themes, and the README is shown in pearl, so both pages must offer the same palettes. Navy keeps every value it had.
+
+| Decision | Rationale |
+| --- | --- |
+| The theme blocks, their helper tokens and the picker rules moved from `session.css` into `page2.css`, before the `/* header (floorplan` marker, and `scripts/lib/themes.py` holds the ids, the storage key, the head script and the picker markup | one source for both pages, so a theme is the same palette on each; the session page inlines `page2.css` only up to that marker, so what both pages share sits before it |
+| Same ids, same key `explain-change-theme`, same picker (native select labelled "Giao diện" or "Appearance", in the header before the panel button) | a pick on one page opens the other in that theme |
+| Every literal colour in the change-page rules became a property: `--zone`, `--surf-rgb`, `--bar-rgb`, `--well-rgb` with `--well-k`, `--chip-hl`, plus the helpers the session page already had; the arrow between steps is a mask painted with `--text-3` | a theme can only change what is a property; a test fails on any `#hex` or `rgba(` outside `:root` and the theme blocks, in both CSS files |
+| A "well" is a tint under chips, tabs and file rows: `rgba(var(--well-rgb), alpha * var(--well-k))`. Navy is the old ink at the old alphas (k = 1); pearl is its violet at a fifth of the alpha | a dark overlay at .6 on a light surface would turn the row text unreadable |
+| Pearl gets its own `--n-data`, `--n-test`, `--n-external`, `--warn-soft`, `--zone`, `--glow` and `--shadow-float`; the dark themes share the navy values for those, tuned to their ground | the map icons and test edges were pale amber and teal, which vanish on white |
+| Chips on a highlighted card (and the "after" block) sit on `--chip-hl`, not on their own soft fill | a soft green, magenta or red fill on the lavender highlight measured 3.9 to 4.3:1 in pearl and navy; on the well it is 5 or more. This changes navy slightly: those chips have a darker fill |
+| The before/after blocks on the Logic tab are HTML and CSS, not Mermaid (Mermaid belongs to the v1 report page), so they follow the theme through the tokens with no re-render | a test switches to pearl and reads the computed fill of the "after" block, a step label, the form rows and the dialog |
+| On wide screens the header does not wrap and the title takes what is left; the "Hide panel" button and the picker never shrink | the picker made the header one row too many, and the button label broke onto two lines |
+
+Contrast (measured from the tokens, `tests/test_themes.py`; now also each status chip on its own fill, the chip on a highlighted card, and the map icons): min text / min ring / white on fills: navy 4.87 / 3.32 / 4.79, ocean 4.58 / 3.29 / 5.05, plum 4.55 / 3.26 / 5.04, graphite 4.77 / 3.41 / 5.02, pearl 5.10 / 4.73 / 5.26.
+
+Checker (`check.mjs`, 390 / 768 / 1440 px) on the sample change page rendered in each theme: 0 failures, 0 warnings in all five.
 
 ## Pages with no transcript (`explain-change/2` and `explain-session/1`)
 
