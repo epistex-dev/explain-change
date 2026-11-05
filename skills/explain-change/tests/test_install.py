@@ -49,7 +49,7 @@ class Base(unittest.TestCase):
 
     def run_sh(self, *args, cwd=None):
         env = {'PATH': os.environ['PATH'], 'HOME': self.home, 'XDG_CONFIG_HOME': self.xdg, 'LC_ALL': 'C.UTF-8'}
-        p = subprocess.run(['sh', self.script, *args], env=env, cwd=cwd or self.cwd, capture_output=True, text=True)
+        p = subprocess.run([os.environ.get('SH', 'sh'), self.script, *args], env=env, cwd=cwd or self.cwd, capture_output=True, text=True)
         return p.returncode, p.stdout, p.stderr
 
     def dest(self, rel, base=None):
@@ -60,6 +60,22 @@ class Base(unittest.TestCase):
         for d, dirs, files in os.walk(base):
             out += [os.path.relpath(os.path.join(d, n), base) for n in dirs + files]
         return sorted(out)
+
+    def snapshot(self, base):
+        """Every path under base with its type, symlink target or file contents."""
+        snap = {}
+        for d, dirs, files in os.walk(base):
+            for n in dirs + files:
+                full = os.path.join(d, n)
+                rel = os.path.relpath(full, base)
+                if os.path.islink(full):
+                    snap[rel] = ('link', os.readlink(full))
+                elif os.path.isdir(full):
+                    snap[rel] = ('dir', None)
+                else:
+                    with open(full, 'rb') as fh:
+                        snap[rel] = ('file', fh.read())
+        return snap
 
 
 class Install(Base):
@@ -182,6 +198,33 @@ class Install(Base):
         before = self.tree(self.home)
         self.run_sh('--uninstall', '--dry-run')
         self.assertEqual(self.tree(self.home), before)
+
+    def test_dry_run_force_over_a_user_owned_dir_deletes_nothing(self):
+        for mode in ('--copy', '--force'):  # copy mode, then the default link mode
+            d = self.dest('.claude/skills')
+            os.makedirs(os.path.join(d, 'sub'), exist_ok=True)
+            with open(os.path.join(d, 'sub', 'mine.txt'), 'w', encoding='utf-8') as fh:
+                fh.write('keep me')
+            before = self.snapshot(self.home)
+            rc, out, _ = self.run_sh('--harness', 'claude', '--force', '--dry-run', *([mode] if mode == '--copy' else []))
+            self.assertEqual(rc, 0, out)
+            self.assertIn('force', out)
+            self.assertEqual(self.snapshot(self.home), before, mode)
+
+    def test_dry_run_force_over_our_own_install_changes_nothing(self):
+        for first, second in ((None, '--copy'), ('--copy', None), ('--copy', '--copy')):
+            self.run_sh('--harness', 'claude', '--force', *filter(None, [first]))
+            before = self.snapshot(self.home)
+            rc, out, _ = self.run_sh('--harness', 'claude', '--force', '--dry-run', *filter(None, [second]))
+            self.assertEqual(rc, 0, out)
+            self.assertEqual(self.snapshot(self.home), before, (first, second))
+            self.run_sh('--harness', 'claude', '--uninstall')
+
+    def test_dry_run_copy_on_an_empty_home_creates_nothing(self):
+        rc, out, _ = self.run_sh('--dry-run', '--copy')
+        self.assertEqual(rc, 0, out)
+        self.assertEqual(self.tree(self.home), ['xdg config'])
+        self.assertIn(self.dest('.claude/skills'), out)
 
 
 class Project(Base):
