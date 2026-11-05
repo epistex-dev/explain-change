@@ -8,7 +8,7 @@ After an agent edit, the skill collects the diff and the session transcript, and
 
 A claim without a source is labelled `inferred` on the page. Everything else is checked before the page is written:
 
-- **Quotes are checked against the session transcript.** A request quote must occur in a message the user typed; a rationale quote must occur in the session. A quote that is not there fails validation.
+- **Quotes are checked against the session transcript.** A request quote must occur in a message the user typed; a rationale quote must occur in the session. A quote that is not there fails validation. The bundled change and session samples are held to the same rule: each ships with a synthetic transcript (`skills/explain-change/references/examples/*.transcript.jsonl`, made-up content only) and validates against it in a throwaway `HOME`.
 - **Tool-call evidence.** A "ran X" claim cites the command and an excerpt of its output, and both must occur in the same tool call. A worker's word with no tool call is labelled a worker's report and counted.
 - **Cited code and counts.** Referenced lines are read at the right commit, and the files and +/- counts on the map must equal `git`.
 - **Redaction of sensitive values.** The skill learns the secrets typed in the session (values after labels such as `password:`, and `ghp_`, `sk-`, `glpat-`, `Bearer` tokens). It rejects any doc that contains one and masks it in the digest and the page.

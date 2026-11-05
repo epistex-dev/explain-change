@@ -202,7 +202,7 @@ Case: Extend. Both pages and their tokens exist (`page2.css`, `session.css`); th
 | Decision | Rationale |
 | --- | --- |
 | The change-page badge keeps its short form "Not checked against the session" (vi "Chưa đối chiếu với phiên làm việc"). The doc's reason is one plain line at the top of the Evidence tab, "No session to compare with: <reason>" (vi "Không có phiên làm việc để đối chiếu: <reason>") | a plain fact the reader can weigh; the reason says which of the three cases applies. A reason of up to 200 characters in the badge wrapped the header from 64 to 124 px at 1440 (PR #5 review); the header now has the same height with any reason, at 1440 and 800. The line is in the page, not a `title`, so it stays readable on touch |
-| The two bundled samples give the reason "synthetic sample" | the note stays a calm, short fact on the screens people see first |
+| The two bundled samples used to give the reason "synthetic sample"; they now carry synthetic transcripts and are checked | a showcase page should be a checked one; the no-transcript note is tested on a copy of each sample with its transcript swapped for a reason |
 | The reason is one line of at most 200 characters (validated), flattened, cut with an ellipsis for an unvalidated doc, credentials redacted and escaped like any doc text | the value is the doc's, so it is data, not markup |
 | A run or a user's try that needs the session to be proven (`tool_call`, `user_reported`) carries a grey "From the agent's own account" chip (vi "Lời kể của agent") and one line in the Evidence tab counts them | the worker label ("Lời báo cáo của worker") is true only for a `report`; reusing it would mislabel the agent's own word. Same chip shape and colour (`mut`, `circle-help`) as the worker label, so there is one visual idea for "a word, not an output" |
 | A `report` source keeps its worker label on a page with no session | the worker's word is still the worker's word |
@@ -210,7 +210,7 @@ Case: Extend. Both pages and their tokens exist (`page2.css`, `session.css`); th
 | The two `.nt` CSS rules are added to the page only when it has no session behind it | a page grounded in a session stays byte-identical to what it was |
 | Quotes, commands and file:line stay off both pages | "Không cần code" |
 
-Screenshots (bundled fixtures with the reason set, 1440 x 900): `docs/images/themes/change-midnight-*.png` and `docs/images/themes/midnight-*.png` (the bundled fixtures render with the reason set, so these are the same bytes). Every README and DESIGN image is captured from the README's own render commands (`--no-validate`), after animations end, twice, and kept only when both captures are byte-identical. Tests: `NoSessionLayout` in `tests/test_page_session.py` (last lane's markers end at or above y = 900 and the note adds no height; header height is the same with no reason and with a 200-character one, at 1440 and 800, en and vi).
+Screenshots (1440 x 900): `docs/images/themes/change-midnight-*.png` and `docs/images/themes/midnight-*.png` are the checked pages of the samples (rendered by `tests/sample_env.py`). Every README and DESIGN image is captured from the render commands, after animations end, twice, and kept only when both captures are byte-identical. Tests: `NoSessionLayout` in `tests/test_page_session.py` (last lane's markers end at or above y = 900 and the note adds no height; header height is the same with no reason and with a 200-character one, at 1440 and 800, en and vi).
 
 ## Flow page (`explain-flow/1`: `scripts/lib/page_flow.py`, `assets/ui/flow.{css,js}`)
 

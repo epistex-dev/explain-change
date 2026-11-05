@@ -7,9 +7,12 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Synthetic Claude Code transcripts for the change and session samples (`references/examples/password-autofill.v2.transcript.jsonl`, `portal-day.session.transcript.jsonl`; made-up Acme Portal content only). The samples now validate `ok` against them, and their pages are the checked pages: no "Not checked" badge or note. `tests/sample_env.py` builds the throwaway git repo and `HOME` (the transcript folder limit is unchanged) and renders both pages; `tests/test_samples_checked.py` pins it.
 - A sixth colour theme, `midnight`, in the colours of the intro video: glassy gradient surfaces, a lit ring and faint violet and blue glows in the corners of the page. It is on the session page, the change page and the flow page, and keeps the contrast of the other themes.
 
 ### Changed
+- The change sample (`password-autofill.v2.json`) names the commits of the synthetic repo built by `tests/sample_env.py`, has a `transcript` field in place of `transcript_unavailable`, and an empty `evidence.not_checked`; the session sample has a `transcript` field too and one excerpt of at least 4 characters. The README and docs screenshots are re-shot from the checked pages. The README quick start runs `python3 tests/sample_env.py /tmp/samples`.
+- `references/explain-schema.md` names the real transcript folder limit (each harness's own folder, symlinks resolved), and `SKILL.md` points to `references/transcripts.md` also when the agent needs to pass `--format`.
 - `midnight` is now the theme a page opens in when `render.py` gets no `--theme` and the reader has no stored pick. A stored pick still wins, and the five earlier themes stay in the Appearance picker. The README screenshots show midnight.
 - The error for an unknown `--theme` now names six ids.
 - The two reference folders are one: `skills/explain-change/reference/examples` and `reference/ui` moved to `skills/explain-change/references/examples` and `references/ui`. The duplicate `reference/ui/LICENSES.txt` is gone (`assets/ui/LICENSES.txt` stays).

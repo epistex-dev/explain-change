@@ -35,13 +35,13 @@ One script links the skill for Claude Code, Codex, Gemini CLI, Copilot, Cursor, 
 
 ## Quick start
 
-After any agent edit, ask your agent: "explain this change". For a whole session say "summarize this session", and for existing code "how does X work". It collects the evidence, writes and checks the doc, and gives you the path of the page. To render the bundled sample without a repo or session:
+After any agent edit, ask your agent: "explain this change". For a whole session say "summarize this session", and for existing code "how does X work". It collects the evidence, writes and checks the doc, and gives you the path of the page. To see the bundled change and session samples, each checked against its synthetic transcript, run the helper below. It builds a throwaway git repo and a throwaway `HOME` under the output folder and touches nothing else:
 
 ```bash
-python3 skills/explain-change/scripts/render.py \
-  skills/explain-change/references/examples/password-autofill.v2.json \
-  --no-validate --out /tmp/sample.html
+python3 tests/sample_env.py /tmp/samples
 ```
+
+The pages are `/tmp/samples/change/index.html` and `/tmp/samples/session/index.html`.
 
 The steps the agent follows are in [SKILL.md](skills/explain-change/SKILL.md).
 

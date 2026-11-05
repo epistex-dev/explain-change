@@ -109,4 +109,4 @@ Rewriting a commit that was never pushed (`git commit --amend`, `git rebase`) st
 
 ## Sample
 
-`references/examples/portal-day.session.json` is a synthetic sample (a made-up web app, no real names) with eight themes in every status except `not_done`, and `password-autofill.v2.json` beside it as the change page of its `login` theme; `validate.py` accepts it with transcript checks off, and `render.py --no-validate` renders both pages.
+`references/examples/portal-day.session.json` is a synthetic sample (a made-up web app, no real names) with eight themes in every status except `not_done`, and `password-autofill.v2.json` beside it as the change page of its `login` theme; each sample has a synthetic `<sample>.transcript.jsonl` beside it, and its `transcript` field points at the copy under `~/.claude/projects/`. `validate.py` accepts both against them and `render.py` renders both pages checked; `tests/sample_env.py` builds the throwaway `HOME` and the synthetic git repo that the change sample's range names.

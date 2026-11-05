@@ -787,6 +787,25 @@ MUTATIONS += [
 TEST_SECONDS = 60
 
 
+# the bundled samples and their synthetic transcripts (data, not code): breaking one fact must turn the test red
+EX, SC = 'references/examples/', 'test_samples_checked.'
+CHANGE_T, SESSION_T = EX + 'password-autofill.v2.transcript.jsonl', EX + 'portal-day.session.transcript.jsonl'
+MUTATIONS += [
+    ('samples: the change sample validates against its transcript', CHANGE_T, 'check this bug where the browser overwrites my saved password',
+     'check this bug where the browser overwrites my saved login', SC + 'Validates.test_the_change_sample_validates_ok_with_its_transcript'),
+    ('samples: the session sample validates against its transcript', SESSION_T, 'i ran chmod +x on it', 'i ran chmod 755 on it',
+     SC + 'Validates.test_the_session_sample_validates_ok_with_its_transcript'),
+    ('samples: the session outward counts match the calls', SESSION_T, 'gh repo create portal-lib --private --source . --remote origin', 'echo portal-lib',
+     SC + 'Validates.test_the_session_sample_validates_ok_with_its_transcript'),
+    ('samples: the change page says nothing is unchecked', EX + 'password-autofill.v2.json',
+     '"transcript": "~/.claude/projects/-work-acme-portal/password-autofill.v2.transcript.jsonl"', '"transcript_unavailable": "synthetic sample"',
+     SC + 'Pages.test_the_rendered_change_page_does_not_say_it_is_not_checked'),
+    ('samples: the session page says nothing is unchecked', EX + 'portal-day.session.json',
+     '"transcript": "~/.claude/projects/-work-acme-portal/portal-day.session.transcript.jsonl"', '"transcript_unavailable": "synthetic sample"',
+     SC + 'Pages.test_the_rendered_session_page_and_its_change_page_do_not_say_it_is_not_checked'),
+]
+
+
 def run_test(root, test_id):
     try:
         p = subprocess.run([sys.executable, '-B', '-m', 'unittest', test_id], cwd=os.path.join(root, 'tests'), capture_output=True, text=True, timeout=TEST_SECONDS)
