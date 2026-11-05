@@ -1,6 +1,6 @@
 ---
 name: explain-change
-description: Explain what an agent just changed, as one offline HTML page with a system map, so the user understands the code instead of trusting it. Use after any agent edit, on "giải thích thay đổi", "mình không hiểu code vừa sửa", "explain this change", or when reviewing a diff, commit or PR.
+description: Explain what an agent just changed, as one offline HTML page with a system map, so the user understands the code instead of trusting it. Use after any agent edit, on "giải thích thay đổi", "mình không hiểu code vừa sửa", "explain this change", or when reviewing a diff, commit or PR. Also for "how does X work", "luồng này chạy thế nào": it explains an existing flow of the code, no change needed.
 ---
 
 You write `explain.json` (schema v2); scripts collect the diff and the session, check every quote, command and cited line, and render the page. The page answers five questions in order: what was asked, where it changed (a map), how the logic changed (before/after pictures), why this way, what was proven. It shows no code, diff or file:line.
@@ -122,3 +122,14 @@ With no transcript, drop `--transcript` from both commands.
 `render.py --theme <id>` sets the colour theme a session page or a change page (`explain-change/2`) opens in: `navy` (the default), `ocean`, `plum`, `graphite` or `pearl` (light). An unknown id exits 1 with one line naming the valid ids. The reader can switch the colour scheme with the "Appearance" picker in the page header; the pick is kept in the browser's `localStorage` under one key, so a pick made on a session page also opens its change pages, and the other way round. The flag sets the page's default for a session doc and for the change pages that render with it; the v1 report page ignores it.
 
 Docs with `version` absent or 1 still validate and render with the older report page (`references/explain-schema.md`, top part).
+
+## 9. Explain a flow
+
+Use it when the user asks how existing code works ("how does X work", "luồng này chạy thế nào"), with no change to explain and no agent session to read. The doc is `explain-flow/1` ([references/explain-flow-schema.md](references/explain-flow-schema.md)): the parts of the system, the steps in order with what each takes in and gives back, the branches, and the error exits. Every step and error is tied to lines of the code at one commit. It shows no code, diff or file:line.
+
+1. Collect: `python3 $S/scripts/collect.py --flow [--path <dir or file>]... [--slug <text>]`. It prints the full SHA of HEAD, the modules and the files under each `--path`, and `RUN_DIR=…`. It needs no diff and never exits 3. Commit or stash first: the doc is about HEAD, and a warning says when the working copy differs.
+2. Write `$RUN_DIR/flow.json` by reading the code, not from memory: put the user's question in `question` as asked, then every part, step, branch and error, each with the lines you read.
+3. Validate: `python3 $S/scripts/validate.py $RUN_DIR/flow.json`. Each source is checked against `git show <commit>:<path>`; fix the claim or the lines until it prints `ok`.
+4. Render: `python3 $S/scripts/render.py $RUN_DIR/flow.json --text`.
+
+Cold-read gate (step 6, with a reader that holds only `index.html.txt`): ask what the flow does; in what order the steps run; what happens when error X occurs; what step N takes in and gives back. Compare each answer with the doc and rewrite the page text where one is wrong.

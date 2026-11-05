@@ -1,0 +1,812 @@
+{
+ "kind": "explain-flow/1",
+ "lang": "en",
+ "title": "How a claim on the page gets checked before the page renders",
+ "question": "How does a claim on the page get checked before the page renders?",
+ "summary": "A claim reaches the page only when the real session backs it, and one failed claim means no page and a list of what to fix. The agent writes a doc in which every claim names its source. Before anything is drawn, the checker opens the session log from its harness's own folder, finds each quote among your own messages, finds each command together with its output inside one call, treats a call with no recorded result as weaker proof, and looks for secrets in every text. All problems come back together, one line each. With none, the page is drawn.",
+ "commit": "267fbf45679cbdf23512a18a3cc8ea351a1a448f",
+ "parts": [
+  {
+   "id": "agent",
+   "name": "Agent",
+   "where": "outside",
+   "role": "Does the task, then writes the doc and names where each claim comes from.",
+   "sources": [
+    {
+     "path": "skills/explain-change/SKILL.md",
+     "lines": [
+      51,
+      51
+     ],
+     "excerpt": "Save it as `$RUN_DIR/explain.json`"
+    }
+   ]
+  },
+  {
+   "id": "you",
+   "name": "You",
+   "where": "outside",
+   "role": "Read the page, or the list of problems when the doc is rejected.",
+   "sources": []
+  },
+  {
+   "id": "checker",
+   "name": "Doc checker",
+   "where": "inside",
+   "role": "Reads the doc, turns claims into lookups and decides ok or rejected.",
+   "sources": [
+    {
+     "path": "skills/explain-change/scripts/validate.py",
+     "lines": [
+      70,
+      84
+     ],
+     "excerpt": "_, errs, stats = load_and_validate(a.explain_json, a.repo, a.transcript, a.format)"
+    }
+   ]
+  },
+  {
+   "id": "reader",
+   "name": "Session reader",
+   "where": "inside",
+   "role": "Opens the session log and finds quotes and calls inside it.",
+   "sources": [
+    {
+     "path": "skills/explain-change/scripts/lib/transcript.py",
+     "lines": [
+      229,
+      233
+     ],
+     "excerpt": "def resolve_queries(main_path, queries):"
+    }
+   ]
+  },
+  {
+   "id": "mask",
+   "name": "Secret mask",
+   "where": "inside",
+   "role": "Learns the secrets the session shows and keeps them out of the doc and the page.",
+   "sources": [
+    {
+     "path": "skills/explain-change/scripts/lib/ground.py",
+     "lines": [
+      164,
+      166
+     ],
+     "excerpt": "def sweep(node, err, path="
+    }
+   ]
+  },
+  {
+   "id": "writer",
+   "name": "Page writer",
+   "where": "inside",
+   "role": "Checks the doc once more, then draws the page.",
+   "sources": [
+    {
+     "path": "skills/explain-change/scripts/render.py",
+     "lines": [
+      150,
+      160
+     ],
+     "excerpt": "doc, errs, stats = lv(a.explain_json, a.repo, a.transcript, a.format)"
+    }
+   ]
+  },
+  {
+   "id": "log",
+   "name": "Session log",
+   "where": "outside",
+   "role": "The harness's own record of the session: your messages, commands and their output.",
+   "sources": []
+  }
+ ],
+ "steps": [
+  {
+   "id": "s1",
+   "name": "Write the doc",
+   "part": "agent",
+   "takes_in": "What happened in the task, and the session it happened in.",
+   "gives_back": "The doc. Each claim names its source: a quote of your words, a command with a piece of its output, a worker's report, or the word inferred.",
+   "sources": [
+    {
+     "path": "skills/explain-change/SKILL.md",
+     "lines": [
+      49,
+      51
+     ],
+     "excerpt": "Save it as `$RUN_DIR/explain.json`"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/check2.py",
+     "lines": [
+      22,
+      28
+     ],
+     "excerpt": "'request': ('transcript', 'report', 'tool_call', 'code'),"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/ground.py",
+     "lines": [
+      83,
+      86
+     ],
+     "excerpt": "kind = 'inferred' if src.get('inferred') is True"
+    }
+   ],
+   "branches": [],
+   "errors": []
+  },
+  {
+   "id": "s2",
+   "name": "Open the doc",
+   "part": "checker",
+   "takes_in": "The doc file.",
+   "gives_back": "The doc, read in and sent to the rules for its kind.",
+   "sources": [
+    {
+     "path": "skills/explain-change/scripts/validate.py",
+     "lines": [
+      19,
+      24
+     ],
+     "excerpt": "return None, ['$: cannot read %s: %s' % (path, e)], {}"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/check.py",
+     "lines": [
+      47,
+      51
+     ],
+     "excerpt": "if check2.is_v2(doc):"
+    }
+   ],
+   "branches": [],
+   "errors": [
+    {
+     "id": "E1",
+     "name": "File unreadable",
+     "result": "One line says the doc cannot be read, and the check stops there. This is the only exit that does not wait for the other problems.",
+     "sources": [
+      {
+       "path": "skills/explain-change/scripts/validate.py",
+       "lines": [
+        22,
+        24
+       ],
+       "excerpt": "'$: cannot read %s: %s'"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s3",
+   "name": "Ask for log or reason",
+   "part": "checker",
+   "takes_in": "The doc, and the log path the agent gave.",
+   "gives_back": "A log to read, or a one-line reason why the harness keeps no readable log.",
+   "sources": [
+    {
+     "path": "skills/explain-change/scripts/lib/check2.py",
+     "lines": [
+      145,
+      162
+     ],
+     "excerpt": "tpath = transcript_path or doc.get('transcript')"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/ground.py",
+     "lines": [
+      23,
+      33
+     ],
+     "excerpt": "def check_reason(doc, has_transcript, err, required):"
+    }
+   ],
+   "branches": [
+    {
+     "when": "A log is given",
+     "to": "s4"
+    },
+    {
+     "when": "Only a reason is given, so step 5 learns from the quotes in the doc alone and steps 4 and 6 to 8 are skipped",
+     "to": "s5"
+    }
+   ],
+   "errors": [
+    {
+     "id": "E2",
+     "name": "Log and reason clash",
+     "result": "Rejected. The doc gave both a log and a reason, or neither; the line says which to drop or add.",
+     "sources": [
+      {
+       "path": "skills/explain-change/scripts/lib/ground.py",
+       "lines": [
+        27,
+        33
+       ],
+       "excerpt": "err('transcript_unavailable', 'not allowed together with a transcript"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s4",
+   "name": "Open the log",
+   "part": "reader",
+   "takes_in": "The log path.",
+   "gives_back": "The log's messages, commands and outputs in one common shape, whichever harness wrote it.",
+   "sources": [
+    {
+     "path": "skills/explain-change/scripts/lib/transcript.py",
+     "lines": [
+      48,
+      69
+     ],
+     "excerpt": "def safe_path(path, fmt='auto'):"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/adapters/_io.py",
+     "lines": [
+      17,
+      26
+     ],
+     "excerpt": "def confine(path, root):"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/neutral.py",
+     "lines": [
+      77,
+      90
+     ],
+     "excerpt": "def load(path, harness):"
+    }
+   ],
+   "branches": [
+    {
+     "when": "The log is inside the harness folder",
+     "to": "s5"
+    },
+    {
+     "when": "It is outside the folder or not found; the check goes on to collect the other problems",
+     "to": "problems"
+    }
+   ],
+   "errors": [
+    {
+     "id": "E3",
+     "name": "Log outside folder",
+     "result": "Rejected. The log lies outside its harness folder (also through a link), or is not a log of a supported harness.",
+     "sources": [
+      {
+       "path": "skills/explain-change/scripts/lib/transcript.py",
+       "lines": [
+        62,
+        66
+       ],
+       "excerpt": "msg = 'transcript must be under %s (got %s)' % (root, path)"
+      },
+      {
+       "path": "skills/explain-change/scripts/lib/adapters/_io.py",
+       "lines": [
+        24,
+        25
+       ],
+       "excerpt": "raise RootError('transcript is outside the harness root: %s' % path)"
+      }
+     ]
+    },
+    {
+     "id": "E4",
+     "name": "Log missing",
+     "result": "Rejected with the path that was not found.",
+     "sources": [
+      {
+       "path": "skills/explain-change/scripts/lib/transcript.py",
+       "lines": [
+        67,
+        68
+       ],
+       "excerpt": "raise ExplainError('transcript not found: %s' % path)"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s5",
+   "name": "Learn the secrets",
+   "part": "mask",
+   "takes_in": "Every message, command and output of the log. With no log: the quotes in the doc.",
+   "gives_back": "A list of secret values (passwords, tokens, keys), held in memory only.",
+   "sources": [
+    {
+     "path": "skills/explain-change/scripts/lib/transcript.py",
+     "lines": [
+      443,
+      461
+     ],
+     "excerpt": "def learn(main_path, fmt='auto'):"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/transcript.py",
+     "lines": [
+      464,
+      469
+     ],
+     "excerpt": "def learn_quotes(doc):"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/check2.py",
+     "lines": [
+      152,
+      152
+     ],
+     "excerpt": "transcript.learn(tpath)"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/check2.py",
+     "lines": [
+      162,
+      162
+     ],
+     "excerpt": "transcript.learn_quotes(doc)"
+    }
+   ],
+   "branches": [],
+   "errors": []
+  },
+  {
+   "id": "s6",
+   "name": "Make the lookups",
+   "part": "checker",
+   "takes_in": "The doc's claims.",
+   "gives_back": "One lookup per claim, with a rule for where it may be found: a request quote only among your own messages; a command claim as a command plus an output excerpt of one call; any other quote in any message.",
+   "sources": [
+    {
+     "path": "skills/explain-change/scripts/lib/ground.py",
+     "lines": [
+      77,
+      122
+     ],
+     "excerpt": "def source(self, src, path, allow, sink=None, code=None):"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/check2.py",
+     "lines": [
+      236,
+      238
+     ],
+     "excerpt": "query(transcript.Query('quote', 'main', ('user',), text=quote)"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/ground.py",
+     "lines": [
+      98,
+      98
+     ],
+     "excerpt": "roles = {'user_reported': ('user',)"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/ground.py",
+     "lines": [
+      112,
+      117
+     ],
+     "excerpt": "c, x = self.text(src, 'command', path), self.text(src, 'excerpt', path)"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/transcript.py",
+     "lines": [
+      40,
+      40
+     ],
+     "excerpt": "MIN_NEEDLE = 4"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/transcript.py",
+     "lines": [
+      209,
+      213
+     ],
+     "excerpt": "if s is not None and len(s) < MIN_NEEDLE:"
+    }
+   ],
+   "branches": [],
+   "errors": [
+    {
+     "id": "E5",
+     "name": "Claim too short",
+     "result": "Rejected. A text under 4 characters could match anything, so it grounds nothing.",
+     "sources": [
+      {
+       "path": "skills/explain-change/scripts/lib/ground.py",
+       "lines": [
+        135,
+        136
+       ],
+       "excerpt": "err(path, 'too short to ground anything"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s7",
+   "name": "Match the claims",
+   "part": "reader",
+   "takes_in": "The lookups and the log.",
+   "gives_back": "Each lookup marked found or not found, after one pass over the log.",
+   "sources": [
+    {
+     "path": "skills/explain-change/scripts/lib/transcript.py",
+     "lines": [
+      229,
+      240
+     ],
+     "excerpt": "def resolve_queries(main_path, queries):"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/transcript.py",
+     "lines": [
+      245,
+      247
+     ],
+     "excerpt": "q.found = q.text in n"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/transcript.py",
+     "lines": [
+      173,
+      176
+     ],
+     "excerpt": "def is_command_call(extra):"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/transcript.py",
+     "lines": [
+      36,
+      36
+     ],
+     "excerpt": "COMMAND_TOOLS = ('Bash',)"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/transcript.py",
+     "lines": [
+      254,
+      262
+     ],
+     "excerpt": "if q.excerpt in n:"
+    }
+   ],
+   "branches": [
+    {
+     "when": "Found",
+     "to": "s8"
+    },
+    {
+     "when": "Not found",
+     "to": "problems"
+    }
+   ],
+   "errors": [
+    {
+     "id": "E6",
+     "name": "Quote not found",
+     "result": "Rejected. The line shows the start of the quote and says whether it was searched among your messages or among all messages.",
+     "sources": [
+      {
+       "path": "skills/explain-change/scripts/lib/ground.py",
+       "lines": [
+        139,
+        141
+       ],
+       "excerpt": "err(path, 'quote not found in %s of transcript %s: %r'"
+      }
+     ]
+    },
+    {
+     "id": "E7",
+     "name": "Command not found",
+     "result": "Rejected. No call that ran this command exists; a command inside a brief or a written file does not count.",
+     "sources": [
+      {
+       "path": "skills/explain-change/scripts/lib/ground.py",
+       "lines": [
+        148,
+        149
+       ],
+       "excerpt": "err(path, 'command not found in any tool call of transcript"
+      }
+     ]
+    },
+    {
+     "id": "E8",
+     "name": "Output not in call",
+     "result": "Rejected. The command did run, but its output holds no such excerpt.",
+     "sources": [
+      {
+       "path": "skills/explain-change/scripts/lib/ground.py",
+       "lines": [
+        146,
+        147
+       ],
+       "excerpt": "err(path, 'the result excerpt is not in the result of the call"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s8",
+   "name": "Judge the results",
+   "part": "checker",
+   "takes_in": "The matched calls, with their output or exit code.",
+   "gives_back": "Each matched call marked ok, errored or result unknown.",
+   "sources": [
+    {
+     "path": "skills/explain-change/scripts/lib/transcript.py",
+     "lines": [
+      254,
+      262
+     ],
+     "excerpt": "unknown = len(extra) > 2 and extra[2]"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/ground.py",
+     "lines": [
+      144,
+      145
+     ],
+     "excerpt": "elif q.command_seen and q.unknown_seen:"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/ground.py",
+     "lines": [
+      152,
+      161
+     ],
+     "excerpt": "def only_errors(tool_queries):"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/check2.py",
+     "lines": [
+      586,
+      591
+     ],
+     "excerpt": "if not by_hand and ground.only_errors(qs_):"
+    },
+    {
+     "path": "README.md",
+     "lines": [
+      66,
+      66
+     ],
+     "excerpt": "has an unknown result: it can back a quote or a `mixed` run, never a `passed` run or a `done`"
+    },
+    {
+     "path": "skills/explain-change/SKILL.md",
+     "lines": [
+      34,
+      34
+     ],
+     "excerpt": "it can back a `mixed` run or a quote, never a `passed` run or a `done`"
+    }
+   ],
+   "branches": [
+    {
+     "when": "The result is ok, or the call backs only a quote or a mixed run",
+     "to": "s9"
+    },
+    {
+     "when": "A passed run rests only on errored or unknown calls",
+     "to": "problems"
+    }
+   ],
+   "errors": [
+    {
+     "id": "E9",
+     "name": "No recorded result",
+     "result": "Rejected. The only call that ran the command has no output or exit code, so it grounds nothing.",
+     "sources": [
+      {
+       "path": "skills/explain-change/scripts/lib/ground.py",
+       "lines": [
+        144,
+        145
+       ],
+       "excerpt": "err(path, 'the call that ran this command has no recorded result"
+      }
+     ]
+    },
+    {
+     "id": "E10",
+     "name": "Passed on errored call",
+     "result": "Rejected. A run marked passed rests only on errored or unknown calls; mark it failed or mixed.",
+     "sources": [
+      {
+       "path": "skills/explain-change/scripts/lib/check2.py",
+       "lines": [
+        589,
+        591
+       ],
+       "excerpt": "if not by_hand and ground.only_errors(qs_):"
+      },
+      {
+       "path": "skills/explain-change/scripts/lib/ground.py",
+       "lines": [
+        157,
+        161
+       ],
+       "excerpt": "def backing_error(tool_queries, claim):"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s9",
+   "name": "Sweep for secrets",
+   "part": "mask",
+   "takes_in": "Every text and key in the doc, and the secrets learned in step 5.",
+   "gives_back": "A clean doc, or the places that hold a secret.",
+   "sources": [
+    {
+     "path": "skills/explain-change/scripts/lib/check2.py",
+     "lines": [
+      559,
+      561
+     ],
+     "excerpt": "ground.sweep(doc, err,"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/ground.py",
+     "lines": [
+      164,
+      179
+     ],
+     "excerpt": "def sweep(node, err, path="
+    }
+   ],
+   "branches": [],
+   "errors": [
+    {
+     "id": "E11",
+     "name": "Secret in doc",
+     "result": "Rejected. The line names the place and never the value, which shows as a mask.",
+     "sources": [
+      {
+       "path": "skills/explain-change/scripts/lib/ground.py",
+       "lines": [
+        168,
+        171
+       ],
+       "excerpt": "err(path, 'contains a password, token or key that the session shows"
+      },
+      {
+       "path": "skills/explain-change/scripts/lib/check2.py",
+       "lines": [
+        55,
+        57
+       ],
+       "excerpt": "return [transcript.redact(e) for e in errs], stats"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s10",
+   "name": "Decide",
+   "part": "checker",
+   "takes_in": "Every problem found in steps 2 to 9.",
+   "gives_back": "ok with the counts, or one line per problem as place and reason, all at once. Warnings come first.",
+   "sources": [
+    {
+     "path": "skills/explain-change/scripts/lib/check2.py",
+     "lines": [
+      55,
+      57
+     ],
+     "excerpt": "return [transcript.redact(e) for e in errs], stats"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/check2.py",
+     "lines": [
+      67,
+      68
+     ],
+     "excerpt": "errs.append('%s: %s' % (path, msg))"
+    },
+    {
+     "path": "skills/explain-change/scripts/validate.py",
+     "lines": [
+      82,
+      84
+     ],
+     "excerpt": "print('\\n'.join(errs))"
+    },
+    {
+     "path": "skills/explain-change/scripts/validate.py",
+     "lines": [
+      57,
+      67
+     ],
+     "excerpt": "def report_v2(s):"
+    },
+    {
+     "path": "skills/explain-change/SKILL.md",
+     "lines": [
+      68,
+      68
+     ],
+     "excerpt": "Fix the claim itself, not the quote."
+    }
+   ],
+   "branches": [
+    {
+     "when": "No problem",
+     "to": "s11"
+    },
+    {
+     "when": "Any problem; no page is written",
+     "to": "problems"
+    }
+   ],
+   "errors": []
+  },
+  {
+   "id": "s11",
+   "name": "Draw the page",
+   "part": "writer",
+   "takes_in": "The doc that got ok.",
+   "gives_back": "One page file. Secrets are masked once more while drawing.",
+   "sources": [
+    {
+     "path": "skills/explain-change/scripts/render.py",
+     "lines": [
+      149,
+      160
+     ],
+     "excerpt": "doc, errs, stats = lv(a.explain_json, a.repo, a.transcript, a.format)"
+    },
+    {
+     "path": "skills/explain-change/scripts/render.py",
+     "lines": [
+      160,
+      170
+     ],
+     "excerpt": "body = page2.render(doc, repo,"
+    },
+    {
+     "path": "skills/explain-change/scripts/lib/page2.py",
+     "lines": [
+      36,
+      38
+     ],
+     "excerpt": "def txt(s):"
+    }
+   ],
+   "branches": [],
+   "errors": [
+    {
+     "id": "E12",
+     "name": "Second check fails",
+     "result": "Same lines as step 10, the words not rendered, and no page file is written.",
+     "sources": [
+      {
+       "path": "skills/explain-change/scripts/render.py",
+       "lines": [
+        152,
+        155
+       ],
+       "excerpt": "print('not rendered: fix the problems above and rerun', file=sys.stderr)"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

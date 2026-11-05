@@ -2,7 +2,7 @@
 """Check explain.json: schema, file coverage, and that every cited snippet really occurs in the code.
 
 usage: validate.py <explain.json> [--repo PATH] [--transcript FILE] [--format auto|claude|copilot|codex|opencode|gemini|cursor-cli|cursor-ide]
-Schema v1 (version absent or 1), v2 (version 2) and explain-session/1 (a whole session; see references/session-schema.md) are checked; v2 also grounds quotes and tool calls in the session
+Schema v1 (version absent or 1), v2 (version 2), explain-session/1 (a whole session; see references/session-schema.md) and explain-flow/1 (a flow of existing code, each source read from the doc's commit; see references/explain-flow-schema.md) are checked; v2 also grounds quotes and tool calls in the session
 transcript (a file under ~/.claude/projects, or a session of Copilot CLI, Codex, OpenCode, Gemini CLI or Cursor under that harness's own folder; the
 format is detected unless --format names it; the doc's "transcript" field is used when the flag is absent).
 Prints one `path: reason` line per problem (exit 1), or `ok` plus per-section counts (exit 0).
@@ -13,7 +13,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from lib import check, check_session, gitio, neutral  # noqa: E402
+from lib import check, check_flow, check_session, gitio, neutral  # noqa: E402
 
 
 def load_and_validate(path, repo=None, transcript=None, fmt='auto'):
@@ -27,6 +27,9 @@ def load_and_validate(path, repo=None, transcript=None, fmt='auto'):
         errs, stats = check_session.validate(doc, transcript, base_dir=here, fmt=fmt)
         return doc, errs, stats
     repo = repo or gitio.toplevel(here)
+    if check_flow.is_flow(doc):  # a flow of existing code: no diff, no session; every source is read from the doc's own commit
+        errs, stats = check_flow.validate(doc, repo)
+        return doc, errs, stats
     errs, stats = check.validate(doc, repo, transcript, scope=read_scope(here, repo), fmt=fmt)
     return doc, errs, stats
 
@@ -51,6 +54,13 @@ def report_session(s):
               s['themes'], ', '.join('%s %d' % (k, v) for k, v in st.items() if v) or 'none', s['events'], s['needs_you'], s['decided'], s['irreversible'],
               ', '.join('%s %d' % kv for kv in s['outward'].items()) or 'none', s['verified_in_transcript'], s['reported'], s['not_compared'], s['inferred'],
               'checked' if s['transcript'] else 'checks off'))
+    return 0
+
+
+def report_flow(s):
+    print('ok')
+    print('flow | parts %d (%d outside) | steps %d, %d with branches | error exits %d | sources %d, each excerpt found in its lines at the commit' % (
+        s['parts'], s['outside'], s['steps'], s['branch_points'], s['errors'], s['sources']))
     return 0
 
 
@@ -84,6 +94,8 @@ def main(argv=None):
         return 1
     if stats.get('kind') == 'session':
         return report_session(stats)
+    if stats.get('kind') == 'flow':
+        return report_flow(stats)
     if stats.get('version') == 2:
         return report_v2(stats)
     print('ok')
