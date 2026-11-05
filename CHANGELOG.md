@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project follows
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- `install.sh`: installs the skill for Claude Code, Codex, Gemini CLI, Copilot, Cursor, OpenCode, Goose, Amp, Kiro, Windsurf, Cline and Roo (`--harness`, `--copy`, `--project`, `--uninstall`, `--dry-run`, `--force`).
+- `gemini-extension.json` (Gemini CLI extension) and a portable `plugin.json` (Agent Plugins manifest, read by Codex).
+- Install section in the README with one row per harness.
+- Tests for `install.sh` and the manifests, and 15 more guards in the red check.
+
+### Changed
+- `SKILL.md` names no single harness: the cold-read gate uses a fresh subagent, else the command in `EXPLAIN_COLDREAD_CMD`, else is skipped and the final reply says so.
+- Without a Claude Code transcript the page is rendered with `--no-validate` and says it was not checked against the session.
+
 ## [0.1.0] - 2026-11-05
 
 ### Added
@@ -14,4 +26,5 @@ All notable changes to this project are documented here. The format follows
 - Plugin and marketplace manifests for `/plugin marketplace add epistex-dev/explain-change`.
 - Bundled sample doc (`reference/examples/password-autofill.v2.json`) and a red-check script that proves each guard is tested.
 
+[Unreleased]: https://github.com/epistex-dev/explain-change/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/epistex-dev/explain-change/releases/tag/v0.1.0

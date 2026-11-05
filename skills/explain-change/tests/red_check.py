@@ -387,6 +387,31 @@ MUTATIONS += [
 ]
 
 
+IN = '../../install.sh'
+TI = 'test_install.'
+MUTATIONS += [
+    ('install: refuses a real dir without --force', IN, 'elif [ "$force" -eq 1 ]; then', 'elif true; then', TI + 'Install.test_an_existing_real_dir_is_refused_without_force'),
+    ('install: replaces a broken symlink', IN, 'if [ -e "$dest" ] || [ -L "$dest" ]; then\n    if [ -L', 'if [ -e "$dest" ]; then\n    if [ -L',
+     TI + 'Install.test_a_broken_symlink_is_replaced'),
+    ('install: never deletes a checkout inside the target', IN, 'case "$SRC/" in "$real"/*)', 'case "$SRC/" in "$real"/ZZ*)',
+     TI + 'Install.test_a_checkout_inside_the_target_is_never_deleted_even_with_force'),
+    ('install: dry run changes nothing', IN, '[ "$dry" -eq 1 ] || { mkdir -p -- "$parent"', '{ mkdir -p -- "$parent"', TI + 'Install.test_dry_run_prints_the_paths_and_changes_nothing'),
+    ('install: copy leaves no __pycache__', IN, '-name __pycache__ -type d', '-name __nothing__ -type d', TI + 'Install.test_copy_makes_a_real_folder_with_a_marker_and_no_pycache'),
+    ('install: copy carries the marker', IN, '&& : > "$dest/$MARKER"', '&& :', TI + 'Uninstall.test_uninstall_removes_what_install_created_in_both_modes'),
+    ('install: uninstall removes only its own', IN, 'if is_ours "$dest"; then', 'if true; then', TI + 'Uninstall.test_uninstall_leaves_everything_it_did_not_create'),
+    ('install: unknown harness is an error', IN, '    *) return 1 ;;\n  esac\n}\n\ntargets=', '    *) echo agents ;;\n  esac\n}\n\ntargets=',
+     TI + 'Usage.test_unknown_harness_exits_nonzero_listing_the_valid_names_and_writes_nothing'),
+    ('install: --project uses project paths', IN, 'claude) echo ".claude/skills" ;;', 'claude) echo "" ;;', TI + 'Project.test_project_installs_under_the_current_directory_not_home'),
+    ('install: project skips harnesses with no path', IN, 'if [ -z "$d" ]; then say skip', 'if false; then say skip', TI + 'Project.test_project_skips_a_harness_with_no_project_path_and_says_so'),
+    ('install: harness names share one target', IN, 'case " $targets " in *" $c "*) ;; *) targets="$targets $c" ;; esac', 'targets="$targets $c"',
+     TI + 'Install.test_harness_list_and_repeats_install_each_target_once'),
+    ('skill: cold-read gate has a harness-neutral fallback', 'SKILL.md', 'The command in env `EXPLAIN_COLDREAD_CMD`', 'The command in env `COLD`', 'test_manifests.SkillFormat.test_the_steps_do_not_assume_one_harness'),
+    ('skill: name matches the folder', 'SKILL.md', 'name: explain-change', 'name: explain', 'test_manifests.SkillFormat.test_frontmatter_follows_the_agent_skills_spec'),
+    ('manifests: one version everywhere', '../../gemini-extension.json', '"version": "0.1.0"', '"version": "0.2.0"', 'test_manifests.Manifests.test_every_manifest_names_the_skill_folder_and_carries_one_version'),
+    ('install: re-link is idempotent', IN, 'say ok "$dest (already linked)"; return', 'say ok "$dest (already linked)"', TI + 'Install.test_rerun_is_idempotent_in_both_modes'),
+]
+
+
 def run_test(root, test_id):
     p = subprocess.run([sys.executable, '-B', '-m', 'unittest', test_id], cwd=os.path.join(root, 'tests'), capture_output=True, text=True)
     return p.returncode == 0, p.stderr.strip().splitlines()[-1] if p.stderr.strip() else ''
@@ -399,8 +424,11 @@ def main():
         if only not in guard:
             continue
         with tempfile.TemporaryDirectory(prefix='red-check-') as d:
-            root = os.path.join(d, 'skill')
+            root = os.path.join(d, 'repo', 'skills', 'explain-change')  # the repo layout, so install.sh finds its skill
             shutil.copytree(SKILL, root, ignore=shutil.ignore_patterns('__pycache__', '.git'))
+            for extra in ('install.sh', 'plugin.json', 'gemini-extension.json', 'CHANGELOG.md'):
+                shutil.copy(os.path.join(SKILL, '..', '..', extra), os.path.join(d, 'repo', extra))
+            shutil.copytree(os.path.join(SKILL, '..', '..', '.claude-plugin'), os.path.join(d, 'repo', '.claude-plugin'))
             green, _ = run_test(root, test)
             path = os.path.join(root, rel)
             with open(path, encoding='utf-8') as fh:

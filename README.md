@@ -4,7 +4,7 @@
 
 ### Your agent did the work. Now you understand it.
 
-**A Claude Code skill that turns an agent's code change into one offline page you can actually understand.**
+**An [Agent Skill](https://agentskills.io) that turns an agent's code change into one offline page you can actually understand. Installs in Claude Code, Codex, Gemini CLI, Copilot, Cursor, OpenCode, Kiro and more.**
 
 [![test](https://github.com/epistex-dev/explain-change/actions/workflows/test.yml/badge.svg)](https://github.com/epistex-dev/explain-change/actions/workflows/test.yml)
 ![license](https://img.shields.io/badge/license-MIT-blue)
@@ -20,7 +20,7 @@
 
 Agents now write code faster than their owners read it. A summary like "fixed the bug, tests pass" asks you to trust the change, and over time you ship code nobody on the team understands.
 
-`explain-change` replaces that trust with a page. After an agent edit, the skill collects the diff and the Claude Code session, and the agent writes a structured `explain.json`. Scripts then check that file against the real repo and session, and render it as one self-contained HTML page. The page uses plain words and shows no code, diff or file:line: it is for the owner who did not write the change.
+`explain-change` replaces that trust with a page. After an agent edit, the skill collects the diff and the session transcript, and the agent writes a structured `explain.json`. Scripts then check that file against the real repo and session, and render it as one self-contained HTML page. The page uses plain words and shows no code, diff or file:line: it is for the owner who did not write the change.
 
 ## What the page shows
 
@@ -51,9 +51,40 @@ Details: [`references/explain-schema.md`](skills/explain-change/references/expla
 
 ## Install
 
-### As a plugin (recommended)
+The skill is a folder with a `SKILL.md`, the [Agent Skills](https://agentskills.io/specification) format, so one install script puts it where each harness looks.
 
-In Claude Code:
+```bash
+git clone https://github.com/epistex-dev/explain-change.git
+cd explain-change
+./install.sh                          # ~/.agents/skills + Claude Code, Kiro, Windsurf, Cline, Roo
+./install.sh --harness codex,gemini   # only the folders these harnesses read
+```
+
+| Harness | Skills folder | Command |
+| --- | --- | --- |
+| Claude Code | `~/.claude/skills` | `./install.sh --harness claude`, or the [plugin](#claude-code-plugin) |
+| Codex | `~/.agents/skills` | `./install.sh --harness codex` |
+| Gemini CLI | `~/.agents/skills` | `./install.sh --harness gemini`, or `gemini extensions install https://github.com/epistex-dev/explain-change` |
+| GitHub Copilot | `~/.agents/skills` | `./install.sh --harness copilot` |
+| Cursor | `~/.agents/skills` | `./install.sh --harness cursor` |
+| OpenCode | `~/.agents/skills` | `./install.sh --harness opencode` |
+| Goose, Amp | `~/.agents/skills` | `./install.sh --harness goose` (or `amp`) |
+| Kiro | `~/.kiro/skills` | `./install.sh --harness kiro` |
+| Windsurf | `~/.codeium/windsurf/skills` | `./install.sh --harness windsurf` |
+| Cline | `~/.cline/skills` | `./install.sh --harness cline` |
+| Roo Code | `~/.roo/skills` | `./install.sh --harness roo` |
+
+Harnesses that share `~/.agents/skills` get one link between them. `install.sh` links to the checkout, so `git pull` updates every harness; every path it touches is printed.
+
+| Flag | Effect |
+| --- | --- |
+| `--copy` | copy the folder instead of linking it |
+| `--project` | install under the current directory (`.agents/skills`, `.claude/skills`, `.kiro/skills`); use it with `--copy` to commit the skill |
+| `--uninstall` | remove what the script installed, nothing else |
+| `--dry-run` | print the paths and change nothing |
+| `--force` | replace an existing folder the script did not create (it refuses without this) |
+
+### Claude Code plugin
 
 ```text
 /plugin marketplace add epistex-dev/explain-change
@@ -64,28 +95,33 @@ The skill is then available as `explain-change` (namespaced `/explain-change:exp
 
 ### Manually
 
-Copy or symlink the skill folder into your skills directory:
+```bash
+mkdir -p ~/.agents/skills
+ln -s "$PWD/skills/explain-change" ~/.agents/skills/explain-change   # or: cp -r
+```
+
+### With the `skills` CLI
 
 ```bash
-git clone https://github.com/epistex-dev/explain-change.git
-mkdir -p ~/.claude/skills
-ln -s "$PWD/explain-change/skills/explain-change" ~/.claude/skills/explain-change   # or: cp -r
+npx skills add epistex-dev/explain-change   # public release
 ```
+
+The [`skills` CLI](https://github.com/vercel-labs/skills) installs a repo's skills into the agent you pick (`-a <agent>`).
 
 ### Requirements
 
-Python 3 with the standard library only (no packages to install) and `git`. Tests of the edge router also use `node` when it is on `PATH`.
+Python 3 with the standard library only (no packages to install) and `git`. Tests of the edge router also use `node` when it is on `PATH`. The cold-read gate (step 6) uses a fresh subagent when the harness has one; otherwise set `EXPLAIN_COLDREAD_CMD` to a command that reads a prompt on stdin and prints its answer, for example `claude -p --tools "" --no-session-persistence`.
 
 ## Usage
 
-Ask Claude Code after any agent edit: "explain this change", "giải thích thay đổi", or review a diff, commit or PR. The skill's seven steps then run:
+Ask your agent after any agent edit: "explain this change", "giải thích thay đổi", or review a diff, commit or PR. The skill's seven steps then run:
 
 1. **Collect**: `collect.py --v2 [<base>..<head> | <commit>] [--path <dir>]...` lists the changed files per module and the matching session transcripts.
 2. **Read the session**: the agent finds the transcript that matches the task and the user's own words.
 3. **Write**: the agent writes `explain.json`.
 4. **Validate**: `validate.py explain.json --transcript <file>` checks every claim and prints `ok`.
 5. **Render**: `render.py explain.json --transcript <file> --text` writes `index.html` (one file, under 512 KB, fonts inlined) next to the doc.
-6. **Cold-read gate**: a fresh subagent answers five questions from the page text alone.
+6. **Cold-read gate**: a fresh reader (a subagent, or `EXPLAIN_COLDREAD_CMD`) answers five questions from the page text alone.
 7. **Show**: you get the path of `index.html`, opened in a preview.
 
 The page language is `vi` by default and `en` through the doc's `lang` field.
@@ -105,7 +141,10 @@ Reading order for the skill itself: [`SKILL.md`](skills/explain-change/SKILL.md)
 ## Development
 
 ```text
-.claude-plugin/        plugin.json, marketplace.json
+.claude-plugin/        Claude Code plugin.json, marketplace.json
+plugin.json            portable plugin manifest (Agent Plugins, read by Codex)
+gemini-extension.json  Gemini CLI extension manifest
+install.sh             installer for every harness
 skills/explain-change/
   SKILL.md             the skill
   scripts/             collect.py, validate.py, render.py, lib/
@@ -128,7 +167,7 @@ The red check removes each guard in a throwaway copy of the skill and requires i
 python3 skills/explain-change/tests/red_check.py
 ```
 
-Validate the plugin manifests with `claude plugin validate .`. CI runs the unit tests on every push and pull request (one job, Python 3.12).
+Validate the plugin manifests with `claude plugin validate .` and the skill with `skills-ref validate skills/explain-change` ([agentskills](https://github.com/agentskills/agentskills/tree/main/skills-ref)). CI runs the unit tests on every push and pull request (one job, Python 3.12).
 
 ## License
 
