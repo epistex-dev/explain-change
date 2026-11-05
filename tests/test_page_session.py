@@ -16,7 +16,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from helpers import SKILL  # noqa: E402,F401  (puts scripts/ on sys.path)
 from lib import outward, page2, page_session  # noqa: E402
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from lib.i18n2 import STR2, count  # noqa: E402
 from sample_env import without_transcript  # noqa: E402
 
 SKILL = os.path.join(os.path.dirname(HERE), 'skills', 'explain-change')
