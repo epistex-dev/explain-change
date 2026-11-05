@@ -144,7 +144,7 @@ After a long session, one task or many, ask for "explain this session". The agen
 
 #### Colour themes
 
-The session page comes in five colour themes: navy (the default), ocean, plum, graphite and pearl (light). The reader picks one with the "Theme" control in the header and the page remembers it; `render.py --theme <id>` sets the theme the page opens in. Every theme keeps the text at 4.5:1 or better and the marker rings at 3:1 or better.
+The session page comes in five colour themes: navy (the default), ocean, plum, graphite and pearl (light). The reader picks one with the "Appearance" control in the header and the page remembers it; `render.py --theme <id>` sets the theme the page opens in. Every theme keeps the text at 4.5:1 or better and the marker rings at 3:1 or better.
 
 | navy | ocean | plum |
 | --- | --- | --- |

@@ -172,13 +172,23 @@ class Head(unittest.TestCase):
         self.assertEqual(h.count("setAttribute('data-theme'"), 2)  # the head script and the picker; nothing else writes it
 
     def test_the_picker_is_a_labelled_native_select_with_every_theme(self):
-        for lang, label in (('en', 'Theme'), ('vi', 'Giao diện')):
+        for lang, label in (('en', 'Appearance'), ('vi', 'Giao diện')):
             d = sample()
             d['lang'] = lang
             h = page(d)
             self.assertRegex(h, r'<label class="picker"><span>%s</span><select id="skin"' % label)
             for tid in page_session.THEMES:
                 self.assertIn('<option value="%s"' % tid, h)
+
+    def test_english_never_calls_the_colour_scheme_a_theme_and_vietnamese_names_read_as_colours(self):
+        en, vi = STR2['en'], STR2['vi']
+        self.assertEqual(en['ses_theme_label'], 'Appearance')
+        self.assertEqual(vi['ses_theme_label'], 'Giao diện')
+        for tid in page_session.THEMES:
+            self.assertNotRegex(en['ses_theme_' + tid], r'(?i)theme')
+        self.assertNotRegex(en['ses_theme_label'], r'(?i)theme')
+        self.assertEqual([vi['ses_theme_' + t] for t in page_session.THEMES], ['Xanh đêm', 'Đại dương', 'Tím mận', 'Than chì', 'Ngọc trai (sáng)'])
+        self.assertNotIn('Hải quân', vi.values())
 
     def test_landmarks_and_the_nav_targets(self):
         h = page(sample())
@@ -277,6 +287,22 @@ class Dom(unittest.TestCase):
         self.assertEqual(r['navy'], 'rgb(245, 246, 255)')
         self.assertEqual(r['pearl'], 'rgb(28, 26, 59)')
         self.assertEqual(r['scheme'], 'light')
+
+    def test_a_long_theme_title_wraps_in_its_chip_and_is_never_cut(self):
+        d = sample()
+        long = 'Xoá mật khẩu bị lộ khỏi lịch sử git và đổi lại mọi khoá đã dùng ở các dịch vụ liên quan'
+        d['themes'][d['needs_you'][0]['theme'] and next(i for i, t in enumerate(d['themes']) if t['id'] == d['needs_you'][0]['theme'])]['title'] = long
+        probe = ("out.chips=qa('.tchip').map(c=>{const t=c.querySelector('.t'),cs=getComputedStyle(t);return {text:t.textContent.length,sw:c.scrollWidth,cw:c.clientWidth,tsw:t.scrollWidth,tcw:t.clientWidth,"
+                 "th:t.getBoundingClientRect().height,lh:parseFloat(cs.lineHeight)||0,over:cs.textOverflow,ws:cs.whiteSpace}})")
+        for width in (1440, 800):
+            r = self.run_dom(d, probe, width=width)
+            long_chips = [c for c in r['chips'] if c['text'] >= 60]
+            self.assertTrue(long_chips, 'the fixture has a chip with a 60+ character title')
+            for c in long_chips:
+                self.assertLessEqual(c['sw'], c['cw'], c)
+                self.assertLessEqual(c['tsw'], c['tcw'], c)
+                self.assertNotEqual(c['over'], 'ellipsis', c)
+                self.assertNotEqual(c['ws'], 'nowrap', c)
 
     OPEN = ("const cl=$('.mk.cl');cl.focus();cl.click();"
             "const st=()=>({pressed:qa('.mk[aria-pressed=true]').length,focusOn:document.activeElement===cl,clPressed:cl.getAttribute('aria-pressed'),def:!!$('.empty-panel.on'),tp:qa('.tp.on').length});")
