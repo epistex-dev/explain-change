@@ -13,6 +13,8 @@ SKILL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # (guard, file, original text, broken text, test id)
 PS, JS = 'scripts/lib/page_session.py', 'assets/ui/session.js'
+TH, JS2, P2, CSS2, RJ = 'scripts/lib/themes.py', 'assets/ui/page2.js', 'scripts/lib/page2.py', 'assets/ui/page2.css', 'scripts/render.py'
+CT = 'test_change_themes.'
 MUTATIONS = [
     ('snippet not found fails', 'scripts/lib/refs.py', "    return 'snippet not found within", "    return None  # "
      "'snippet not found within", 'test_check.SnippetGrounding.test_snippet_not_found_fails'),
@@ -607,11 +609,11 @@ MUTATIONS += [
      'test_themes.Dom.test_the_picker_applies_the_pick_and_stores_it'),
     ('themes: a blocked storage cannot break the picker', JS, "try{localStorage.setItem('explain-change-theme',skin.value)}catch(e){}", "localStorage.setItem('explain-change-theme',skin.value)",
      'test_themes.Dom.test_a_blocked_local_storage_falls_back_to_the_default_without_an_error'),
-    ('themes: a blocked storage cannot break the head script', PS, "try{var s=localStorage.getItem('%s');if(a.indexOf(s)>-1)t=s}catch(e){}", "var s=localStorage.getItem('%s');if(a.indexOf(s)>-1)t=s",
+    ('themes: a blocked storage cannot break the head script', TH, "try{var s=localStorage.getItem('%s');if(a.indexOf(s)>-1)t=s}catch(e){}", "var s=localStorage.getItem('%s');if(a.indexOf(s)>-1)t=s",
      'test_themes.Dom.test_a_blocked_local_storage_falls_back_to_the_default_without_an_error'),
-    ('themes: a stored pick is applied', PS, 'if(a.indexOf(s)>-1)t=s', 'if(false)t=s',
+    ('themes: a stored pick is applied', TH, 'if(a.indexOf(s)>-1)t=s', 'if(false)t=s',
      'test_themes.Dom.test_a_stored_pick_is_applied_before_the_body_and_selected_in_the_picker'),
-    ('themes: a stored value that is not a theme is ignored', PS, 'if(a.indexOf(s)>-1)t=s', 'if(s)t=s',
+    ('themes: a stored value that is not a theme is ignored', TH, 'if(a.indexOf(s)>-1)t=s', 'if(s)t=s',
      'test_themes.Dom.test_a_stored_value_that_is_not_a_theme_is_ignored'),
     ('themes: the theme is set before the style (no flash)', PS, '%(head_js)s\n<style>\n%(css)s\n</style>\n</head>', '<style>\n%(css)s\n</style>\n%(head_js)s\n</head>',
      'test_themes.Head.test_the_theme_is_set_in_a_head_script_before_the_style_and_the_body'),
@@ -625,11 +627,11 @@ MUTATIONS += [
      'test_themes.ThemeFlag.test_the_renderer_refuses_an_unknown_id_too'),
     ('themes: no literal colour in the rules', 'assets/ui/session.css', 'background:var(--ok-fill);color:var(--on-fill);font-weight:600', 'background:var(--ok-fill);color:#fff;font-weight:600',
      'test_themes.ThemeTokens.test_no_literal_colour_outside_the_root_and_the_theme_blocks'),
-    ('themes: body text meets AA in every theme', 'assets/ui/session.css', '--text:#1c1a3b; --text-2:#3d3965; --text-3:#575288;', '--text:#1c1a3b; --text-2:#3d3965; --text-3:#9a96c8;',
+    ('themes: body text meets AA in every theme', 'assets/ui/page2.css', '--text:#1c1a3b; --text-2:#3d3965; --text-3:#575288;', '--text:#1c1a3b; --text-2:#3d3965; --text-3:#9a96c8;',
      'test_themes.ThemeTokens.test_wcag_aa_text_and_rings_in_every_theme'),
-    ('themes: status rings meet 3:1 in the light theme', 'assets/ui/session.css', '--kdot-ring:85%; --mk-ring:85%;', '--kdot-ring:55%; --mk-ring:60%;',
+    ('themes: status rings meet 3:1 in the light theme', 'assets/ui/page2.css', '--kdot-ring:85%; --mk-ring:85%;', '--kdot-ring:55%; --mk-ring:60%;',
      'test_themes.ThemeTokens.test_wcag_aa_text_and_rings_in_every_theme'),
-    ('themes: forest is dropped', 'assets/ui/session.css', '[data-theme="pearl"]{', '[data-theme="forest"]{}\n[data-theme="pearl"]{',
+    ('themes: forest is dropped', 'assets/ui/page2.css', '[data-theme="pearl"]{', '[data-theme="forest"]{}\n[data-theme="pearl"]{',
      'test_themes.ThemeTokens.test_every_theme_is_one_data_theme_block_and_navy_is_the_default'),
     ('a11y: a header landmark', PS, '<header class="bar">', '<div class="bar">',
      'test_themes.Head.test_landmarks_and_the_nav_targets'),
@@ -653,6 +655,26 @@ MUTATIONS += [
      'test_themes.Dom.test_a_nav_link_leaves_the_theme_and_shows_the_default_view'),
     ('panel: the page opens on the default view', JS, "else{$('.empty-panel').classList.add('on');place()}\nhistory", "else if(wide.matches)show(D.themes[0].id,null,null,null,false);\nelse{$('.empty-panel').classList.add('on');place()}\nhistory",
      'test_themes.Dom.test_the_page_opens_on_the_default_view_not_on_a_theme'),
+    ('change themes: the picker applies the pick', JS2, "    root.setAttribute('data-theme',skin.value);\n", '', CT + 'Dom.test_the_picker_applies_the_pick_and_stores_it'),
+    ('change themes: the picker stores the pick', JS2, "try{localStorage.setItem('explain-change-theme',skin.value)}catch(e){}", '', CT + 'Dom.test_the_picker_applies_the_pick_and_stores_it'),
+    ('change themes: a blocked storage cannot break the picker', JS2, "try{localStorage.setItem('explain-change-theme',skin.value)}catch(e){}", "localStorage.setItem('explain-change-theme',skin.value)",
+     CT + 'Dom.test_a_blocked_local_storage_falls_back_to_the_default_without_an_error'),
+    ('change themes: the stored key is shared with the session page', JS2, "localStorage.setItem('explain-change-theme',", "localStorage.setItem('explain-change-theme2',",
+     CT + 'Markup.test_both_pages_share_one_list_and_one_storage_key'),
+    ('change themes: the head script runs before the style', P2, '%(head_js)s\n', '', CT + 'Markup.test_the_theme_is_applied_in_a_head_script_before_the_style_and_the_body'),
+    ('change themes: the baked default is on the html tag', P2, ' data-theme="%(theme)s">', '>', CT + 'Markup.test_the_default_is_navy_and_the_renderer_bakes_the_requested_theme'),
+    ('change themes: the picker is in the header', P2, '  %(picker)s\n', '', CT + 'Markup.test_the_picker_is_a_labelled_native_select_in_the_header_with_every_theme'),
+    ('change themes: the renderer refuses an unknown id', P2, '        if theme not in THEMES:', '        if False:', CT + 'Markup.test_the_renderer_refuses_an_unknown_theme'),
+    ('change themes: --theme reaches the change page', RJ, "bool(stats.get('transcript')), theme=a.theme)\n    if len(body", "bool(stats.get('transcript')))\n    if len(body",
+     CT + 'Cli.test_theme_sets_the_default_of_a_change_doc'),
+    ('change themes: a session render themes its linked change page', RJ, 'text=a.text, theme=a.theme)', 'text=a.text)', CT + 'Cli.test_a_session_render_gives_its_linked_change_page_the_same_theme'),
+    ('change themes: Escape in the picker keeps the selected node', JS2, "&&node&&e.target!==skin)", '&&node)', CT + 'Dom.test_escape_in_the_picker_does_not_clear_the_selected_node'),
+    ('change themes: the after block follows the theme', CSS2, '.ba.after{background:var(--hl);', '.ba.after{background:#383471;', CT + 'Dom.test_the_logic_diagrams_follow_the_theme'),
+    ('change themes: no literal colour in the change page rules', CSS2, 'background:var(--accent);color:var(--on-fill);text-decoration:none}', 'background:var(--accent);color:#fff;text-decoration:none}',
+     'test_themes.ThemeTokens.test_no_literal_colour_outside_the_root_and_the_theme_blocks'),
+    ('change themes: pearl map icons meet AA', CSS2, '--n-test:#7a4d08;', '--n-test:#c9a45c;', 'test_themes.ThemeTokens.test_wcag_aa_text_and_rings_in_every_theme'),
+    ('change themes: chips on a highlighted card use the well', CSS2, '.hl .chip,.ba.after .chip{background:var(--chip-hl)}', '', 'test_themes.ThemeTokens.test_wcag_aa_text_and_rings_in_every_theme'),
+    ('change themes: every theme sets every colour token', CSS2, '--n-data:#0b6a62; ', '', 'test_themes.ThemeTokens.test_every_theme_sets_every_colour_token'),
 ]
 TEST_SECONDS = 60
 

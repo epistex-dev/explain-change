@@ -13,6 +13,7 @@ from html.parser import HTMLParser
 from . import arch as archmod
 from .ground import MAX_REASON
 from .i18n2 import STR2, count
+from .themes import THEMES, head_script, picker
 from .transcript import redact
 
 UI = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'assets', 'ui')
@@ -194,8 +195,10 @@ def layout(mods, edges):
 
 # ---------------------------------------------------------------- builder
 class Builder:
-    def __init__(self, doc, arch, validated, session_checked=None):
-        self.d, self.arch, self.validated = doc, arch, validated
+    def __init__(self, doc, arch, validated, session_checked=None, theme=THEMES[0]):
+        if theme not in THEMES:
+            raise ValueError('unknown theme %r; valid: %s' % (theme, ', '.join(THEMES)))
+        self.d, self.arch, self.validated, self.theme = doc, arch, validated, theme
         if session_checked is None:  # the caller did not say: a doc that declares no session was not checked against one
             session_checked = not (isinstance(doc.get('transcript_unavailable'), str) and doc['transcript_unavailable'].strip()) or bool(doc.get('transcript'))
         self.session_checked = session_checked
@@ -515,13 +518,14 @@ class Builder:
         notice = ('<!-- Fonts: Inter (SIL OFL 1.1, Copyright 2016 The Inter Project Authors), JetBrains Mono (SIL OFL 1.1, Copyright 2020 The JetBrains Mono Project Authors). '
                   'Icons: Lucide (ISC). Full notices: explain-change/assets/ui/LICENSES.txt -->')
         return '''<!doctype html>
-<html lang="%(lang)s" data-panel="open">
+<html lang="%(lang)s" data-panel="open" data-theme="%(theme)s">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="generator" content="explain-change v2; validated=%(validated)s">
 <title>%(title)s &middot; %(page)s</title>
 %(notice)s
+%(head_js)s
 <style>
 %(css)s
 </style>
@@ -534,6 +538,7 @@ class Builder:
   <div class="title"><h1>%(title)s</h1>%(sub)s</div>
   %(unchecked)s
   %(verdict)s
+  %(picker)s
   <button class="pillbtn toggle" id="toggle" type="button" aria-expanded="true" aria-controls="panel">%(i_close)s<span>%(hide)s</span></button>
 </header>
 <main class="map" id="map">
@@ -572,7 +577,7 @@ class Builder:
 </html>
 ''' % {
             'lang': t['html_lang'], 'validated': 'yes' if self.validated else 'no', 'title': txt(title), 'page': esc(t['page_name']), 'notice': notice,
-            'css': css(), 'sprite': sprite, 'skip': esc(t['skip']), 'i_map': ic('map'), 'sub': sub, 'verdict': self.verdict(), 'i_close': ic('panel-right-close'),
+            'theme': self.theme, 'head_js': head_script(), 'picker': picker(t, self.theme), 'css': css(), 'sprite': sprite, 'skip': esc(t['skip']), 'i_map': ic('map'), 'sub': sub, 'verdict': self.verdict(), 'i_close': ic('panel-right-close'),
             'hide': esc(t['hide']), 'map_concl': txt(d['conclusions']['map']), 'map_hint': esc(t['map_hint']), 'legend_label': esc(t['legend_label']),
             'legend': legend, 'stage': self.stage(), 'edge_list': edge_list,
             'hidden': ('<p class="hidden-note">%s</p>' % esc(count(t, 'hidden_note', hidden))) if hidden else '',
@@ -601,13 +606,14 @@ def shape_problems(doc):
     return errs
 
 
-def render(doc, repo=None, arch=None, validated=True, session_checked=None):
+def render(doc, repo=None, arch=None, validated=True, session_checked=None, theme=THEMES[0]):
     """The page for a v2 doc. `arch`: an Architecture, or None to look for floorplan/architecture.json from `repo`.
-    `session_checked`: False shows the "not checked against the session" badge; None reads it from the doc."""
+    `session_checked`: False shows the "not checked against the session" badge; None reads it from the doc.
+    `theme`: the colour theme baked in as the default; the reader's stored pick wins."""
     if arch is None and repo:
         from . import collect2
         arch = collect2.load_arch(repo)
-    return Builder(doc, arch, validated, session_checked).build()
+    return Builder(doc, arch, validated, session_checked, theme).build()
 
 
 class _Text(HTMLParser):

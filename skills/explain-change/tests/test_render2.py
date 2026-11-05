@@ -176,7 +176,7 @@ class RenderV2(V2Case):
         out = self.page(lambda d: d.update(title=EVIL))
         self.assertNotIn(EVIL, out)
         self.assertIn('&lt;script&gt;alert(1)&lt;/script&gt;', out)
-        self.assertEqual(out.count('</script>'), 2)  # the data block and the page's own script
+        self.assertEqual(out.count('</script>'), 3)  # the theme head script, the data block and the page's own script
 
     def test_every_doc_string_is_escaped(self):
         def m(d):
@@ -195,7 +195,7 @@ class RenderV2(V2Case):
         out = page2.render(self.doc(m), self.repo)  # rendering does not validate: hostile text must still be inert
         self.assertNotIn('<script>alert', out)
         self.assertNotIn('<img', out)
-        self.assertEqual(out.count('</script>'), 2)
+        self.assertEqual(out.count('</script>'), 3)
         self.assertEqual(self.data(out)['edges'][0]['label'], '</script>' + EVIL)  # JSON survives the round trip
 
     def test_attribute_values_cannot_break_out(self):
