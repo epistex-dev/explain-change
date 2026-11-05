@@ -99,8 +99,8 @@ RD, P2 = 'scripts/render.py', 'scripts/lib/page2.py'
 R2, L2 = 'test_render2.RenderV2.', 'test_render2.Layout.'
 RF, HX = 'test_render2.ReviewFixes.', 'test_v2_hardening.'
 MUTATIONS += [
-    ('v2: a quote must occur in the transcript', TR, "                        n = norm(text) if n is None else n\n                        q.found = q.text in n\n                    elif q.kind == 'url'",
-     "                        n = norm(text) if n is None else n\n                        q.found = True\n                    elif q.kind == 'url'", V2 + 'Requests.test_quote_not_in_transcript_fails'),
+    ('v2: a quote must occur in the transcript', TR, "                    n = norm(text) if n is None else n\n                    q.found = q.text in n\n                elif q.kind == 'url'",
+     "                    n = norm(text) if n is None else n\n                    q.found = True\n                elif q.kind == 'url'", V2 + 'Requests.test_quote_not_in_transcript_fails'),
     ('v2: a request quote is the user, not the assistant', C2, "query(transcript.Query('quote', 'main', ('user',), text=quote), p + '.quote')",
      "query(transcript.Query('quote', 'main', QUOTE_ROLES, text=quote), p + '.quote')", V2 + 'Requests.test_quote_from_assistant_message_fails'),
     ('v2: injected context is not the user', TR, "txt = INJECTED.sub('', b['text']).strip()", "txt = b['text'].strip()",
@@ -120,7 +120,7 @@ MUTATIONS += [
     ('v2: a fixed or changed request needs a note', C2, "if r.get('status') in NOTE_REQUIRED:", 'if False:', V2 + 'Requests.test_status_must_be_known_and_fixes_need_a_note'),
     ('v2: a transcript is required unless declared unavailable', C2, "if nonempty(doc.get('transcript_unavailable')):", 'if True:',
      V2 + 'Requests.test_transcript_is_required_unless_declared_unavailable'),
-    ('v2: transcript must lie under ~/.claude/projects', TR, 'if not (rp == root or rp.startswith(root + os.sep)):', 'if False:',
+    ('v2: transcript must lie under ~/.claude/projects', TR, 'inside = rp == root or rp.startswith(root + os.sep)', 'inside = True',
      V2 + 'Requests.test_transcript_outside_projects_is_refused'),
     ('v2: a symlink out of projects is refused', TR, 'rp = os.path.realpath(os.path.expanduser(path))', 'rp = os.path.abspath(os.path.expanduser(path))',
      V2 + 'Requests.test_symlink_out_of_projects_is_refused'),
@@ -170,8 +170,8 @@ MUTATIONS += [
     ('v2: a URL must be seen in the transcript', 'scripts/lib/ground.py', "self.query(transcript.Query('url', 'main', URL_ROLES, text=u), path + '.url')", "pass",
      V2 + 'LogicRationaleEvidence.test_rationale_url_must_be_seen_in_the_transcript'),
     ('v2: evidence command must be in the transcript', TR, "and is_command_call(extra) and q.command in norm(extra[2]):", "and is_command_call(extra):", V2 + 'LogicRationaleEvidence.test_evidence_command_not_in_transcript_fails'),
-    ('v2: evidence excerpt is from the same tool call', TR, "if kind == 'tool_result' and extra and extra[0] in pending:\n                    n = norm(text)\n                    for q in pending.pop(extra[0]):",
-     "if kind == 'tool_result' and extra and pending:\n                    n = norm(text)\n                    for q in [x for v in pending.values() for x in v]:",
+    ('v2: evidence excerpt is from the same tool call', TR, "if kind == 'tool_result' and extra and extra[0] in pending:\n                n = norm(text)\n                unknown = len(extra) > 2 and extra[2]\n                for q in pending.pop(extra[0]):",
+     "if kind == 'tool_result' and extra and pending:\n                n = norm(text)\n                unknown = len(extra) > 2 and extra[2]\n                for q in [x for v in pending.values() for x in v]:",
      V2 + 'LogicRationaleEvidence.test_evidence_excerpt_from_a_different_tool_call_fails'),
     ('v2: a worker transcript id must exist', 'scripts/lib/ground.py', "self.err(path + '.transcript', 'unknown transcript %r; this session has: %s' % (t, ', '.join(self.tfiles)))\n            return None",
      "pass", V2 + 'LogicRationaleEvidence.test_evidence_in_worker_transcript'),
@@ -204,7 +204,7 @@ MUTATIONS += [
     ('v2: project folders match case-insensitively', TR, 'have = {n.lower(): n for n in os.listdir(root)}', 'have = {n: n for n in os.listdir(root)}',
      'test_v2_collect.Candidates.test_slug_matches_case_insensitively_and_in_parents'),
     ('v2 render: dispatch on version', RD, '        if v2(a.explain_json):', '        if False:', V2 + 'VersionDispatch.test_render_dispatches_on_version'),
-    ('v2 render: an invalid doc writes nothing', RD, '        doc, errs, stats = lv(a.explain_json, a.repo, a.transcript)\n        if errs:', '        doc, errs, stats = lv(a.explain_json, a.repo, a.transcript)\n        if False:',
+    ('v2 render: an invalid doc writes nothing', RD, '        doc, errs, stats = lv(a.explain_json, a.repo, a.transcript, a.format)\n        if errs:', '        doc, errs, stats = lv(a.explain_json, a.repo, a.transcript, a.format)\n        if False:',
      R2 + 'test_invalid_v2_doc_writes_nothing'),
     ('v2 render: --no-validate says so', RD, "        print('warning: not validated (--no-validate); nothing was checked against git or the transcript', file=sys.stderr)", '        pass',
      R2 + 'test_no_validate_renders_an_archived_doc_and_says_so'),
@@ -243,7 +243,7 @@ MUTATIONS += [
     ('v2 B1: a list-typed ref file does not crash', C2, "not r.get('side') and not (isinstance(r.get('file'), str) and r['file'] in ver.deleted):",
      "not r.get('side') and not (r['file'] in ver.deleted):", HX + 'WrongTypes.test_wrong_types_anywhere'),
     ('v2 B2: only Bash calls ground a command', TR, "COMMAND_TOOLS = ('Bash',)", "COMMAND_TOOLS = ('Bash', 'mcp__x__run')", HX + 'FalseEvidence.test_only_bash_calls_run_commands'),
-    ('v2 B2: an errored result is remembered', TR, 'q.found_ok = q.found_ok or not extra[1]', 'q.found_ok = True', HX + 'FalseEvidence.test_an_errored_run_cannot_back_passed'),
+    ('v2 B2: an errored result is remembered', TR, 'q.found_ok = q.found_ok or not (extra[1] or unknown)', 'q.found_ok = True', HX + 'FalseEvidence.test_an_errored_run_cannot_back_passed'),
     ('v2 B2: an errored run cannot back passed', C2, 'if not by_hand and ground.only_errors(qs_):', 'if False:',
      HX + 'FalseEvidence.test_an_errored_run_cannot_back_passed'),
     ('v2 B2: a URL in a brief or a written file is not seen', TR, 'q.found = seen is not None and q.text in norm(seen)', 'q.found = q.text in norm(str(extra))',
@@ -258,7 +258,7 @@ MUTATIONS += [
     ('v2 B4: error lines are redacted', C2, 'return [transcript.redact(e) for e in errs], stats', 'return errs, stats', HX + 'Secrets.test_an_error_about_something_else_never_prints_the_secret'),
     ('v2 B4: the page redacts what got past validation', P2, "return esc(redact(str(s if s is not None else '')).replace('`', ''))", "return esc(str(s if s is not None else '').replace('`', ''))",
      HX + 'Secrets.test_a_secret_that_got_past_validation_still_stays_off_the_page'),
-    ('v2 B4: the candidates list is redacted', 'scripts/lib/collect2.py', "first = transcript.redact((c['first_user']", "first = ((c['first_user']",
+    ('v2 B4: the candidates list is redacted', 'scripts/lib/collect2.py', "first = transcript.redact((c['first_user'] or '(no user message)').replace('\\n', ' '))  # the first message", "first = ((c['first_user'] or '(no user message)').replace('\\n', ' '))  # the first message",
      HX + 'Secrets.test_the_candidates_list_hides_the_secret'),
     ('v2: the page says when no session was checked', P2, "if not self.session_checked else ''", "if False else ''", HX + 'NoSessionBadge.test_a_doc_with_no_session_shows_the_badge'),
     ('v2: an architecture node needs list globs', AR, "if v is not None and (not isinstance(v, list) or not all(isinstance(g, str) for g in v)):", 'if False:',
@@ -298,7 +298,7 @@ MUTATIONS += [
     ('v2 B4b: redaction removes the learned values', TR, "        s = s.replace(v, MASK)", "        pass", HX + 'SecretsRound2.test_page_text_and_candidates_hide_the_bare_value'),
     ('v2 B4b: the digest learns the values', TR, '    learn(main_path)\n', '', HX + 'SecretsRound2.test_the_digest_hides_the_bare_value'),
     ('v2 B4b: the candidates list learns the values', 'scripts/lib/collect2.py', "        transcript.learn(c['path'])", '        pass', HX + 'SecretsRound2.test_page_text_and_candidates_hide_the_bare_value'),
-    ('v2 B4b: an archived render learns the values', RD, "            transcript.learn(learn_from)  # an archived doc is still kept clear of the session's credentials\n        print('warning: not validated (--no-validate); nothing was checked against git", "            pass\n        print('warning: not validated (--no-validate); nothing was checked against git", HX + 'SecretsRound2.test_render_of_an_archived_doc_learns_from_the_transcript'),
+    ('v2 B4b: an archived render learns the values', RD, "            transcript.learn(learn_from, a.format)  # an archived doc is still kept clear of the session's credentials\n        print('warning: not validated (--no-validate); nothing was checked against git", "            pass\n        print('warning: not validated (--no-validate); nothing was checked against git", HX + 'SecretsRound2.test_render_of_an_archived_doc_learns_from_the_transcript'),
     ('v2 URL: a list of URLs counts', TR, "[x for x in v if isinstance(x, str)] if isinstance(v, list) else []", '[]', HX + 'UrlSources.test_a_url_in_a_list_or_opened_in_the_preview_is_seen'),
     ('v2 URL: preview_navigate and preview_open count', TR, '|preview_(navigate|open))', ')', HX + 'UrlSources.test_a_url_in_a_list_or_opened_in_the_preview_is_seen'),
     ('v2 map: no run lies along a zone border', 'assets/ui/route.js', 'const segOk = (x1, y1, x2, y2) => !hits(x1, y1, x2, y2) && !alongBorder(x1, y1, x2, y2);',
@@ -356,7 +356,7 @@ MUTATIONS += [
     ('v3 scope: a path outside the repo is refused', GI, " or p.startswith('../') or", ' or', V3 + 'Scope.test_unsafe_paths_are_refused_and_nothing_is_written'),
     ('v3 scope: the paths follow `--`', GI, "return ['--'] + [':(literal)'", "return [':(literal)'", V3 + 'Pathspec.test_paths_come_after_double_dash_as_literals'),
     ('v3 scope: the scope is stored in summary.json', CL, "**({'scope': scope} if scope else {}), ", '', V3 + 'Scope.test_path_limits_the_diff_and_is_stored'),
-    ('v3 scope: validate reads the stored scope', 'scripts/validate.py', 'scope=read_scope(here, repo))', 'scope=None)', V3 + 'Scope.test_validate_wants_only_the_in_scope_files_on_the_map'),
+    ('v3 scope: validate reads the stored scope', 'scripts/validate.py', 'scope=read_scope(here, repo), fmt=fmt)', 'scope=None, fmt=fmt)', V3 + 'Scope.test_validate_wants_only_the_in_scope_files_on_the_map'),
     ('v3 scope: the commit log is limited to the scope', CL, "'-n', '20', spec_, *spec)", "'-n', '20', spec_)", V3 + 'RunFolderName.test_a_commit_that_misses_the_scope_does_not_name_the_folder'),
     ('v3 slug: --slug names the folder', CO, 'subject = a.slug if a.slug and a.slug.strip() else collect.pick_slug', 'subject = collect.pick_slug', V3 + 'RunFolderName.test_slug_flag_names_the_folder_and_keeps_the_timestamp'),
     ('v3 slug: the most common subject wins', CL, 'key=lambda s: (subjects.count(s), -subjects.index(s))', 'key=lambda s: -subjects.index(s)',
@@ -381,9 +381,9 @@ MUTATIONS += [
      V3 + 'FileRows.test_a_node_shows_four_files_largest_first_then_a_count_line'),
     ('v3 map: a route does not turn back on itself', 'assets/ui/route.js', 'REVERSE = 250,', 'REVERSE = 0,', 'test_route.NoReversal.test_a_rightward_edge_does_not_leave_by_the_left_side_and_loop_back'),
     ('v3 map: random layouts rarely turn back', 'assets/ui/route.js', 'REVERSE = 250,', 'REVERSE = 0,', 'test_route.NoReversal.test_random_layouts_have_few_routes_against_their_own_direction'),
-    ('v3 learn: assistant text teaches values', TR, "                    else:\n                        _LEARNED.update(secret_values(text))", "                    elif kind in ('user', 'report'):\n                        _LEARNED.update(secret_values(text))",
+    ('v3 learn: assistant text teaches values', TR, "                else:\n                    _LEARNED.update(secret_values(text))", "                elif kind in ('user', 'report'):\n                    _LEARNED.update(secret_values(text))",
      V3 + 'LearnedFromEveryText.test_a_value_only_in_worker_assistant_text_is_learned_and_a_bare_quote_is_rejected'),
-    ('v3 learn: tool_result text teaches values', TR, "                    else:\n                        _LEARNED.update(secret_values(text))", "                    elif kind != 'tool_result':\n                        _LEARNED.update(secret_values(text))",
+    ('v3 learn: tool_result text teaches values', TR, "                else:\n                    _LEARNED.update(secret_values(text))", "                elif kind != 'tool_result':\n                    _LEARNED.update(secret_values(text))",
      V3 + 'LearnedFromEveryText.test_a_value_only_in_tool_result_text_is_learned_and_a_bare_quote_is_rejected'),
     ('session mode: unknown status is refused', 'scripts/lib/check_session.py', "        if t.get('status') not in STATUSES:", '        if False:',
      'test_session.Mutations.test_unknown_status'),
@@ -427,7 +427,7 @@ MUTATIONS += [
      'test_session.Mutations.test_change_doc_is_a_relative_json_path'),
     ('session mode: change_doc must be an explain-change/2 doc', 'scripts/lib/check_session.py', "    if schema != 'explain-change/2':", '    if False:',
      'test_session.Mutations.test_change_doc_must_exist_and_be_a_change_doc'),
-    ('session mode: digest: a failed call is not an outward action', 'scripts/lib/session.py', '                    if not outward.failed(extra[1], text[:64]):', '                    if True:',
+    ('session mode: digest: a failed call is not an outward action', 'scripts/lib/session.py', '                if not outward.failed(extra[1], text[:64]):', '                if True:',
      'test_session.Mutations.test_a_failed_push_is_not_in_the_digest'),
     ('session mode: digest: an Exit code result is a failure', 'scripts/lib/outward.py', '    return bool(is_error) or (isinstance(result, str) and bool(FAILED.match(result)))', '    return bool(is_error)',
      'test_outward.Failed.test_a_failed_call_is_never_counted'),
@@ -535,7 +535,7 @@ MUTATIONS += [
      'test_page_session.Cli.test_renders_the_session_page_and_the_sibling_change_page'),
     ('session B: a change page that cannot render stops the run', 'scripts/render.py', "        except (OSError, ValueError) as e:  # the doc is missing or is not JSON", "        except ZeroDivisionError as e:",
      'test_page_session.Cli.test_a_change_doc_that_cannot_be_rendered_stops_the_run'),
-    ('session B: render refuses an invalid session doc', 'scripts/render.py', "        errs, stats = check_session.validate(doc, a.transcript, base_dir=here)\n        if errs:", "        errs, stats = check_session.validate(doc, a.transcript, base_dir=here)\n        if False:",
+    ('session B: render refuses an invalid session doc', 'scripts/render.py', "        errs, stats = check_session.validate(doc, a.transcript, base_dir=here, fmt=a.format)\n        if errs:", "        errs, stats = check_session.validate(doc, a.transcript, base_dir=here, fmt=a.format)\n        if False:",
      'test_page_session.Cli.test_an_invalid_doc_writes_nothing'),
     ('session B: the lane keeps markers a gap apart', 'assets/ui/fit.js', "    for (let j = 1; j < items.length; j++) items[j].x = Math.max(items[j].x, items[j - 1].x + pitch);\n", "",
      'test_page_session.Fit.test_spacing_and_bounds_hold_for_random_lanes'),
@@ -1126,6 +1126,60 @@ MUTATIONS += [
 ]
 
 
+# the adapters wired into collect, validate and render: (guard, file, original text, broken text, test id)
+NE, TR, GR = 'scripts/lib/neutral.py', 'scripts/lib/transcript.py', 'scripts/lib/ground.py'
+W = 'test_wire.'
+MUTATIONS += [
+    ('wire: injected text is not user text', NE, "if ev.kind == 'user_text' and ev.text:", "if ev.kind in ('user_text', 'injected') and ev.text:",
+     W + 'Rejections.test_a_quote_from_injected_text_is_rejected'),
+    ('wire: a shell result with no output or exit code is unknown', NE, "unknown = bool(t.is_shell) and (t.output is None or t.exit_code is None)", 'unknown = False',
+     W + 'Rejections.test_a_result_unknown_cannot_back_done'),
+    ('wire: no output makes a result unknown', NE, "(t.output is None or t.exit_code is None)", '(t.exit_code is None)',
+     W + 'NeutralModel.test_a_shell_call_with_no_output_or_no_exit_code_has_an_unknown_result'),
+    ('wire: no exit code makes a result unknown', NE, "(t.output is None or t.exit_code is None)", '(t.output is None)',
+     W + 'NeutralModel.test_a_shell_call_with_no_output_or_no_exit_code_has_an_unknown_result'),
+    ('wire: a tool that is not a shell is never unknown', NE, "unknown = bool(t.is_shell) and", "unknown = True and",
+     W + 'NeutralModel.test_a_tool_that_is_not_a_shell_never_has_an_unknown_result'),
+    ('wire: an unknown result does not make a query ok', TR, "q.found_ok = q.found_ok or not (extra[1] or unknown)", "q.found_ok = q.found_ok or not extra[1]",
+     W + 'EndToEnd.test_a_passed_run_needs_a_result_that_is_known_and_not_an_error'),
+    ('wire: the validator says why a result is unknown', GR, "    if all(q.unknown for q in tool_queries):", "    if False:",
+     W + 'Rejections.test_a_result_unknown_cannot_back_done'),
+    ('wire: a call with no recorded result is named', GR, "elif q.command_seen and q.unknown_seen:", "elif False:",
+     W + 'Rejections.test_a_result_unknown_cannot_back_done'),
+    ('wire: an unknown result cannot back a passed run', 'scripts/lib/check2.py', "ground.backing_error(qs_, 'passed') or ", '',
+     W + 'EndToEnd.test_a_passed_run_needs_a_result_that_is_known_and_not_an_error'),
+    ('wire: an unknown result cannot back a done', 'scripts/lib/check_session.py', "ground.backing_error(qs, 'done') or ", '',
+     W + 'Rejections.test_a_result_unknown_cannot_back_done'),
+    ('wire: a shell call is a command call whatever its tool name', TR, "(len(extra) > 4 and extra[4])", 'False',
+     W + 'Rejections.test_a_known_ok_result_can_back_done'),
+    ('wire: a shell command is the command of the call', NE, "    if tool.is_shell:\n        return {'command'", "    if False:\n        return {'command'",
+     W + 'Outward.test_a_push_is_outward_in_copilot_and_codex'),
+    ('wire: a push with no recorded result still counts', 'scripts/lib/session.py', "sc.unknown_outward += len(acts) if len(extra) > 2 and extra[2] else 0", "sc.unknown_outward += 0",
+     W + 'Outward.test_a_push_in_a_cursor_ide_session_is_counted_and_flagged_as_having_no_recorded_result'),
+    ('wire: sessions are labelled by harness', 'scripts/lib/collect2.py', "out.append('  %d. [%s] %s' % (i, name, c['path']))", "out.append('  %d. %s' % (i, c['path']))",
+     W + 'Listing.test_the_session_listing_names_each_harness'),
+    ('wire: an undetectable file is a format error', TR, "if fmt == 'auto' and os.path.isfile(rp) and not neutral.claude_shaped(rp):", 'if False:',
+     W + 'Hostile.test_an_undetectable_file_exits_1_naming_the_supported_formats'),
+    ('wire: a format error exits 1', 'scripts/collect.py', "        return 1 if isinstance(e, neutral.FormatError) else 2\n\n\ndef main", "        return 2\n\n\ndef main",
+     W + 'Hostile.test_an_undetectable_file_exits_1_naming_the_supported_formats'),
+    ('wire: --format must match the file', NE, "    if not _detects(mod, os.path.expanduser(path)):", '    if False:',
+     W + 'Hostile.test_a_mismatched_format_exits_1'),
+    ('wire: --format claude reads no adapter', TR, "if fmt != 'claude' and not (fmt == 'auto' and inside):", "if not (fmt == 'auto' and inside):",
+     W + 'ClaudeUnchanged.test_format_claude_never_reads_an_adapter'),
+    ('wire: a transcript is read only under the official root', NE, "    root = mod.default_root()\n    try:", "    root = '/'\n    try:",
+     W + 'Hostile.test_a_symlink_out_of_the_root_is_refused'),
+    ('wire: a Claude file outside the projects folder keeps its error', TR, "        raise ExplainError(msg)", "        raise neutral.FormatError(msg)",
+     W + 'ClaudeUnchanged.test_a_claude_transcript_outside_the_projects_folder_keeps_its_error'),
+    ('wire: the listing of other harnesses hides credentials', 'scripts/lib/collect2.py',
+     "            first = transcript.redact((c['first_user'] or '(no user message)').replace('\\n', ' '))\n            out.append('  %d. [%s] %s'",
+     "            first = (c['first_user'] or '(no user message)').replace('\\n', ' ')\n            out.append('  %d. [%s] %s'",
+     W + 'Listing.test_a_credential_in_the_first_message_is_masked_in_the_listing'),
+    ('wire: SKILL.md names the folder of each reader', 'SKILL.md', '| Codex | `~/.codex/sessions` | `codex` |', '| Codex | `~/.codex/session` | `codex` |',
+     W + 'Docs.test_each_row_names_the_folder_the_reader_uses'),
+    ('wire: README.md names the folder of each reader', '../../README.md', '| Codex | `~/.codex/sessions` | `codex` |', '| Codex | `~/.codex/session` | `codex` |',
+     W + 'Docs.test_each_row_names_the_folder_the_reader_uses'),
+]
+
 def main():
     bad = 0
     only = sys.argv[1] if len(sys.argv) > 1 else ''  # optional: run only the guards whose name contains this text
@@ -1136,7 +1190,7 @@ def main():
         with tempfile.TemporaryDirectory(prefix='red-check-') as d:
             root = os.path.join(d, 'repo', 'skills', 'explain-change')  # the repo layout, so install.sh finds its skill
             shutil.copytree(SKILL, root, ignore=shutil.ignore_patterns('__pycache__', '.git'))
-            for extra in ('install.sh', 'plugin.json', 'gemini-extension.json', 'CHANGELOG.md'):
+            for extra in ('install.sh', 'plugin.json', 'gemini-extension.json', 'CHANGELOG.md', 'README.md'):
                 shutil.copy(os.path.join(SKILL, '..', '..', extra), os.path.join(d, 'repo', extra))
             shutil.copytree(os.path.join(SKILL, '..', '..', '.claude-plugin'), os.path.join(d, 'repo', '.claude-plugin'))
             green, _ = run_test(root, test)

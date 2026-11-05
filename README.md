@@ -51,7 +51,19 @@ Details: [`references/explain-schema.md`](skills/explain-change/references/expla
 
 ### Transcript readers
 
-Besides Claude Code, the skill has readers for the session files of GitHub Copilot CLI, Codex, OpenCode (database and the older JSON tree), Gemini CLI, Cursor CLI and Cursor IDE (`skills/explain-change/scripts/lib/adapters/`). Each reader turns its harness's records into one model (user messages, tool calls with their exit codes, outputs) and reads only under that harness's own transcript folder after resolving symlinks, so a file the agent wrote itself cannot ground a claim. No environment variable or flag moves that folder. `collect.py`, `validate.py` and `render.py` still take a Claude Code transcript. The readers are ported from open-source projects: see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+The skill reads the session of seven harnesses (readers in `skills/explain-change/scripts/lib/adapters/`). Each reader turns its harness's records into one model (user messages, tool calls with their exit codes, outputs), and `collect.py`, `validate.py` and `render.py` ground a change doc or a session doc in any of them. Pass `--transcript <file>`; the format is detected, and `--format` names it. A transcript is read only under the harness's own folder after resolving symlinks, so a file the agent wrote itself cannot ground a claim, and no environment variable or flag moves that folder.
+
+| Harness | Official transcript folder | `--format` |
+|---|---|---|
+| Claude Code | `~/.claude/projects` | `claude` |
+| GitHub Copilot CLI | `~/.copilot/session-state` | `copilot` |
+| Codex | `~/.codex/sessions` | `codex` |
+| OpenCode | `~/.local/share/opencode` (`opencode.db`; a session is named `<database path>#<session id>`) | `opencode` |
+| Gemini CLI | `~/.gemini/tmp` | `gemini` |
+| Cursor CLI | `~/.cursor/projects` | `cursor-cli` |
+| Cursor IDE | `~/.config/Cursor/User/globalStorage` on Linux (the same folder of Cursor's user data on macOS and Windows) | `cursor-ide` |
+
+A shell call whose output or exit code the harness did not record (every Cursor CLI and Cursor IDE call, an OpenCode call still running) has an unknown result: it can back a quote or a `mixed` run, never a `passed` run or a `done`. The readers are ported from open-source projects: see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Install
 

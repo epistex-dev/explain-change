@@ -412,8 +412,10 @@ class Digest(Case):
 
     def test_a_path_outside_the_projects_folder_is_refused(self):
         p = self.run_collect('--transcript', '/etc/hostname')
-        self.assertEqual(p.returncode, 2)
+        self.assertEqual(p.returncode, 1)  # a file no supported format recognises: exit 1, one line naming the formats
         self.assertIn('transcript must be under', p.stderr)
+        self.assertEqual(len(p.stderr.strip().splitlines()), 1)
+        self.assertIn('claude, ', p.stderr)
 
     def test_bad_lines_are_skipped_and_reported(self):
         with open(self.transcript, 'ab') as fh:

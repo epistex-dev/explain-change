@@ -44,11 +44,11 @@ def has_cycle(nodes, edges):
     return any(n not in state and visit(n) for n in adj)
 
 
-def validate(doc, repo, transcript=None, scope=None):
+def validate(doc, repo, transcript=None, scope=None, fmt='auto'):
     """Dispatch on the schema version: 2 -> check2 (needs the session transcript; `scope` limits the changed files to those paths),
     absent or 1 -> the rules below."""
     if check2.is_v2(doc):
-        return check2.validate(doc, repo, transcript, scope)
+        return check2.validate(doc, repo, transcript, scope, fmt)
     errs = []
     stats = {}
 
