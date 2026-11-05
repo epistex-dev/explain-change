@@ -391,7 +391,9 @@ IN = '../../install.sh'
 TI = 'test_install.'
 MUTATIONS += [
     ('install: refuses a real dir without --force', IN, 'elif [ "$force" -eq 1 ]; then', 'elif true; then', TI + 'Install.test_an_existing_real_dir_is_refused_without_force'),
-    ('install: replaces a broken symlink', IN, 'if [ -e "$dest" ] || [ -L "$dest" ]; then\n    if [ -L', 'if [ -e "$dest" ]; then\n    if [ -L',
+    ('install: keeps a live symlink to something else', IN, 'if is_ours "$dest" || [ ! -e "$dest" ]; then', 'if [ -L "$dest" ] || is_ours "$dest"; then',
+     TI + 'Install.test_a_live_symlink_to_something_else_is_refused_without_force'),
+    ('install: replaces a broken symlink', IN, 'if [ -e "$dest" ] || [ -L "$dest" ]; then\n    if is_ours', 'if [ -e "$dest" ]; then\n    if is_ours',
      TI + 'Install.test_a_broken_symlink_is_replaced'),
     ('install: never deletes a checkout inside the target', IN, 'case "$SRC/" in "$real"/*)', 'case "$SRC/" in "$real"/ZZ*)',
      TI + 'Install.test_a_checkout_inside_the_target_is_never_deleted_even_with_force'),

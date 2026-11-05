@@ -125,7 +125,7 @@ do_install() {
     esac
   fi
   if [ -e "$dest" ] || [ -L "$dest" ]; then
-    if [ -L "$dest" ] || { [ -d "$dest" ] && [ -f "$dest/$MARKER" ]; }; then
+    if is_ours "$dest" || [ ! -e "$dest" ]; then  # ours, or a dangling symlink
       say replace "$dest"
     elif [ "$force" -eq 1 ]; then
       say force "$dest (replacing a directory this script did not create)"

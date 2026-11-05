@@ -10,7 +10,7 @@ All notable changes to this project are documented here. The format follows
 - `install.sh`: installs the skill for Claude Code, Codex, Gemini CLI, Copilot, Cursor, OpenCode, Goose, Amp, Kiro, Windsurf, Cline and Roo (`--harness`, `--copy`, `--project`, `--uninstall`, `--dry-run`, `--force`).
 - `gemini-extension.json` (Gemini CLI extension) and a portable `plugin.json` (Agent Plugins manifest, read by Codex).
 - Install section in the README with one row per harness.
-- Tests for `install.sh` and the manifests, and 15 more guards in the red check.
+- Tests for `install.sh` and the manifests, and 16 more guards in the red check.
 
 ### Changed
 - `SKILL.md` names no single harness: the cold-read gate uses a fresh subagent, else the command in `EXPLAIN_COLDREAD_CMD`, else is skipped and the final reply says so.

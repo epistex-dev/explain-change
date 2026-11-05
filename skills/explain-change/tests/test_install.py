@@ -138,6 +138,16 @@ class Install(Base):
         self.assertEqual(os.listdir(d), ['mine.txt'])
         self.assertTrue(os.path.islink(self.dest('.kiro/skills')), 'the other targets still install')
 
+    def test_a_live_symlink_to_something_else_is_refused_without_force(self):
+        d = self.dest('.agents/skills')
+        os.makedirs(os.path.dirname(d))
+        os.symlink(self.tmp, d)
+        rc, out, _ = self.run_sh('--harness', 'agents')
+        self.assertEqual(rc, 1, out)
+        self.assertEqual(os.readlink(d), self.tmp)
+        self.assertEqual(self.run_sh('--harness', 'agents', '--force')[0], 0)
+        self.assertEqual(os.readlink(d), self.skill)
+
     def test_force_replaces_an_existing_real_dir(self):
         d = self.dest('.claude/skills')
         os.makedirs(d)
