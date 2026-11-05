@@ -2,12 +2,15 @@
 """Collect the diff an agent will explain.
 
 usage: collect.py [<base>..<head> | <commit>] [--repo PATH] [--v2] [--transcript FILE] [--path DIR_OR_FILE]... [--slug TEXT]
+       collect.py --session [--transcript FILE] [--repo PATH]
 --path (repeatable) limits the diff, the map and the validator to those repo-relative paths; the scope is stored in summary.json.
 --slug TEXT names the run folder; without it the most common subject among the commits that touch the scope does.
 Default range: uncommitted changes vs HEAD when there are any, else the last commit.
 --v2 (implied by --transcript) adds what schema v2 needs: changed files mapped to modules (floorplan/architecture.json
 or top directories), and the session transcripts that could ground the page (3 newest listed; with --transcript, a digest
 of the user's messages and the test-like tool calls). Only files under ~/.claude/projects are read.
+--session prints a digest of a whole session (numbered user turns, tool calls by turn, repos touched, outward actions) for an
+explain-session/1 doc; it writes nothing and needs no diff. Without --transcript it lists the candidate sessions.
 Creates <repo>/.explain/<YYYYMMDD-HHMM>-<slug>/ with summary.json and diff.patch, prints a summary plus
 `RUN_DIR=<path>`. Exit 3 and no directory when the range has no changes.
 """
@@ -18,7 +21,23 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lib import arch as archmod  # noqa: E402
-from lib import collect, collect2, gitio, transcript  # noqa: E402
+from lib import collect, collect2, gitio, session, transcript  # noqa: E402
+
+
+def session_digest(a):
+    try:
+        if not a.transcript:
+            repo = os.path.abspath(a.repo)
+            print(collect2.format_candidates(repo, transcript.candidates(repo)))
+            return 0
+        text, warns = session.digest(transcript.safe_path(a.transcript))
+        print(text)
+        for w in warns:
+            print('warning: ' + w, file=sys.stderr)
+        return 0
+    except gitio.ExplainError as e:
+        print('error: %s' % e, file=sys.stderr)
+        return 2
 
 
 def main(argv=None):
@@ -26,10 +45,13 @@ def main(argv=None):
     ap.add_argument('range', nargs='?')
     ap.add_argument('--repo', default='.')
     ap.add_argument('--v2', action='store_true')
+    ap.add_argument('--session', action='store_true', help='digest a whole session instead of a diff')
     ap.add_argument('--transcript')
     ap.add_argument('--path', action='append', default=[], metavar='PATH', help='limit to this repo-relative folder or file (repeatable)')
     ap.add_argument('--slug', help='run folder name (after the timestamp)')
     a = ap.parse_args(argv)
+    if a.session:
+        return session_digest(a)
     try:
         repo = gitio.toplevel(os.path.abspath(a.repo))
         scope = gitio.normalize_scope(repo, a.path)

@@ -3,7 +3,7 @@ tied to the diff, the code, the architecture map or the session transcript. Retu
 import re
 
 from . import arch as archmod
-from . import gitio, transcript
+from . import gitio, ground, transcript
 from .refs import Verifier
 
 SCHEMA = 'explain-change/2'
@@ -61,7 +61,6 @@ def validate(doc, repo, transcript_path=None, scope=None):
 def _validate(doc, repo, transcript_path=None, scope=None):
     errs, warns = [], []
     stats = {'version': 2, 'warnings': warns}
-    queries = []  # (transcript.Query, path, what)
     module_refs = []  # (path, list of module ids)
     counts = {'verified': 0, 'inferred': 0}
     unverified = []
@@ -164,19 +163,12 @@ def _validate(doc, repo, transcript_path=None, scope=None):
 
     stats['transcript'] = tpath is not None  # False: nothing was checked against a session (the page says so)
 
-    def query(q, path):
-        queries.append((q, path))
-        return q
+    def on_inferred(path):
+        counts['inferred'] += 1
+        stats.setdefault('inferred', []).append(path)
 
-    def tid_of(src, path):
-        t = src.get('transcript', 'main')
-        if not isinstance(t, str) or not (t == 'main' or transcript.AGENT_ID.match(t)):
-            err(path + '.transcript', '"main" or an agent id like "agent-a1b2c3"')
-            return None
-        if tpath and t not in tfiles:
-            err(path + '.transcript', 'unknown transcript %r; this session has: %s' % (t, ', '.join(tfiles)))
-            return None
-        return t
+    grd = ground.Grounder(err, tpath, tfiles, unverified, on_inferred)
+    queries, query = grd.queries, grd.query
 
     def ref_ok(r, path, side=None):
         if isinstance(r, dict) and side and not r.get('side') and not (isinstance(r.get('file'), str) and r['file'] in ver.deleted):
@@ -190,49 +182,9 @@ def _validate(doc, repo, transcript_path=None, scope=None):
 
     def source(src, path, allow, side=None, sink=None):
         """Validate one Source object; returns its kind, or None when invalid."""
-        if not isinstance(src, dict):
-            err(path, 'source must be an object {kind, ...}')
-            return None
-        kind = 'inferred' if src.get('inferred') is True and 'kind' not in src else src.get('kind')
-        if kind not in allow:
-            err(path + '.kind', 'one of %s here' % (allow,))
-            return None
-        if kind == 'inferred':
-            counts['inferred'] += 1
-            stats.setdefault('inferred', []).append(path)
-        elif kind == 'code':
-            ref_ok(src.get('ref'), path + '.ref', side)
-        elif kind in ('transcript', 'user_reported', 'report'):
-            q = text(src, 'quote', path)
-            if kind == 'report':
-                stats['reported'] = stats.get('reported', 0) + 1
-            if q and tpath:
-                tid = 'main' if kind == 'user_reported' else tid_of(src, path)
-                if tid:
-                    roles = {'user_reported': ('user',), 'report': ('report', 'assistant')}.get(kind, QUOTE_ROLES)
-                    query(transcript.Query('quote', tid, roles, text=q), path + '.quote')
-            elif q:
-                unverified.append(path)
-            if sink is not None and q:
-                sink.append(q)
-        elif kind == 'url':
-            u = src.get('url')
-            if not isinstance(u, str) or not re.match(r'https?://[^\s]+\Z', u):
-                err(path + '.url', 'needs an http(s) URL')
-            elif tpath:
-                query(transcript.Query('url', 'main', URL_ROLES, text=u), path + '.url')
-            else:
-                unverified.append(path)
-        elif kind == 'tool_call':
-            c, x = text(src, 'command', path), text(src, 'excerpt', path)
-            if c and x and tpath:
-                tid = tid_of(src, path)
-                if tid:
-                    query(transcript.Query('tool', tid, command=c, excerpt=x), path)
-            elif c and x:
-                unverified.append(path)
-            if sink is not None and x:
-                sink.append(x)
+        kind = grd.source(src, path, allow, sink, code=lambda s, p: ref_ok(s.get('ref'), p + '.ref', side))
+        if kind == 'report':
+            stats['reported'] = grd.reported
         return kind
 
     def grounding(obj, path, block, side=None, sink=None):
@@ -605,23 +557,8 @@ def _validate(doc, repo, transcript_path=None, scope=None):
                 err(path, 'unknown module id %r (not in map.modules)' % x)
 
     # ---- a credential never reaches the doc, the page or this report
-    def sweep(node, path, in_snippet=False):
-        """in_snippet: a code line quoted from the diff. Code names its own variables (`password: z.string()`), so only a credential
-        learned from the session counts there, not a label."""
-        if isinstance(node, str):
-            if transcript.contains_learned(node):
-                err(path, 'contains a password, token or key that the session shows; the page would show it. Leave the secret out')
-            elif not in_snippet and transcript.has_secret(node):
-                err(path, 'contains what looks like a password, token or key; the page would show it. Quote another part of the message and leave the secret out')
-        elif isinstance(node, dict):
-            for k, v in node.items():
-                if isinstance(k, str) and transcript.contains_learned(k):
-                    err(path, 'a key contains a password, token or key that the session shows')
-                sweep(v, '%s.%s' % (path, k) if path else str(k), k == 'snippet' and bool(re.search(r'(^|\.)refs?(\[\d+\])?$', path)))
-        elif isinstance(node, list):
-            for i, v in enumerate(node):
-                sweep(v, '%s[%d]' % (path, i), in_snippet)
-    sweep(doc, '')
+    # Code names its own variables (`password: z.string()`), so a quoted diff line is checked for learned credentials only.
+    ground.sweep(doc, err, is_snippet=lambda path, k: k == 'snippet' and bool(re.search(r'(^|\.)refs?(\[\d+\])?$', path)))
 
     # ---- each fact in full in one block: a request's result must not repeat logic or evidence
     def words(v):
@@ -647,29 +584,10 @@ def _validate(doc, repo, transcript_path=None, scope=None):
             warns.append('requests[%d].result repeats %d or more words in a row of %s: say it once there and link it with "see"' % (i, DUP_RUN, hit))
 
     # ---- transcript lookups (one streaming pass per transcript file)
+    grd.resolve(warns)
     if tpath and queries:
-        qs = [q for q, _ in queries]
-        tstats = transcript.resolve_queries(tpath, qs)
-        for tid, st in tstats.items():
-            w = st.warning('transcript %s' % tid)
-            if w:
-                warns.append(w)
-        for q, path in queries:
-            if q.too_short():
-                err(path, 'too short to ground anything (at least %d characters)' % transcript.MIN_NEEDLE)
-            elif q.found:
-                continue
-            elif q.kind == 'quote':
-                err(path, 'quote not found in %s of transcript %s: %r' % (
-                    'a message of the user' if q.roles == {'user'} else 'any message', q.tid, q.text[:80]))
-            elif q.kind == 'url':
-                err(path, 'URL not found anywhere in the transcript: %s' % q.text[:100])
-            elif q.command_seen:
-                err(path, 'the result excerpt is not in the result of the call that ran this command (transcript %s)' % q.tid)
-            else:
-                err(path, 'command not found in any tool call of transcript %s: %r (only a Bash call that ran it counts, not a command inside a worker brief or a written file)' % (q.tid, q.command[:80]))
         for path, qs_, by_hand in passed_runs:
-            if qs_ and not by_hand and all(q.found and not q.found_ok for q in qs_):
+            if not by_hand and ground.only_errors(qs_):
                 err(path + '.result', '"passed" rests on tool calls whose result is an error (is_error); an errored run cannot back a pass (use "failed" or "mixed")')
     stats['verified_in_transcript'] = sum(1 for q, _ in queries if q.found)
     stats['unverified'] = len(unverified)

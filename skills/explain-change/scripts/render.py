@@ -14,7 +14,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lib import arch as archmod  # noqa: E402
-from lib import check2, collect2, gitio, page, page2, transcript  # noqa: E402
+from lib import check2, check_session, collect2, gitio, page, page2, transcript  # noqa: E402
 from validate import load_and_validate  # noqa: E402
 
 
@@ -22,6 +22,14 @@ def v2(path):
     try:
         with open(path, encoding='utf-8') as fh:
             return check2.is_v2(json.load(fh))
+    except (OSError, ValueError):
+        return False
+
+
+def session_doc(path):
+    try:
+        with open(path, encoding='utf-8') as fh:
+            return check_session.is_session(json.load(fh))
     except (OSError, ValueError):
         return False
 
@@ -39,6 +47,9 @@ def main(argv=None):
     try:
         here = os.path.dirname(os.path.abspath(a.explain_json))
         out = os.path.abspath(a.out or os.path.join(here, 'index.html'))
+        if session_doc(a.explain_json):
+            print('error: render.py does not render explain-session/1 docs; check one with validate.py', file=sys.stderr)
+            return 2
         if v2(a.explain_json):
             return render_v2(a, out)
         doc, errs, stats = load_and_validate(a.explain_json, a.repo)

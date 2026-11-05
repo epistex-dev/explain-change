@@ -78,4 +78,8 @@ Give the user the absolute path of `index.html` and the validate counts line. Op
 
 Done when the user holds the path and the page is open, or no preview tool exists and you said so.
 
+## 8. Whole session
+
+When the user wants the context of a whole session or of several tasks, not one change, read [references/session-schema.md](references/session-schema.md) and follow it with `collect.py --session`. Done when `validate.py` prints `ok` for the session doc.
+
 Docs with `version` absent or 1 still validate and render with the older report page (`references/explain-schema.md`, top part).
