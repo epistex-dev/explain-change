@@ -3,6 +3,7 @@
 
 usage: collect.py [<base>..<head> | <commit>] [--repo PATH] [--v2] [--transcript FILE] [--format auto|claude|copilot|codex|opencode|gemini|cursor-cli|cursor-ide] [--path DIR_OR_FILE]... [--slug TEXT]
        collect.py --session [--transcript FILE] [--format ...] [--repo PATH]
+       collect.py --flow [--path DIR_OR_FILE]... [--slug TEXT] [--repo PATH]
 --path (repeatable) limits the diff, the map and the validator to those repo-relative paths; the scope is stored in summary.json.
 --slug TEXT names the run folder; without it the most common subject among the commits that touch the scope does.
 Default range: uncommitted changes vs HEAD when there are any, else the last commit.
@@ -13,6 +14,8 @@ of the user's messages and the test-like tool calls). A transcript is read only 
 detected from the file; --format names it. A file outside every harness folder that no supported format recognises exits 1 with one line naming the formats; a directory exits 2.
 --session prints a digest of a whole session (numbered user turns, tool calls by turn, repos touched, outward actions) for an
 explain-session/1 doc; it writes nothing and needs no diff. Without --transcript it lists the candidate sessions.
+--flow collects for an explain-flow/1 doc (references/explain-flow-schema.md): the full SHA of HEAD, the modules, the files under each --path and
+RUN_DIR; it needs no diff, never exits 3 and writes only summary.json.
 Creates <repo>/.explain/<YYYYMMDD-HHMM>-<slug>/ with summary.json and diff.patch, prints a summary plus
 `RUN_DIR=<path>`. Exit 3 and no directory when the range has no changes.
 """
@@ -23,7 +26,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lib import arch as archmod  # noqa: E402
-from lib import collect, collect2, gitio, neutral, session, transcript  # noqa: E402
+from lib import collect, collect2, collect_flow, gitio, neutral, session, transcript  # noqa: E402
 
 
 def session_digest(a):
@@ -48,6 +51,7 @@ def main(argv=None):
     ap.add_argument('--repo', default='.')
     ap.add_argument('--v2', action='store_true')
     ap.add_argument('--session', action='store_true', help='digest a whole session instead of a diff')
+    ap.add_argument('--flow', action='store_true', help='collect for an explain-flow/1 doc: HEAD, modules and files, no diff')
     ap.add_argument('--transcript')
     ap.add_argument('--format', default='auto', choices=neutral.CHOICES, help='transcript format (default: detected from the file)')
     ap.add_argument('--path', action='append', default=[], metavar='PATH', help='limit to this repo-relative folder or file (repeatable)')
@@ -55,6 +59,13 @@ def main(argv=None):
     a = ap.parse_args(argv)
     if a.session:
         return session_digest(a)
+    if a.flow:
+        try:
+            repo = gitio.toplevel(os.path.abspath(a.repo))
+            return collect_flow.run(repo, gitio.normalize_scope(repo, a.path), a.slug)
+        except (gitio.ExplainError, archmod.ArchError) as e:
+            print('error: %s' % e, file=sys.stderr)
+            return 2
     try:
         repo = gitio.toplevel(os.path.abspath(a.repo))
         scope = gitio.normalize_scope(repo, a.path)
