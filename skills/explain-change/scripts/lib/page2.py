@@ -468,6 +468,8 @@ class Builder:
         nrep = sum(1 for r in ran if self.reported_only(r))
         nown = sum(1 for r in ran if self.own_account(r))
         out = [self.concl('evidence')]
+        if not self.session_checked and self.reason():  # the full reason lives here, so a long one never changes the header
+            out.append('<p class="hint nt-why">%s</p>' % esc(t['unchecked_why'] + self.reason()))
         if nrep:
             out.append('<p class="hint">%s</p>' % esc(count(t, 'reported_summary', nrep)))
         if nown:
@@ -576,7 +578,7 @@ class Builder:
             'hidden': ('<p class="hidden-note">%s</p>' % esc(count(t, 'hidden_note', hidden))) if hidden else '',
             'panel_label': esc(t['panel_label']), 'toggle_label': esc(t['toggle_label']), 'i_sparkles': ic('sparkles'), 'i_x': ic('x'),
             'tabs_label': esc(t['tabs_label']), 'tabs': tabs, 'nc_clear': esc(t['nc_clear']), 'filter_label': esc(t['filter_label']), 'panels': panels,
-            'unchecked': ('<span class="chip warn unchecked">%s%s</span>' % (ic('triangle-alert'), esc(t['unchecked'] + (': ' + self.reason() if self.reason() else '')))) if not self.session_checked else '',
+            'unchecked': ('<span class="chip warn unchecked">%s%s</span>' % (ic('triangle-alert'), esc(t['unchecked']))) if not self.session_checked else '',
             'data': jdump({'edges': edges, 't': js_t}), 'router': _read(os.path.join(UI, 'route.js')), 'js': _read(os.path.join(UI, 'page2.js'))}
 
 

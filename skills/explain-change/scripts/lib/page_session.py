@@ -14,8 +14,9 @@ from .i18n2 import STR2, count
 from .page2 import UI, _read, esc, font_faces, ic, jdump
 from .transcript import redact
 
-NT_CSS = ('.nt{display:flex;align-items:flex-start;gap:6px;margin:var(--s3) 0 0;color:var(--text-2);font-size:var(--fs-sm)}\n'
-          '.nt .ic{flex:none;width:16px;height:16px;color:var(--warn)}\n')  # only a page with no session behind it carries these two rules, so a checked page stays as it was
+NT_CSS = ('.srow{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2) var(--s4)}\n'
+          '.nt{display:flex;align-items:flex-start;gap:6px;flex:1 1 200px;max-width:52ch;min-width:0;margin:0;color:var(--text-2);font-size:var(--fs-sm)}\n'
+          '.nt .ic{flex:none;width:16px;height:16px;margin-top:1px;color:var(--warn)}\n')  # only a page with no session behind it carries these rules, so a checked page stays as it was
 
 KINDS = ('asked', 'decided', 'redirected', 'blocked', 'done', 'outward', 'in_progress')
 KIND_ICON = {'asked': 'message', 'decided': 'sparkles', 'redirected': 'redirect', 'blocked': 'ban', 'done': 'circle-check', 'outward': 'upload', 'in_progress': 'circle-dashed'}
@@ -123,8 +124,12 @@ class Builder:
             counts[th['status']] = counts.get(th['status'], 0) + 1
         key = ''.join('<li class="st-%s">%s<b class="cnt">%d</b><span class="lb">%s</span></li>' % (st, ic(STATUS_ICON[st]), counts[st], esc(t['ses_st_' + st]))
                       for st in STATUSES if st in counts)
-        return ('<section class="card b-sum" aria-labelledby="sum"><p class="slogan">%s</p><h1 class="sum" id="sum">%s</h1><ul class="skey" aria-label="%s">%s</ul>%s</section>'
-                % (esc(t['ses_slogan']), txt(self.doc['summary']), esc(t['ses_status_label']), key, self.not_checked()))
+        ul = '<ul class="skey" aria-label="%s">%s</ul>' % (esc(t['ses_status_label']), key)
+        note = self.not_checked()
+        if note:  # beside the status key, in the room right of it: the note adds almost nothing to the first screen
+            ul = '<div class="srow">%s%s</div>' % (ul, note)
+        return ('<section class="card b-sum" aria-labelledby="sum"><p class="slogan">%s</p><h1 class="sum" id="sum">%s</h1>%s</section>'
+                % (esc(t['ses_slogan']), txt(self.doc['summary']), ul))
 
     def not_checked(self):
         """One plain line when no session was read: the page says so and gives the doc's reason."""

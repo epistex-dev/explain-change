@@ -262,11 +262,15 @@ class ChangePageNote(V2Case):
 
     def test_vi_note_has_the_reason(self):
         t = text_of(self.render('vi'))
-        self.assertIn('Chưa đối chiếu với phiên làm việc: ' + REASON, t)
+        self.assertIn('Chưa đối chiếu với phiên làm việc', t)
+        self.assertNotIn('Chưa đối chiếu với phiên làm việc: ', t)  # the badge is the short form; the reason is its own line in the Evidence tab
+        self.assertIn('Không có phiên làm việc để đối chiếu: ' + REASON, t)
 
     def test_en_note_has_the_reason(self):
         t = text_of(self.render('en'))
-        self.assertIn('Not checked against the session: ' + REASON, t)
+        self.assertIn('Not checked against the session', t)
+        self.assertNotIn('Not checked against the session: ', t)
+        self.assertIn('No session to compare with: ' + REASON, t)
 
     def test_a_checked_page_has_no_note(self):
         html = page2.render(self.doc(), self.repo, session_checked=True)

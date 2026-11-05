@@ -460,6 +460,72 @@ class Dom(unittest.TestCase):
         self.assertTrue(r['cluster']['back'])
 
 
+SIZES = r"""
+<script>
+setTimeout(() => {
+  const r = s => document.querySelector(s).getBoundingClientRect();
+  const marks = [...document.querySelectorAll('.lane')].map(l => [...l.querySelectorAll('.mk')].filter(b => !b.hidden).map(b => b.getBoundingClientRect().bottom));
+  const out = {lanes: marks.length, lastBottom: marks.length ? Math.max(...marks[marks.length - 1]) : null,
+               header: document.querySelector('header.top') ? r('header.top').height : null, overflowX: document.documentElement.scrollWidth - innerWidth};
+  const pre = document.createElement('pre'); pre.id = 'probe'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
+}, 600);
+</script>"""
+LONG = 'a long reason that explains in some detail why this harness keeps no log the skill can read, ' * 3
+
+
+def measure(tmp, html, width, height=900):
+    """Open a page headless at width x height and return the SIZES probe."""
+    f = os.path.join(tmp, 'm%d.html' % width)
+    with open(f, 'w', encoding='utf-8') as fh:
+        fh.write(html.replace('</body>', SIZES + '</body>'))
+    prof = tempfile.mkdtemp(dir=tmp)
+    p = subprocess.run([chromium(), '--headless=new', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--user-data-dir=' + prof, '--hide-scrollbars',
+                        '--window-size=%d,%d' % (width, height), '--virtual-time-budget=4000', '--dump-dom', 'file://' + f],
+                       capture_output=True, text=True, timeout=120, env={**os.environ, 'TMPDIR': '/tmp'})
+    m = re.search(r'<pre id="probe">(.*?)</pre>', p.stdout, re.S)
+    assert m, 'no probe output: ' + p.stderr[-400:]
+    import html as h
+    return json.loads(h.unescape(m.group(1)))
+
+
+@unittest.skipUnless(chromium(), 'needs a chromium, chrome or brave binary')
+class NoSessionLayout(unittest.TestCase):
+    """The note on a page with no session must not cost the first screen anything."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.mkdtemp(prefix='ns-', dir='/tmp')
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.tmp, ignore_errors=True)
+
+    def change(self, reason, width, lang='en'):
+        d = json.load(open(CHANGE, encoding='utf-8'))
+        d['lang'] = lang
+        if reason is None:
+            d.pop('transcript_unavailable', None)
+        else:
+            d['transcript_unavailable'] = reason
+        return measure(self.tmp, page2.render(d, validated=False, session_checked=False), width)
+
+    def test_session_page_with_the_note_keeps_every_lane_on_a_1440_x_900_screen(self):
+        d = sample()
+        self.assertTrue(d['transcript_unavailable'])
+        r = measure(self.tmp, page_session.render(d, {}, session_checked=False), 1440)
+        self.assertEqual(r['lanes'], len(d['themes']))
+        self.assertLessEqual(r['lastBottom'], 900, r)
+        checked = measure(self.tmp, page_session.render(d, {}, session_checked=True), 1440)
+        self.assertLessEqual(r['lastBottom'], checked['lastBottom'] + 1, (r, checked))  # the note adds no height at all
+
+    def test_a_200_character_reason_never_changes_the_change_page_header(self):
+        for width in (1440, 800):
+            base = self.change(None, width)['header']
+            self.assertEqual(self.change('x' * 200, width)['header'], base, width)
+            self.assertEqual(self.change(LONG[:200], width)['header'], base, width)
+            self.assertEqual(self.change(LONG[:200], width, 'vi')['header'], self.change(None, width, 'vi')['header'], width)
+
+
 class Cli(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory(prefix='sp-cli-')

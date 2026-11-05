@@ -1208,17 +1208,17 @@ _NO_TRANSCRIPT = [
         ('no transcript: an unvalidated session page learns from its quotes', 'scripts/render.py',
          "        else:\n            transcript.learn_quotes(doc)\n        print('warning: not validated (--no-validate); nothing was checked against the transcript'",
          "        print('warning: not validated (--no-validate); nothing was checked against the transcript'", 'UnvalidatedRender.test_session_page'),
-        ('no transcript: the badge gives the reason', P2, "esc(t['unchecked'] + (': ' + self.reason() if self.reason() else ''))", "esc(t['unchecked'])",
+        ('no transcript: the Evidence tab gives the reason', P2, "esc(t['unchecked_why'] + self.reason())", "esc(t['unchecked_why'])",
          'ChangePageNote.test_en_note_has_the_reason'),
-        ('no transcript: the badge escapes the reason', P2, "esc(t['unchecked'] + (': '", "(t['unchecked'] + (': '", 'HostileReason.test_html_in_the_reason_is_escaped_on_both_pages'),
+        ('no transcript: the reason is escaped', P2, "esc(t['unchecked_why'] + self.reason())", "(t['unchecked_why'] + self.reason())", 'HostileReason.test_html_in_the_reason_is_escaped_on_both_pages'),
         ('no transcript: the badge cuts a long reason', P2, "        return r[:MAX_REASON - 1] + '…' if len(r) > MAX_REASON else r", '        return r',
          'HostileReason.test_a_page_rendered_without_validation_still_caps_the_reason'),
         ('no transcript: the badge hides a credential in the reason', P2, "r = redact(' '.join(r.split())) if isinstance(r, str) else ''", "r = ' '.join(r.split()) if isinstance(r, str) else ''",
          'HostileReason.test_a_credential_in_the_reason_of_an_unvalidated_page_is_hidden'),
         ("no transcript: a run the session would prove is the agent's own account", P2, '        return not self.session_checked and bool(s) and any(', '        return False and bool(s) and any(',
          'ChangePageNote.test_claims_that_need_the_session_say_they_are_the_agents_account'),
-        ('no transcript: a checked page has no note', P2, "'unchecked': ('<span class=\"chip warn unchecked\">%s%s</span>' % (ic('triangle-alert'), esc(t['unchecked'] + (': ' + self.reason() if self.reason() else '')))) if not self.session_checked else ''",
-         "'unchecked': ('<span class=\"chip warn unchecked\">%s%s</span>' % (ic('triangle-alert'), esc(t['unchecked'] + (': ' + self.reason() if self.reason() else '')))) if True else ''",
+        ('no transcript: a checked page has no note', P2, "esc(t['unchecked']))) if not self.session_checked else ''",
+         "esc(t['unchecked']))) if True else ''",
          'ChangePageNote.test_a_checked_page_has_no_note'),
         ('no transcript: the session page gives the note and the reason', PS, "        if self.session_checked:\n            return ''\n        r = self.doc.get", "        if True:\n            return ''\n        r = self.doc.get",
          'SessionPage.test_the_note_has_the_reason_in_both_languages'),
@@ -1238,6 +1238,12 @@ _NO_TRANSCRIPT = [
          'Docs.test_skill_md_has_the_no_transcript_path_for_each_harness_without_a_reader'),
 ]
 MUTATIONS += [(name, rel, old, new, 'test_no_transcript.' + test) for name, rel, old, new, test in _NO_TRANSCRIPT]
+MUTATIONS += [
+    ('no transcript: the badge stays short (header never wraps)', P2, "esc(t['unchecked']))) if not self.session_checked", "esc(t['unchecked'] + ': ' + self.reason()))) if not self.session_checked",
+     'test_page_session.NoSessionLayout.test_a_200_character_reason_never_changes_the_change_page_header'),
+    ('no transcript: the session note shares the status row', PS, "ul = '<div class=\"srow\">%s%s</div>' % (ul, note)", "ul = ul + note",
+     'test_page_session.NoSessionLayout.test_session_page_with_the_note_keeps_every_lane_on_a_1440_x_900_screen'),
+]
 
 def main():
     bad = 0
