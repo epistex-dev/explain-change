@@ -12,6 +12,7 @@ from . import outward
 from .ground import MAX_REASON
 from .i18n2 import STR2, count
 from .page2 import UI, _read, esc, font_faces, ic, jdump
+from .themes import THEME_KEY, THEMES, head_script, picker  # noqa: F401  (re-exported: the session tests and render.py read them here)
 from .transcript import redact
 
 NT_CSS = ('.srow{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2) var(--s4)}\n'
@@ -22,8 +23,6 @@ KINDS = ('asked', 'decided', 'redirected', 'blocked', 'done', 'outward', 'in_pro
 KIND_ICON = {'asked': 'message', 'decided': 'sparkles', 'redirected': 'redirect', 'blocked': 'ban', 'done': 'circle-check', 'outward': 'upload', 'in_progress': 'circle-dashed'}
 STATUSES = ('done', 'done_by_user', 'done_needs_you', 'in_progress', 'not_done')
 STATUS_ICON = {'done': 'circle-check', 'done_by_user': 'user', 'done_needs_you': 'triangle-alert', 'in_progress': 'circle-dashed', 'not_done': 'circle-x'}
-THEMES = ('navy', 'ocean', 'plum', 'graphite', 'pearl')  # colour themes: one [data-theme] block each in session.css; the first is the default
-THEME_KEY = 'explain-change-theme'  # localStorage key of the reader's pick
 OUT_ICON = {'repo_created': 'plus', 'push': 'upload', 'force_push': 'triangle-alert', 'history_rewrite': 'history', 'delete': 'trash', 'deploy': 'globe',
             'pr': 'branch', 'message': 'message', 'other': 'circle-help'}
 
@@ -257,16 +256,6 @@ class Builder:
                     n, n, n, self.status_chip(th['status']), esc(t['ses_close']), ic('x'), n, txt(th['title']), txt(th['outcome']), esc(t['ses_journey_h']), items,
                     ('<div class="links">%s</div>' % ''.join(links)) if links else '', t2))
 
-    def theme_head(self):
-        """Runs in <head>, before the style and the body: applies the reader's stored pick (or the baked default) so the first paint is in the right theme."""
-        return ("<script>(function(){var d=document.documentElement,a=%s,t=d.getAttribute('data-theme');try{var s=localStorage.getItem('%s');if(a.indexOf(s)>-1)t=s}catch(e){}"
-                "d.setAttribute('data-theme',t);d.classList.add('js')})()</script>" % (json.dumps(list(THEMES)), THEME_KEY))
-
-    def picker(self):
-        t = self.t
-        opts = ''.join('<option value="%s"%s>%s</option>' % (k, ' selected' if k == self.theme else '', esc(t['ses_theme_' + k])) for k in THEMES)
-        return '<label class="picker"><span>%s</span><select id="skin" name="skin">%s</select></label>' % (esc(t['ses_theme_label']), opts)
-
     def nav(self):
         t = self.t
         links = (('sec-needs', 'ses_sec_needs'), ('journey', 'ses_sec_journey'), ('sec-dec', 'ses_sec_decided'), ('sec-out', 'ses_sec_out'))
@@ -304,6 +293,6 @@ class Builder:
 </script>
 </body>
 </html>
-''' % {'lang': t['html_lang'], 'theme': self.theme, 'title': txt(self.doc['title']), 'head_js': self.theme_head(), 'css': _css() + ('' if self.session_checked else NT_CSS), 'sprite': _sprite(), 'skip': esc(t['ses_skip']),
-       'i_spark': ic('sparkles'), 'i_layout': ic('layout'), 'page': esc(t['ses_page']), 'nav': self.nav(), 'picker': self.picker(), 'band': band, 'journey': journey,
+''' % {'lang': t['html_lang'], 'theme': self.theme, 'title': txt(self.doc['title']), 'head_js': head_script(), 'css': _css() + ('' if self.session_checked else NT_CSS), 'sprite': _sprite(), 'skip': esc(t['ses_skip']),
+       'i_spark': ic('sparkles'), 'i_layout': ic('layout'), 'page': esc(t['ses_page']), 'nav': self.nav(), 'picker': picker(self.t, self.theme), 'band': band, 'journey': journey,
        'data': jdump(self.data), 'fit': _read(os.path.join(UI, 'fit.js')), 'js': _read(os.path.join(UI, 'session.js'))}
