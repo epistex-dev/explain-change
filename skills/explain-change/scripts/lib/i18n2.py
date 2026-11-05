@@ -97,6 +97,7 @@ STR2 = {
         'fl_no_err': 'Bước này không có lỗi riêng của nó.',
         'fl_step_n': 'bước %d', 'fl_go_step': 'thì sang %s', 'fl_go_problems': 'thì kết thúc ở danh sách vấn đề', 'fl_go_end': 'thì luồng kết thúc tốt',
         'fl_then_step': 'Sang %s', 'fl_then_end': 'Luồng kết thúc tốt',
+        'fl_hands_to': 'Chuyển tiếp cho %s',
         'fl_foot': 'Đã đối chiếu với code ở commit %s, ngày %s', 'fl_foot_nd': 'Đã đối chiếu với code ở commit %s',
     },
     'en': {
@@ -201,6 +202,7 @@ STR2 = {
         'fl_no_err': 'This step has no error exit of its own.',
         'fl_step_n': 'step %d', 'fl_go_step': 'then %s', 'fl_go_problems': 'then the flow ends in the problem list', 'fl_go_end': 'then the flow ends well',
         'fl_then_step': 'Then %s', 'fl_then_end': 'The flow ends well',
+        'fl_hands_to': 'Hands over to %s',
         'fl_foot': 'Checked against the code at commit %s, %s', 'fl_foot_nd': 'Checked against the code at commit %s',
     },
 }

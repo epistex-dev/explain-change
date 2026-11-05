@@ -10,6 +10,7 @@
    "id": "agent",
    "name": "Agent",
    "where": "outside",
+   "icon": "sparkles",
    "role": "Does the task, then writes the doc and names where each claim comes from.",
    "sources": [
     {
@@ -26,6 +27,7 @@
    "id": "you",
    "name": "You",
    "where": "outside",
+   "icon": "user",
    "role": "Read the page, or the list of problems when the doc is rejected.",
    "sources": []
   },
@@ -33,6 +35,7 @@
    "id": "checker",
    "name": "Doc checker",
    "where": "inside",
+   "icon": "shield-check",
    "role": "Reads the doc, turns claims into lookups and decides ok or rejected.",
    "sources": [
     {
@@ -49,6 +52,7 @@
    "id": "reader",
    "name": "Session reader",
    "where": "inside",
+   "icon": "file-search",
    "role": "Opens the session log and finds quotes and calls inside it.",
    "sources": [
     {
@@ -65,6 +69,7 @@
    "id": "mask",
    "name": "Secret mask",
    "where": "inside",
+   "icon": "key-round",
    "role": "Learns the secrets the session shows and keeps them out of the doc and the page.",
    "sources": [
     {
@@ -81,6 +86,7 @@
    "id": "writer",
    "name": "Page writer",
    "where": "inside",
+   "icon": "monitor",
    "role": "Checks the doc once more, then draws the page.",
    "sources": [
     {
@@ -97,6 +103,7 @@
    "id": "log",
    "name": "Session log",
    "where": "outside",
+   "icon": "database",
    "role": "The harness's own record of the session: your messages, commands and their output.",
    "sources": []
   }
@@ -236,6 +243,9 @@
    "id": "s4",
    "name": "Open the log",
    "part": "reader",
+   "reads": [
+    "log"
+   ],
    "takes_in": "The log path.",
    "gives_back": "The log's messages, commands and outputs in one common shape, whichever harness wrote it.",
    "sources": [
@@ -437,6 +447,9 @@
    "id": "s7",
    "name": "Match the claims",
    "part": "reader",
+   "reads": [
+    "log"
+   ],
    "takes_in": "The lookups and the log.",
    "gives_back": "Each lookup marked found or not found, after one pass over the log.",
    "sources": [

@@ -182,6 +182,105 @@ class Sources(FlowCase):
         self.assertTrue(all(ln.startswith('steps[0].sources[') for ln in p.stdout.splitlines()))
 
 
+class WrongTypes(FlowCase):
+    """A field of the wrong type is one `path: reason` line and exit 1, never a traceback (an unhashable value hit a dict lookup)."""
+    WRONG = (['x'], {'a': 1}, 7, None)
+    OPTIONAL = ('branches', 'errors', 'sources', 'icon', 'reads')  # absent or null is the same as not given
+
+    def test_step_part_that_is_a_list_or_dict(self):
+        for v in (['x'], {'a': 1}):
+            with self.subTest(v):
+                out = self.assertRejected(lambda d: d['steps'][0].update(part=v), 'steps[0].part: must be the id of a part of this doc')
+                self.assertEqual(len(out.splitlines()), 1, out)
+
+    def test_branch_target_that_is_a_list_or_dict(self):
+        for v in (['a'], {'a': 1}):
+            with self.subTest(v):
+                out = self.assertRejected(lambda d: d['steps'][1]['branches'][0].update(to=v), 'steps[1].branches[0].to: must be a step id')
+                self.assertTrue(all(ln.startswith(('steps[1].branches[0].to:', 'steps')) for ln in out.splitlines()), out)
+
+    def test_source_path_with_a_lone_surrogate(self):
+        out = self.assertRejected(lambda d: d['steps'][0]['sources'][0].update(path='a\ud800b'), 'steps[0].sources[0].path: must be a repo-relative path')
+        self.assertEqual(len(out.splitlines()), 1, out)
+
+    def test_visible_text_with_a_lone_surrogate(self):
+        for setter in (lambda d, v: d.update(title=v), lambda d, v: d.update(question=v), lambda d, v: d['parts'][0].update(role=v),
+                       lambda d, v: d['steps'][0].update(takes_in=v), lambda d, v: d['steps'][1]['branches'][0].update(when=v),
+                       lambda d, v: d['steps'][1]['errors'][0].update(result=v)):
+            with self.subTest(setter):
+                out = self.assertRejected(lambda d: setter(d, 'bad \ud800 text'), 'cannot be written as UTF-8')
+                self.assertEqual(len(out.splitlines()), 1, out)
+
+    def paths(self, node, here=()):
+        yield here
+        if isinstance(node, dict):
+            for k, v in node.items():
+                yield from self.paths(v, here + (k,))
+        elif isinstance(node, list):
+            for i, v in enumerate(node):
+                yield from self.paths(v, here + (i,))
+
+    def test_every_field_given_a_list_dict_number_or_null_is_a_line_not_a_crash(self):
+        from lib import check_flow
+        base = self.good()
+        base['parts'][0]['icon'] = 'user'
+        base['steps'][2]['reads'] = ['checker']
+        self.assertEqual(check_flow.validate(copy.deepcopy(base), self.repo)[0], [])  # the starting point is clean, so every line below comes from the change
+        seen = 0
+        for path in self.paths(base):
+            if not path or path == ('kind',):
+                continue
+            for v in self.WRONG:
+                d = copy.deepcopy(base)
+                node = d
+                for k in path[:-1]:
+                    node = node[k]
+                node[path[-1]] = copy.deepcopy(v)
+                with self.subTest(path=path, value=v):
+                    errs, _ = check_flow.validate(d, self.repo)  # a crash here is the failure
+                    seen += 1
+                    ok_empty = (v is None and path[-1] in self.OPTIONAL) or (v == 7 and path[-2:-1] == ('lines',))  # 7 is a fine line number
+                    self.assertTrue(errs or ok_empty, 'accepted %r at %s' % (v, path))
+                    for e in errs:
+                        self.assertRegex(e, r'^[A-Za-z_$][\w\[\].]*: \S', e)
+                        self.assertNotIn('\n', e)
+        self.assertGreater(seen, 200)
+
+
+class PartIcons(FlowCase):
+    def test_a_known_icon_passes_and_an_unknown_one_is_one_line(self):
+        p = self.run_validate(self.doc(lambda d: d['parts'][1].update(icon='shield-check')))
+        self.assertEqual(p.returncode, 0, p.stdout)
+        out = self.assertRejected(lambda d: d['parts'][1].update(icon='rocket'), 'parts[1].icon: must be one of')
+        self.assertEqual(len(out.splitlines()), 1, out)
+
+    def test_the_allowlist_is_the_sprite_plus_the_flow_icons(self):
+        import re
+        from lib import check_flow
+        ui = os.path.join(SKILL, 'assets', 'ui')
+        have = set()
+        for f in ('icons.svg', 'session-icons.svg', 'flow-icons.svg'):
+            with open(os.path.join(ui, f), encoding='utf-8') as fh:
+                have |= set(re.findall(r'<symbol id="i-([a-z0-9-]+)"', fh.read()))
+        self.assertEqual(set(check_flow.ICONS), have)
+
+
+class Reads(FlowCase):
+    def test_reads_a_part_is_fine(self):
+        p = self.run_validate(self.doc(lambda d: d['steps'][0].update(reads=['caller'])))
+        self.assertEqual(p.returncode, 0, p.stdout)
+
+    def test_reads_must_be_a_list_of_part_ids(self):
+        self.assertRejected(lambda d: d['steps'][0].update(reads='caller'), 'steps[0].reads: must be a list of part ids')
+        self.assertRejected(lambda d: d['steps'][0].update(reads=['nobody']), 'steps[0].reads[0]: must be the id of a part of this doc')
+
+    def test_reads_its_own_part_is_refused(self):
+        self.assertRejected(lambda d: d['steps'][0].update(reads=['checker']), 'steps[0].reads[0]: is the part of the step itself')
+
+    def test_reads_twice_is_refused(self):
+        self.assertRejected(lambda d: d['steps'][0].update(reads=['caller', 'caller']), 'steps[0].reads[1]: duplicate')
+
+
 class Structure(FlowCase):
     def test_empty_steps(self):
         self.assertRejected(lambda d: d.update(steps=[]), 'steps: needs at least 1')

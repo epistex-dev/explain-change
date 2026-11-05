@@ -8,6 +8,10 @@ KIND = 'explain-flow/1'
 LANGS = ('vi', 'en')
 WHERES = ('inside', 'outside')
 EXITS = ('problems', 'end')
+# the names a part may give as `icon`: the symbols of assets/ui/icons.svg, session-icons.svg and flow-icons.svg (a test keeps this list equal to them)
+ICONS = ('arrow-right', 'ban', 'branch', 'bug', 'circle-check', 'circle-dashed', 'circle-help', 'circle-x', 'database', 'file-code', 'file-search', 'flask-conical',
+         'globe', 'history', 'key-round', 'layout', 'list', 'map', 'message', 'monitor', 'panel-right', 'panel-right-close', 'plus', 'redirect', 'server',
+         'shield-check', 'sparkles', 'trash', 'triangle-alert', 'undo', 'upload', 'user', 'x')
 ID = re.compile(r'[A-Za-z0-9][A-Za-z0-9_-]{0,39}\Z')
 SHA = re.compile(r'[0-9a-f]{40}([0-9a-f]{24})?\Z')
 MAX_SPAN = 80
@@ -28,6 +32,15 @@ def _int(v):
 
 def _str(v):
     return isinstance(v, str) and bool(v.strip())
+
+
+def _utf8(v):
+    """True when the string can be written as UTF-8 (a lone surrogate from a JSON escape such as \\ud800 cannot)."""
+    try:
+        v.encode('utf-8')
+    except UnicodeEncodeError:
+        return False
+    return True
 
 
 def code_reason(text):
@@ -100,6 +113,9 @@ def _validate(doc, repo):
         if not _str(v):
             err(p, 'required non-empty string')
             return None
+        if not _utf8(v):
+            err(p, 'has a character that cannot be written as UTF-8 (a lone surrogate); the page could not be saved')
+            return None
         if code:
             why = code_reason(v)
             if why:
@@ -144,7 +160,7 @@ def _validate(doc, repo):
         if not _str(fp):
             err(path + '.path', 'required non-empty string')
             ok = False
-        elif fp.startswith('/') or re.match(r'[A-Za-z]:', fp) or '\\' in fp or any(c in fp for c in '\0\n\r'):
+        elif fp.startswith('/') or re.match(r'[A-Za-z]:', fp) or '\\' in fp or any(c in fp for c in '\0\n\r') or not _utf8(fp):
             err(path + '.path', 'must be a repo-relative path with forward slashes, not an absolute one')
             ok = False
         elif any(seg in ('..', '.', '') for seg in fp.split('/')) or fp.startswith('-'):
@@ -211,6 +227,9 @@ def _validate(doc, repo):
         pid = ident(p, path, path)
         text(p, 'name', path)
         text(p, 'role', path)
+        icon = p.get('icon')
+        if icon is not None and not (isinstance(icon, str) and icon in ICONS):
+            err(path + '.icon', 'must be one of %s' % (', '.join(ICONS),))
         if p.get('where') not in WHERES:
             err(path + '.where', 'must be one of %s' % (WHERES,))
         sources(p, path, 1 if p.get('where') == 'inside' else 0)
@@ -235,7 +254,7 @@ def _validate(doc, repo):
         text(s, 'name', path)
         text(s, 'takes_in', path)
         text(s, 'gives_back', path)
-        if s.get('part') not in parts:
+        if not (isinstance(s.get('part'), str) and s['part'] in parts):
             err(path + '.part', 'must be the id of a part of this doc')
         sources(s, path, 1)
         for k, b in enumerate(items(s, 'branches', path)):
@@ -244,6 +263,16 @@ def _validate(doc, repo):
                 err(bp, 'must be {when, to}')
                 continue
             text(b, 'when', bp)
+        reads = s.get('reads')
+        if reads is not None and not isinstance(reads, list):
+            err(path + '.reads', 'must be a list of part ids')
+        for k, r in enumerate(reads if isinstance(reads, list) else []):
+            if not (isinstance(r, str) and r in parts):
+                err('%s.reads[%d]' % (path, k), 'must be the id of a part of this doc')
+            elif r == s.get('part'):
+                err('%s.reads[%d]' % (path, k), 'is the part of the step itself; list another part it reads from')
+            elif reads.index(r) != k:
+                err('%s.reads[%d]' % (path, k), 'duplicate %r' % r)
         for k, e in enumerate(items(s, 'errors', path)):
             ep = '%s.errors[%d]' % (path, k)
             if not isinstance(e, dict):
@@ -266,7 +295,7 @@ def _validate(doc, repo):
         brs = s.get('branches') if isinstance(s.get('branches'), list) else []
         for k, b in enumerate(brs):
             to = b.get('to') if isinstance(b, dict) else None
-            if to in EXITS or to in steps:
+            if isinstance(to, str) and (to in EXITS or to in steps):
                 outs.append(to)
             elif isinstance(b, dict):
                 err('steps[%d].branches[%d].to' % (i, k), 'must be a step id, "problems" or "end"; %r is neither' % (to,))

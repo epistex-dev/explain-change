@@ -9,13 +9,20 @@ import re
 
 from .i18n2 import STR2, count
 from .page2 import UI, _read, esc, font_faces, ic, jdump
-from .page_session import _sprite, plain, txt
+from .check_flow import ICONS
+from .page_session import _sprite as _base_sprite, plain, txt
 from .themes import THEME_KEY, THEMES, head_script, picker
 
 END = 'end'
 PROBLEMS = 'problems'
 OUT_ICON, IN_ICON = 'globe', 'file-code'
 IN_KINDS = ('service', 'data', 'ui', 'test')  # a decorative tint per part inside the system; the doc carries no kind
+
+
+def _sprite():
+    """The shared sprite, plus the icons only this page uses (assets/ui/flow-icons.svg); the other pages keep their sprite byte for byte."""
+    s = _base_sprite()
+    return s[:s.rindex('</svg>')] + _read(os.path.join(UI, 'flow-icons.svg')) + '</svg>'
 
 
 def _css():
@@ -35,7 +42,7 @@ def shape_problems(doc):
     need(isinstance(parts, list) and bool(parts) and all(isinstance(p, dict) and all(isinstance(p.get(k), str) for k in ('id', 'name', 'role')) and p.get('where') in ('inside', 'outside') for p in parts), 'parts')
     ids = {p['id'] for p in parts if isinstance(p, dict) and isinstance(p.get('id'), str)} if isinstance(parts, list) else set()
     need(isinstance(steps, list) and bool(steps) and all(
-        isinstance(s, dict) and all(isinstance(s.get(k), str) for k in ('id', 'name', 'takes_in', 'gives_back')) and s.get('part') in ids
+        isinstance(s, dict) and all(isinstance(s.get(k), str) for k in ('id', 'name', 'takes_in', 'gives_back')) and isinstance(s.get('part'), str) and s.get('part') in ids
         and isinstance(s.get('branches', []), list) and all(isinstance(b, dict) and isinstance(b.get('when'), str) and isinstance(b.get('to'), str) for b in s.get('branches', []))
         and isinstance(s.get('errors', []), list) and all(isinstance(e, dict) and isinstance(e.get('name'), str) and isinstance(e.get('result'), str) for e in s.get('errors', []))
         for s in steps), 'steps')
@@ -82,11 +89,37 @@ class Builder:
                     dest, nums = self.steps[self.num[to] - 1]['part'], [i + 1, self.num[to]]
                     if dest == s['part']:
                         continue
+                    src = s['part']
                 else:
-                    dest, nums = to, [i + 1]
-                e = out.setdefault((s['part'], dest), [s['part'], dest, [], to == PROBLEMS])
+                    src, dest, nums = s['part'], to, [i + 1]
+                e = out.setdefault((src, dest), [src, dest, [], to == PROBLEMS])
                 e[2] += [n for n in nums if n not in e[2]]
-        return list(out.values())
+            for r in s.get('reads') or []:  # a part the step reads from: the data goes from it to the step's part
+                if r in self.part and r != s['part']:
+                    e = out.setdefault((r, s['part']), [r, s['part'], [], False])
+                    if i + 1 not in e[2]:
+                        e[2].append(i + 1)
+        merged = {}
+        for (a, b), e in out.items():  # two parts that hand over to each other share one line with a head at both ends
+            if (b, a) in merged:
+                back = merged[(b, a)]
+                back[2] += [n for n in e[2] if n not in back[2]]
+                back[4] = 1
+            else:
+                merged[(a, b)] = e + [0]
+        return list(merged.values())
+
+    def hands_to(self, pid):
+        """Where the flow goes from a part, in the order the map lists them: other parts, then the problem list and the happy end."""
+        t, names = self.t, []
+        rank = {PROBLEMS: 1, END: 2}
+        for a, b, _, _, bi in sorted(self.edges(), key=lambda e: rank.get(e[1], 0)):
+            for x, y in ((a, b), (b, a) if bi else (None, None)):
+                if x == pid:
+                    label = plain(self.part[y]['name']) if y in self.part else t['fl_problems'] if y == PROBLEMS else t['fl_ok']
+                    if label not in names:
+                        names.append(label)
+        return names
 
     def ends(self):
         used = {to for i in range(len(self.steps)) for to in self.targets(i)}
@@ -105,7 +138,18 @@ class Builder:
         k = self.kind[p['id']]
         out = p['where'] == 'outside'
         return ('<div class="node f-node k-%s%s" data-mod="%s"%s style="--i:%d"><h3>%s%s</h3><p class="n-sum">%s</p>%s</div>' % (
-            k, ' out' if out else '', esc(p['id']), ' data-has' if p['id'] in self.of_part else '', i, ic(OUT_ICON if out else IN_ICON), txt(p['name']), txt(p['role']), self.pills(p)))
+            k, ' out' if out else '', esc(p['id']), ' data-has' if p['id'] in self.of_part else '', i, ic(self.icon(p)), txt(p['name']), txt(p['role']), self.next_line(p) + self.pills(p)))
+
+    def icon(self, p):
+        """The part's own icon, else the generic one of its zone."""
+        return p['icon'] if p.get('icon') in ICONS else OUT_ICON if p['where'] == 'outside' else IN_ICON
+
+    def next_line(self, p):
+        """The compact "to the next part" line: stands in for the map's lines where they are hidden (narrow screens, print, no script)."""
+        names = self.hands_to(p['id'])
+        if not names:
+            return ''
+        return '<p class="f-next" aria-label="%s">%s<span>%s</span></p>' % (esc(self.t['fl_hands_to'] % ', '.join(names)), ic('arrow-right'), esc(', '.join(names)))
 
     def zone(self, label, icon, parts, cls, start):
         if not parts:
@@ -130,10 +174,9 @@ class Builder:
         ends = self.ends()
         terms = ''.join('<span class="f-term %s" data-mod="%s">%s%s</span>' % (
             'bad' if k == PROBLEMS else 'ok', k, ic('triangle-alert' if k == PROBLEMS else 'circle-check'), esc(t['fl_problems'] if k == PROBLEMS else t['fl_ok'])) for k in ends)
-        svg = ('<svg class="a-edges" id="edges" aria-hidden="true"><defs>'
-               '<marker id="fl-ah" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto"><path d="M1 1.5 9 5 1 8.5z"/></marker>'
-               '<marker id="fl-ahb" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto"><path d="M1 1.5 9 5 1 8.5z"/></marker>'
-               '</defs></svg>')
+        heads = ''.join('<marker id="%s" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M0.5 1 9.5 5 0.5 9z"/></marker>' % m
+                        for m in ('fl-ah', 'fl-aho', 'fl-ahb'))
+        svg = '<svg class="a-edges" id="edges" aria-hidden="true"><defs>%s</defs></svg>' % heads
         return '<div class="a-stage" id="stage" style="--cols:%s">%s%s%s</div>' % (cols, html, ('<div class="a-ends">%s</div>' % terms) if terms else '', svg)
 
     def legend(self):
@@ -208,7 +251,7 @@ class Builder:
     def article(self, i):
         t, s = self.t, self.steps[i]
         p = self.part[s['part']]
-        chip = '<span class="f-mod k-%s">%s%s</span>' % (self.kind[p['id']], ic(OUT_ICON if p['where'] == 'outside' else IN_ICON), txt(p['name']))
+        chip = '<span class="f-mod k-%s">%s%s</span>' % (self.kind[p['id']], ic(self.icon(p)), txt(p['name']))
         return ('<article id="step-%d" aria-labelledby="st-%d"><p class="f-kick">%s</p><h2 id="st-%d">%s</h2>%s'
                 '<div class="f-in"><div class="f-twin"><div><span class="f-lbl">%s</span><p class="f-txt">%s</p></div><div><span class="f-lbl">%s</span><p class="f-txt">%s</p></div></div></div>'
                 '%s%s</article>') % (i + 1, i + 1, esc(t['fl_step_of'] % (i + 1, len(self.steps))), i + 1, txt(s['name']), chip,

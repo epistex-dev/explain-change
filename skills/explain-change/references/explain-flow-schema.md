@@ -24,6 +24,7 @@ Workflow: `collect.py --flow [--path <dir or file>]... [--slug <text>]` prints t
 ```
 
 - `where`: `inside` (code of this repo) or `outside` (an actor or store the repo does not hold: a person, an agent, a log file).
+- `icon` (optional): the glyph on the part's card, one of `arrow-right`, `ban`, `branch`, `bug`, `circle-check`, `circle-dashed`, `circle-help`, `circle-x`, `database`, `file-code`, `file-search`, `flask-conical`, `globe`, `history`, `key-round`, `layout`, `list`, `map`, `message`, `monitor`, `panel-right`, `panel-right-close`, `plus`, `redirect`, `server`, `shield-check`, `sparkles`, `trash`, `triangle-alert`, `undo`, `upload`, `user`, `x`. Without it the card shows a generic glyph (a globe outside, a file inside). Pick one that says what the part is: `sparkles` an agent, `user` a person, `shield-check` a checker, `file-search` a reader, `database` a log or store, `key-round` a secret, `monitor` a screen or page.
 - `role`: one sentence.
 - `sources`: at least 1 for an `inside` part; `[]` is allowed for an `outside` one.
 
@@ -39,6 +40,7 @@ Workflow: `collect.py --flow [--path <dir or file>]... [--slug <text>]` prints t
 - `part`: the `id` of a part. `takes_in` and `gives_back`: plain words, what goes into the step and what comes out.
 - `sources`: at least 1.
 - `branches`: the exits of the step, each `{when, to}`. `to` is a step `id`, `"problems"` (the flow ends in the list of problems) or `"end"` (the flow ends well). A step with no `branches` goes to the next step in the list, and the last one to `"end"`. A step with `branches` leaves by them alone, so list the ordinary way on too.
+- `reads` (optional): the ids of other parts the step takes its input from, such as a log or a store that is not a step of its own. The map draws a line from each of them to the step's part. Not the step's own part, no duplicates.
 - `errors`: what can go wrong in the step, each `{id, name, result, sources}` with at least 1 source. `result` says what the reader sees.
 
 ## Source
@@ -58,11 +60,14 @@ Workflow: `collect.py --flow [--path <dir or file>]... [--slug <text>]` prints t
 `validate.py` prints one `path: reason` line per problem, all together (exit 1), or `ok` and a counts line (exit 0).
 
 - **Ids** are unique across parts, steps and errors, 1 to 40 letters, digits, `-` or `_`; `end` and `problems` are reserved.
-- **References** resolve: each `part` to a part, each `to` to a step, `"problems"` or `"end"`.
+- **References** resolve: each `part` to a part, each `to` to a step, `"problems"` or `"end"`, each `reads` entry to a part, each `icon` to a name above.
+- **Types**: a field of the wrong type (a list or an object where an id or text goes, a number, null) is one `path: reason` line, never a crash. Text that cannot be written as UTF-8 (a lone surrogate such as `\ud800`) is refused in a visible field and in a source path.
 - **Graph**: every step is reachable from the first one, and some reachable step leads to `"end"`. A loop is fine as long as the flow can leave it.
 - **Visible text** (`title`, `summary`, `name`, `role`, `takes_in`, `gives_back`, `when`, `result`) holds no code: no backtick, braces, operator such as `=>` or `==`, call such as `run()`, member such as `a.b`, snake_case name or `file.py:12`. Prose such as "e.g.", "claim(s)" or "(for example, a path)" passes. These fields and `question` also hold no password, token or key; the error line never shows the value. `question` is the user's own words, so only the secret check applies to it.
 - **commit** must be a full SHA that exists in the repo (`--repo`, else the repo of the doc).
 
 ## What the page draws
+
+The lines of the map come from the doc: consecutive steps in different parts, and the `branches` of a step, give a line from the earlier part to the later one (or to the problem list or the happy end); `reads` gives a line from the part read to the part of the step. Two parts that hand over to each other share one line with a head at both ends. A line is routed around the cards. Where lines are hidden (under 1100 px, print, no script) each card carries a one-line "hands over to" list of the same targets.
 
 The map comes from `parts` (`where` picks the zone, `role` the line under the name) and the steps grouped by `part`; the route is `steps` in order, one panel each with `takes_in`, `gives_back`, `branches` and `errors`. Counts: steps, steps with `branches`, error exits, parts. `sources`, `commit` and `excerpt` are for the checker, not the page.

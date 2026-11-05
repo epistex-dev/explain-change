@@ -51,6 +51,91 @@ class PageCase(FlowCase):
         return h
 
 
+class WrongTypes(PageCase):
+    """A wrongly typed field is a list of lines and exit 1 from render.py too, and no page is written."""
+
+    def test_nothing_is_written_for_a_wrongly_typed_field(self):
+        for name, mutate in (('part is a list', lambda d: d['steps'][0].update(part=['x'])), ('part is a dict', lambda d: d['steps'][0].update(part={'a': 1})),
+                             ('branch to is a list', lambda d: d['steps'][1]['branches'][0].update(to=['a'])),
+                             ('branch to is a dict', lambda d: d['steps'][1]['branches'][0].update(to={'a': 1})),
+                             ('lone surrogate in a title', lambda d: d.update(title='bad \ud800 title')),
+                             ('lone surrogate in a source path', lambda d: d['steps'][0]['sources'][0].update(path='a\ud800b'))):
+            with self.subTest(name):
+                d = self.flow()
+                mutate(d)
+                p, h = self.render(d)
+                self.assertEqual(p.returncode, 1, p.stdout + p.stderr)
+                self.assertIsNone(h)
+                self.assertNotIn('Traceback', p.stderr)
+                self.assertTrue(p.stdout.strip(), 'one line per problem on stdout')
+
+    def test_the_unvalidated_path_does_not_crash_either(self):
+        d = self.flow()
+        d['steps'][0]['part'] = ['x']
+        p, h = self.render(d, '--no-validate')
+        self.assertEqual(p.returncode, 1, p.stdout + p.stderr)
+        self.assertNotIn('Traceback', p.stderr)
+
+
+class Map(PageCase):
+    def builder(self, mutate=None):
+        d = self.flow()
+        if mutate:
+            mutate(d)
+        return page_flow.Builder(d, 'pearl', None, None)
+
+    def test_a_part_shows_its_own_icon_and_falls_back_to_the_generic_one(self):
+        h = self.page_of(lambda d: d['parts'][1].update(icon='shield-check'))
+        self.assertIn('data-mod="checker"', h)
+        node = h[h.index('data-mod="checker"'):]
+        self.assertIn('href="#i-shield-check"', node[:node.index('</h3>')])
+        node = h[h.index('data-mod="caller"'):]
+        self.assertIn('href="#i-globe"', node[:node.index('</h3>')])  # no icon given: the generic one of its zone
+        self.assertEqual(h.count('<symbol id="i-file-search"'), 1)
+
+    def page_of(self, mutate):
+        d = self.flow()
+        mutate(d)
+        p, h = self.render(d)
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        return h
+
+    def test_consecutive_steps_in_different_parts_make_a_connector(self):
+        e = {(a, b): (n, bi) for a, b, n, _, bi in self.builder().edges()}
+        self.assertEqual(e[('checker', 'caller')], ([2, 3], 0))
+        self.assertEqual(e[('checker', 'problems')], ([2], 0))
+
+    def test_a_part_the_step_reads_from_gets_a_connector_to_it(self):
+        before = {(a, b): n for a, b, n, *_ in self.builder().edges()}
+        self.assertNotIn(('log', 'checker'), before)
+
+        def reads(d):
+            d['parts'].append({'id': 'log', 'name': 'Log', 'where': 'outside', 'role': 'The record.', 'sources': []})
+            d['steps'][1].update(reads=['log'])
+        after = {(a, b): n for a, b, n, *_ in self.builder(reads).edges()}
+        self.assertEqual(after[('log', 'checker')], [2])
+
+    def test_two_parts_that_hand_over_to_each_other_share_one_two_headed_line(self):
+        def back(d):
+            d['steps'][2]['branches'] = [{'when': 'It is shown', 'to': 's1'}, {'when': 'Done', 'to': 'end'}]
+        e = {(a, b): bi for a, b, _, _, bi in self.builder(back).edges()}
+        self.assertEqual(e[('checker', 'caller')], 1)
+        self.assertNotIn(('caller', 'checker'), e)
+
+    def test_each_card_says_where_it_hands_over_for_screens_without_lines(self):
+        h = self.page_of(lambda d: None)
+        self.assertIn('<p class="f-next" aria-label="Hands over to Caller, Problem list">', h)  # on the Checker card
+        with open(os.path.join(SKILL, 'assets', 'ui', 'flow.css'), encoding='utf-8') as fh:
+            css = fh.read()
+        self.assertRegex(css, r'@media \(max-width:1100px\)\{[^@]*\.f-next\{display:flex\}')
+
+    def test_the_lines_are_routed_by_the_script_not_drawn_straight(self):
+        with open(os.path.join(SKILL, 'assets', 'ui', 'flow.js'), encoding='utf-8') as fh:
+            js = fh.read()
+        self.assertIn('function route(', js)
+        self.assertIn('rounded(', js)
+
+
 class Dispatch(PageCase):
     def test_a_flow_doc_renders_by_its_kind(self):
         p, h = self.render(self.flow())

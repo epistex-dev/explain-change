@@ -15,6 +15,8 @@ SKILL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PS, JS = 'scripts/lib/page_session.py', 'assets/ui/session.js'
 TH, JS2, P2, CSS2, RJ = 'scripts/lib/themes.py', 'assets/ui/page2.js', 'scripts/lib/page2.py', 'assets/ui/page2.css', 'scripts/render.py'
 CT = 'test_change_themes.'
+CF, PF = 'scripts/lib/check_flow.py', 'scripts/lib/page_flow.py'
+W = 'test_flow.WrongTypes.'
 MUTATIONS = [
     ('snippet not found fails', 'scripts/lib/refs.py', "    return 'snippet not found within", "    return None  # "
      "'snippet not found within", 'test_check.SnippetGrounding.test_snippet_not_found_fails'),
@@ -719,9 +721,9 @@ MUTATIONS += [
      'test_flow.Structure.test_duplicate_id'),
     ('flow: end and problems are reserved ids', 'scripts/lib/check_flow.py', 'if v in EXITS:', 'if False:',
      'test_flow.Structure.test_reserved_id'),
-    ('flow: step part resolves', 'scripts/lib/check_flow.py', "if s.get('part') not in parts:", 'if False:',
+    ('flow: step part resolves', 'scripts/lib/check_flow.py', "if not (isinstance(s.get('part'), str) and s['part'] in parts):", 'if False:',
      'test_flow.Structure.test_part_reference_dangles'),
-    ('flow: branch target resolves', 'scripts/lib/check_flow.py', 'if to in EXITS or to in steps:', 'if True:',
+    ('flow: branch target resolves', 'scripts/lib/check_flow.py', 'if isinstance(to, str) and (to in EXITS or to in steps):', 'if True:',
      'test_flow.Structure.test_dangling_branch_target'),
     ('flow: every step reachable', 'scripts/lib/check_flow.py', 'if sid and sid not in seen:', 'if False:',
      'test_flow.Structure.test_unreachable_step'),
@@ -757,6 +759,40 @@ MUTATIONS += [
      'test_flow.Collect.test_lists_head_modules_files_and_run_dir_without_a_diff'),
     ('flow: collect --flow: a path with no file is refused', 'scripts/lib/collect_flow.py', '    if scope and not under:', '    if False:',
      'test_flow.Collect.test_path_with_no_file_is_refused'),
+    ('flow: a step part of the wrong type is a line, not a crash', CF, "if not (isinstance(s.get('part'), str) and s['part'] in parts):", "if s.get('part') not in parts:",
+     W + 'test_step_part_that_is_a_list_or_dict'),
+    ('flow: a branch target of the wrong type is a line, not a crash', CF, 'if isinstance(to, str) and (to in EXITS or to in steps):', 'if to in EXITS or to in steps:',
+     W + 'test_branch_target_that_is_a_list_or_dict'),
+    ('flow: a source path with a lone surrogate is refused', CF, " or not _utf8(fp):", ':',
+     W + 'test_source_path_with_a_lone_surrogate'),
+    ('flow: visible text that cannot be written as UTF-8 is refused', CF, '        if not _utf8(v):', '        if False:',
+     W + 'test_visible_text_with_a_lone_surrogate'),
+    ('flow: every field of a wrong type is a line (list of ids)', CF, "if not isinstance(v, list):\n            if v is not None or minimum:", "if not isinstance(v, list):\n            if False:",
+     W + 'test_every_field_given_a_list_dict_number_or_null_is_a_line_not_a_crash'),
+    ('flow: the page without validation does not crash on a part of the wrong type', PF, "and isinstance(s.get('part'), str) and s.get('part') in ids", "and s.get('part') in ids",
+     'test_flow_page.WrongTypes.test_the_unvalidated_path_does_not_crash_either'),
+    ('flow: a part icon must be on the allowlist', CF, 'if icon is not None and not (isinstance(icon, str) and icon in ICONS):', 'if False:',
+     'test_flow.PartIcons.test_a_known_icon_passes_and_an_unknown_one_is_one_line'),
+    ('flow: reads is a list of part ids', CF, "if reads is not None and not isinstance(reads, list):", 'if False:',
+     'test_flow.Reads.test_reads_must_be_a_list_of_part_ids'),
+    ('flow: reads names a part of the doc', CF, "if not (isinstance(r, str) and r in parts):", 'if False:',
+     'test_flow.Reads.test_reads_must_be_a_list_of_part_ids'),
+    ('flow: reads is not the step own part', CF, "elif r == s.get('part'):", 'elif False:',
+     'test_flow.Reads.test_reads_its_own_part_is_refused'),
+    ('flow: reads has no duplicate', CF, 'elif reads.index(r) != k:', 'elif False:',
+     'test_flow.Reads.test_reads_twice_is_refused'),
+    ('flow page: a part shows its own icon', PF, "return p['icon'] if p.get('icon') in ICONS else OUT_ICON", 'return OUT_ICON',
+     'test_flow_page.Map.test_a_part_shows_its_own_icon_and_falls_back_to_the_generic_one'),
+    ('flow page: a part a step reads from gets a connector', PF, "if r in self.part and r != s['part']:", 'if False:',
+     'test_flow_page.Map.test_a_part_the_step_reads_from_gets_a_connector_to_it'),
+    ('flow page: parts that hand over to each other share one line', PF, 'back[4] = 1', 'back[4] = 0',
+     'test_flow_page.Map.test_two_parts_that_hand_over_to_each_other_share_one_two_headed_line'),
+    ('flow page: a card says where it hands over', PF, "return '<p class=\"f-next\"", "return '<p hidden class=\"f-next\"",
+     'test_flow_page.Map.test_each_card_says_where_it_hands_over_for_screens_without_lines'),
+    ('flow page: the card line shows where the lines are hidden', 'assets/ui/flow.css', '  .a-edges{display:none}\n  .f-next{display:flex}\n}', '  .a-edges{display:none}\n}',
+     'test_flow_page.Map.test_each_card_says_where_it_hands_over_for_screens_without_lines'),
+    ('flow page: the lines are routed around the cards', 'assets/ui/flow.js', 'function route(', 'function route_off(',
+     'test_flow_page.Map.test_the_lines_are_routed_by_the_script_not_drawn_straight'),
 ]
 TEST_SECONDS = 60
 
