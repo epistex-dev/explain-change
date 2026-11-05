@@ -17,6 +17,31 @@ def nonempty(v):
     return isinstance(v, str) and bool(v.strip())
 
 
+MAX_REASON = 200  # the reason a doc gives for having no transcript is shown on the page: one short line
+
+
+def check_reason(doc, has_transcript, err, required):
+    """The pairing rule of every doc kind: with a transcript the doc must not say there is none, without one it must say why.
+    `required` is the error text when the reason is missing. Returns the reason when it is usable (one line, at most MAX_REASON characters), else None."""
+    v = doc.get('transcript_unavailable')
+    if has_transcript:
+        if v is not None:
+            err('transcript_unavailable', 'not allowed together with a transcript: the session is read, so drop the reason (or drop --transcript)')
+        return None
+    if v is None:
+        err('transcript', required)
+        return None
+    if not nonempty(v):
+        err('transcript_unavailable', 'must be a short text that says why no session was read (for example "Windsurf keeps no readable session log")')
+    elif '\n' in v.strip():
+        err('transcript_unavailable', 'one line, no line breaks')
+    elif len(v.strip()) > MAX_REASON:
+        err('transcript_unavailable', '%d characters; keep the reason to one short line (at most %d)' % (len(v.strip()), MAX_REASON))
+    else:
+        return v.strip()
+    return None
+
+
 class Grounder:
     """err(path, msg) reports a problem. tpath/tfiles: the main transcript and {id: file} of its session (None: no transcript, the quotes
     are only listed in `not_compared`). on_inferred(path) is called for each `{"inferred": true}` source."""

@@ -65,6 +65,10 @@ The skill reads the session of seven harnesses (readers in `skills/explain-chang
 
 A shell call whose output or exit code the harness did not record (every Cursor CLI and Cursor IDE call, an OpenCode call still running) has an unknown result: it can back a quote or a `mixed` run, never a `passed` run or a `done`. The readers are ported from open-source projects: see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
+### When no transcript is readable
+
+Windsurf, Cline, Roo, Kiro, Goose, Amp, Aider and other Agent Skills harnesses keep no session log the skill reads. The same goes for a transcript that is missing, deleted or unreadable, and for a run outside any agent session. The skill still works, for the change page and the session page alike: the agent writes the doc from its own context and gives the reason in `"transcript_unavailable"` (one line, no secret). `validate.py` and `render.py` still check the git range, the diff, the +/- counts, the file coverage, every cited code line and every secret; they refuse a doc that has neither a transcript nor a reason, and a doc that has both. The page says so in one plain line, "Not checked against the session: <reason>", marks each run as the agent's own account, and on a session page shows the outward counts as the agent's own.
+
 ## Install
 
 The skill is a folder with a `SKILL.md`, the [Agent Skills](https://agentskills.io/specification) format, so one install script puts it where each harness looks.

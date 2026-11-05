@@ -2,7 +2,7 @@
 
 A session doc sketches a whole session, one task or many, for a reader who cannot follow it all: what was asked, what got done, what waits on the reader, what the agent decided alone, and what left the working copy. It is about the work, not the code: it shows no code, diff or file:line, and it has no risks section and no quiz. A theme that changed code links to its `explain-change/2` page for the detail.
 
-Workflow: `collect.py --session` lists the candidate sessions; `collect.py --session --transcript <file>` prints the digest; write the doc; `validate.py <doc> --transcript <file>` checks it; `render.py <doc> --transcript <file>` writes the page. With no session available, set `"transcript_unavailable": "<reason>"`; the checks that need a session then stay off and `validate.py` prints "transcript checks off".
+Workflow: `collect.py --session` lists the candidate sessions; `collect.py --session --transcript <file>` prints the digest; write the doc; `validate.py <doc> --transcript <file>` checks it; `render.py <doc> --transcript <file>` writes the page. With no session available (an unsupported harness, a missing or unreadable file, no agent session at all), set `"transcript_unavailable": "<reason>"` (one line, at most 200 characters, never together with a transcript; a doc with neither is refused); the checks that need a session then stay off and `validate.py` prints "transcript checks off". The schema, theme, order and secret checks still run. The page reads "Not checked against the session: <reason>" and shows each outward count as the agent's own count, once.
 
 ## The page
 
@@ -30,7 +30,7 @@ Themes are yours to draw: group the turns and the work by what the reader would 
 | --- | --- |
 | `schema`, `lang` | `"explain-session/1"`, `"vi"` or `"en"` |
 | `title`, `summary` | one line; the summary is one sentence |
-| `transcript` or `transcript_unavailable` | the session file under `~/.claude/projects` (the `--transcript` flag does the same), or the reason there is none |
+| `transcript` or `transcript_unavailable` | the session file under its harness's folder (the `--transcript` flag does the same), or the reason there is none (exactly one of the two) |
 | `themes` | `[Theme]`, at least one, in the order the work started |
 | `needs_you` | `[{text, theme, source}]`: what only the reader can do. `[]` when nothing |
 | `decided` | `[{text, reversible, theme, source}]`: choices the agent made without asking. `reversible` is true or false. `[]` when nothing |

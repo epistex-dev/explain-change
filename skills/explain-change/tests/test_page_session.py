@@ -48,8 +48,9 @@ def busy_doc(n=40):
     return d
 
 
-def page(doc, links=None):
-    return page_session.render(doc, links or {})
+def page(doc, links=None, checked=True):
+    """A page as the reader of a checked session sees it; the sample declares no session, and test_no_transcript.py covers the page that says so."""
+    return page_session.render(doc, links or {}, session_checked=checked)
 
 
 def words(html):

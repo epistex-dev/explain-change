@@ -461,6 +461,26 @@ def learn(main_path, fmt='auto'):
     return len(_LEARNED)
 
 
+def learn_quotes(doc):
+    """With no session to read, the doc's own quotes of the user's words are all there is to learn from: a credential they hold is then hidden
+    and refused wherever else the doc repeats it. Returns how many values are known."""
+    for q in _quotes(doc):
+        _LEARNED.update(secret_values(q))
+    return len(_LEARNED)
+
+
+def _quotes(o):
+    if isinstance(o, dict):
+        for k, v in o.items():
+            if k == 'quote' and isinstance(v, str):
+                yield v
+            else:
+                yield from _quotes(v)
+    elif isinstance(o, list):
+        for v in o:
+            yield from _quotes(v)
+
+
 def contains_learned(s):
     return any(v in s for v in _LEARNED)
 

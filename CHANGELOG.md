@@ -7,6 +7,7 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- A change doc and a session doc work with no readable transcript (a harness without a reader, a missing or unreadable file, a run outside any agent session). The doc gives `"transcript_unavailable": "<reason>"`; `validate.py` and `render.py` refuse a doc with neither a transcript nor a reason, and a doc with both, and still check git, diff, counts, file coverage, cited code and secrets. A credential in the doc's own quotes is refused wherever the doc repeats it. The change page reads "Not checked against the session: <reason>" and marks runs as the agent's own account; the session page carries the same note and shows each outward count as the agent's own, once. `collect.py --session` with no session names this path.
 - `collect.py`, `validate.py` and `render.py` take a transcript of Copilot CLI, Codex, OpenCode, Gemini CLI, Cursor CLI or Cursor IDE, for change docs and session docs. `--transcript` detects the format; `--format auto|claude|copilot|codex|opencode|gemini|cursor-cli|cursor-ide` names it, and a file in none of them and outside every harness folder exits 1 with one line naming the formats (a directory exits 2). `collect.py` lists the sessions of the repo's folder labelled by harness.
 - A shell call whose output or exit code a harness did not record has an unknown result: it cannot back a `passed` run or a `done`, and the validator says why. Text a harness injected into the user channel never matches a request quote.
 - A README and `SKILL.md` table of the supported harnesses and their transcript folders, kept equal to the readers by a test.
@@ -22,10 +23,11 @@ All notable changes to this project are documented here. The format follows
 - A label such as `mk:` inside a CSS name (`--mk:`, `.mk:hover`) is no longer learned as a secret: the short label `mk` must follow the start of the text, white space or punctuation other than `-`, `_` and `.`. The other labels (`password=`, `db_password=`, `--token=`) match as before.
 
 ### Changed
+- `transcript_unavailable` must be a single line of at most 200 characters; a longer, empty, non-text or multi-line value is an error, and a doc that gives both a transcript and a reason is refused (it was accepted before).
 - The session page has a compact band (summary and Needs you side by side), shows all lanes on a 1440 x 900 screen, and its side panel opens on what the agent decided (irreversible choices always listed, reversible ones in an accordion) and the outward actions.
 - The session page has `header` and `nav` landmarks; an open count bubble stays pressed and keeps focus when the lanes are laid out again.
 - `SKILL.md` names no single harness: the cold-read gate uses a fresh subagent, else the command in `EXPLAIN_COLDREAD_CMD`, else is skipped and the final reply says so.
-- Without a Claude Code transcript the page is rendered with `--no-validate` and says it was not checked against the session.
+- Without a transcript the doc is validated and rendered like any other (`validate.py` and `render.py` without `--transcript`), and the page says it was not checked against the session.
 
 ## [0.1.0] - 2026-11-05
 

@@ -87,7 +87,10 @@ def render_session(a, out):
         learn_from = a.transcript or doc.get('transcript')
         if isinstance(learn_from, str) and learn_from:
             transcript.learn(learn_from, a.format)  # an archived doc is still kept clear of the session's credentials
+        else:
+            transcript.learn_quotes(doc)
         print('warning: not validated (--no-validate); nothing was checked against the transcript', file=sys.stderr)
+        stats = {'transcript': bool(learn_from)}
     else:
         errs, stats = check_session.validate(doc, a.transcript, base_dir=here, fmt=a.format)
         if errs:
@@ -112,7 +115,7 @@ def render_session(a, out):
         if code:
             return code
         links[i] = name
-    body = page_session.render(doc, links, a.theme)
+    body = page_session.render(doc, links, a.theme, session_checked=bool(stats.get('transcript')))
     if len(body.encode('utf-8')) > page2.MAX_BYTES:
         print('error: page is %d KB, over the %d KB limit of html_preview' % (len(body.encode('utf-8')) // 1024, page2.MAX_BYTES // 1024), file=sys.stderr)
         return 2
@@ -138,6 +141,8 @@ def render_v2(a, out):
         learn_from = a.transcript or doc.get('transcript')
         if isinstance(learn_from, str) and learn_from:
             transcript.learn(learn_from, a.format)  # an archived doc is still kept clear of the session's credentials
+        else:
+            transcript.learn_quotes(doc)
         print('warning: not validated (--no-validate); nothing was checked against git or the transcript', file=sys.stderr)
         arch = archmod.Architecture(a.arch) if a.arch else None
         repo = a.repo

@@ -145,6 +145,7 @@ def _validate(doc, repo, transcript_path=None, scope=None, fmt='auto'):
     tpath = transcript_path or doc.get('transcript')
     tfiles = {}
     if isinstance(tpath, str) and tpath:
+        ground.check_reason(doc, True, err, '')
         try:
             tpath = transcript.safe_path(tpath, fmt)
             tfiles = transcript.session_files(tpath)
@@ -154,11 +155,11 @@ def _validate(doc, repo, transcript_path=None, scope=None, fmt='auto'):
             tpath = None
     else:
         tpath = None
-        if nonempty(doc.get('transcript_unavailable')):
-            warns.append('transcript unavailable (%s): requests, tests and quotes are NOT checked against a session' % doc['transcript_unavailable'].strip())
-        else:
-            err('transcript', 'required: pass --transcript <file under ~/.claude/projects> or set "transcript"; '
-                'without a session set "transcript_unavailable" to the reason (everything then stays unverified)')
+        reason = ground.check_reason(doc, False, err, 'required: pass --transcript <file under ~/.claude/projects> or set "transcript"; '
+                                     'without a session set "transcript_unavailable" to the reason (everything then stays unverified)')
+        if reason:
+            warns.append('transcript unavailable (%s): requests, tests and quotes are NOT checked against a session' % reason)
+        transcript.learn_quotes(doc)  # no session to learn from: the user's words quoted in the doc are what there is
 
     stats['transcript'] = tpath is not None  # False: nothing was checked against a session (the page says so)
 
