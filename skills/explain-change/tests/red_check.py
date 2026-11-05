@@ -549,7 +549,7 @@ MUTATIONS += [
      'test_page_session.Dom.test_1440_sizes_gaps_clusters_and_keyboard'),
     ('session B: markers are 8 px apart or more', 'assets/ui/session.css', "--mk-gap:8px;", "--mk-gap:2px;",
      'test_page_session.Dom.test_1440_sizes_gaps_clusters_and_keyboard'),
-    ('session B: Escape closes the panel', 'assets/ui/session.js', "if(e.key==='Escape'&&cur){", "if(false){",
+    ('session B: Escape closes the panel', 'assets/ui/session.js', "if(e.key==='Escape'&&cur&&", "if(false&&cur&&",
      'test_page_session.Dom.test_1440_sizes_gaps_clusters_and_keyboard'),
     ('session B: focus returns to the marker', 'assets/ui/session.js', "  if(back)back.focus();", "",
      'test_page_session.Dom.test_1440_sizes_gaps_clusters_and_keyboard'),
