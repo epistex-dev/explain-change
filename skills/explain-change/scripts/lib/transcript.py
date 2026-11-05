@@ -19,6 +19,7 @@ STRONG = re.compile(r'(?i)(?<![\w-])(vitest|pytest|unittest|phpunit|artisan test
                     r'composer (test|lint)|(go|cargo|make|mix|dotnet|gradle|mvn) (test|check)|docker (compose )?build|glab ci|pipelines?|red_check|prove[_-]fix|check\.mjs)(?![\w-])')
 INLINE = re.compile(r'<<-?\s*[\'"]?\w|(?<![\w-])(python3?|node|ruby|perl|php|bash|sh)\s+(-c|-e|-r)\b|(?<![\w-])python3?\s+-(\s|$)')  # a heredoc or an inline script
 READ_ONLY = re.compile(r'^\s*(cd [^;&|]+(&&|;)\s*)?(git (show|log|ls-tree|diff|grep|fetch|status|branch|worktree)|grep|sed|cat|head|tail|ls|find|wc|echo|date|mkdir)\b')
+# `mk` (short for "mật khẩu") also names CSS (`--mk:32px;`, `.mk:hover`): _css_name() tells those apart by shape, so tk_mk:, user.mk: and --mk= still teach
 _LABEL = r'(?<![A-Za-z0-9])(?:pass(?:word|wd)?|mật khẩu|mk|token|secret|api[_-]?key)(?:\s+chung)?\s*[:=]\s*'
 SECRET = re.compile(  # a labelled value | a token with a known prefix | a bearer token
     r'(?i)(?P<label>' + _LABEL + r')(?=\S*[\d!@#$%^&*_])(?P<val>\S{6,})'
@@ -327,8 +328,27 @@ def code_shaped(v):
     return bool(re.search(r'[.(\[]', v)) or not re.search(r'\d', v)
 
 
+_PSEUDO = re.compile(r'[a-z][a-z-]*(?:\([^)]*\))?(?:[{,\s>+~:.\[)]|$)')
+
+
+def _css_name(m):
+    """True when a labelled match is CSS, not a credential: a custom property `--mk:32px;` (no space, the value ends in ; or }) or a selector `.mk:hover` /
+    `a.mk:nth-child(2)` (a pseudo-class right after the colon). `--mk=`, `user.mk: x` and `tk_mk:` are not CSS. When unsure, it is a credential."""
+    s, lab = m.string, m.group('label')
+    if not lab.lower().startswith('mk') or not lab.endswith(':'):  # a space after the colon is a config key, not CSS
+        return False
+    before, v = s[:m.start('label')], m.group('val')
+    if before.endswith('--') and not re.search(r'\w$', before[:-2]):
+        return bool(re.search(r'[;}]', v))
+    if before.endswith('.'):
+        return bool(_PSEUDO.match(v))
+    return False
+
+
 def _flagged(m):
-    return m.group('val') is None or not code_shaped(m.group('val'))
+    if m.group('val') is None:
+        return True
+    return not code_shaped(m.group('val')) and not _css_name(m)
 
 
 def has_secret(s):

@@ -62,13 +62,17 @@ def _read_bytes(path):
         return fh.read()
 
 
-def css():
+def font_faces():
     faces = []
     for fam, f, rng in FONTS:
         b = base64.b64encode(_read_bytes(os.path.join(UI, 'fonts', f + '.woff2'))).decode('ascii')
         faces.append('@font-face{font-family:"%s";font-style:normal;font-weight:100 900;font-display:swap;'
                      'src:url(data:font/woff2;base64,%s) format("woff2-variations");unicode-range:%s}' % (fam, b, rng))
-    return '\n'.join(faces) + '\n' + _read(os.path.join(UI, 'page2.css'))
+    return '\n'.join(faces)
+
+
+def css():
+    return font_faces() + '\n' + _read(os.path.join(UI, 'page2.css'))
 
 
 # ---------------------------------------------------------------- modules and layout
