@@ -52,12 +52,12 @@ def nonempty(v):
     return isinstance(v, str) and bool(v.strip())
 
 
-def validate(doc, repo, transcript_path=None, scope=None):
-    errs, stats = _validate(doc, repo, transcript_path, scope)
+def validate(doc, repo, transcript_path=None, scope=None, fmt='auto'):
+    errs, stats = _validate(doc, repo, transcript_path, scope, fmt)
     return [transcript.redact(e) for e in errs], stats  # an error line quotes the doc; never print a secret
 
 
-def _validate(doc, repo, transcript_path=None, scope=None):
+def _validate(doc, repo, transcript_path=None, scope=None, fmt='auto'):
     errs, warns = [], []
     stats = {'version': 2, 'warnings': warns}
     module_refs = []  # (path, list of module ids)
@@ -146,7 +146,7 @@ def _validate(doc, repo, transcript_path=None, scope=None):
     tfiles = {}
     if isinstance(tpath, str) and tpath:
         try:
-            tpath = transcript.safe_path(tpath)
+            tpath = transcript.safe_path(tpath, fmt)
             tfiles = transcript.session_files(tpath)
             transcript.learn(tpath)  # the sweep below and every error line then hide the bare value too
         except gitio.ExplainError as e:
@@ -587,7 +587,7 @@ def _validate(doc, repo, transcript_path=None, scope=None):
     if tpath and queries:
         for path, qs_, by_hand in passed_runs:
             if not by_hand and ground.only_errors(qs_):
-                err(path + '.result', '"passed" rests on tool calls whose result is an error (is_error); an errored run cannot back a pass (use "failed" or "mixed")')
+                err(path + '.result', ground.backing_error(qs_, 'passed') or '"passed" rests on tool calls whose result is an error (is_error); an errored run cannot back a pass (use "failed" or "mixed")')
     stats['verified_in_transcript'] = sum(1 for q, _ in queries if q.found)
     stats['unverified'] = len(unverified)
     if unverified:

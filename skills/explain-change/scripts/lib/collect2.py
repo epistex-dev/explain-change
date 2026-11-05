@@ -59,7 +59,7 @@ def format_modules(repo, a, rep):
     return '\n'.join(out)
 
 
-def format_candidates(repo, cands):
+def format_candidates(repo, cands, others=()):
     out = ['## Transcript candidates (most recently modified first; pass the right one as --transcript <path>)']
     if not cands:
         out.append('  none found under ~/.claude/projects for %s or its parents' % repo)
@@ -70,4 +70,13 @@ def format_candidates(repo, cands):
         out.append('  %d. %s' % (i, c['path']))
         out.append('     %s .. %s   %d KB, %d worker transcripts' % (c['start'] or '?', c['end'] or '?', c['size'] // 1024, c['subagents']))
         out.append('     first user message: %s' % (first[:140] + ('…' if len(first) > 140 else '')))
+    for name, found in others:
+        for c in found:
+            transcript.learn(c['np'])
+        out += ['', '## %s sessions recorded in %s (most recent first; pass the right one as --transcript <reference>)' % (name, repo)]
+        for i, c in enumerate(found, 1):
+            first = transcript.redact((c['first_user'] or '(no user message)').replace('\n', ' '))
+            out.append('  %d. [%s] %s' % (i, name, c['path']))
+            out.append('     %s .. %s   %d events, %d sub-agent sessions' % (c['start'] or '?', c['end'] or '?', c['events'], c['subagents']))
+            out.append('     first user message: %s' % (first[:140] + ('…' if len(first) > 140 else '')))
     return '\n'.join(out)

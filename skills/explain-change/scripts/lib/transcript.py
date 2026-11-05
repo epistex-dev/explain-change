@@ -12,6 +12,7 @@ import os
 import re
 import unicodedata
 
+from . import neutral
 from .gitio import ExplainError
 
 TEST_WORDS = re.compile(r'(?i)(?<![\w-])(test|tests|vitest|pytest|phpunit|artisan test|npm run|lint|build|ci|playwright)(?![\w-])')
@@ -44,12 +45,25 @@ def projects_root():
     return os.path.realpath(os.environ.get('EXPLAIN_PROJECTS_DIR') or os.path.expanduser('~/.claude/projects'))
 
 
-def safe_path(path):
-    """Real path of a transcript, refused unless it lies under ~/.claude/projects."""
+def safe_path(path, fmt='auto'):
+    """Real path of a transcript, refused unless it lies under ~/.claude/projects. A transcript of another harness (fmt auto detects it, or
+    names it) is read by its adapter under that harness's root and comes back as a neutral.NPath, a str holding its parsed session."""
+    if isinstance(path, neutral.NPath):
+        return path
     rp = os.path.realpath(os.path.expanduser(path))
     root = projects_root()
-    if not (rp == root or rp.startswith(root + os.sep)):
-        raise ExplainError('transcript must be under %s (got %s)' % (root, path))
+    inside = rp == root or rp.startswith(root + os.sep)
+    if fmt not in neutral.CHOICES:
+        raise neutral.FormatError('unknown format %r; supported: %s' % (fmt, neutral.formats_line()))
+    if fmt != 'claude' and not (fmt == 'auto' and inside):
+        other = neutral.open_transcript(path, fmt)
+        if other is not None:
+            return other
+    if not inside:
+        msg = 'transcript must be under %s (got %s)' % (root, path)
+        if fmt == 'auto' and os.path.isfile(rp) and not neutral.claude_shaped(rp):
+            raise neutral.FormatError('%s, and no supported format matched it (supported: %s)' % (msg, neutral.formats_line()))
+        raise ExplainError(msg)
     if not os.path.isfile(rp):
         raise ExplainError('transcript not found: %s' % path)
     return rp
@@ -93,6 +107,17 @@ def records(path, stats):
                 yield rec
 
 
+def iter_parts(src, st):
+    """Yield (timestamp, cwd, kind, text, extra) for every part of a transcript file: a Claude Code JSONL path, or a neutral.NFile."""
+    if isinstance(src, neutral.NFile):
+        yield from neutral.iter_parts(src, st)
+        return
+    for rec in records(src, st):
+        ts, cwd = rec.get('timestamp'), rec.get('cwd')
+        for kind, text, extra in parts(rec):
+            yield ts, cwd, kind, text, extra
+
+
 def _blocks(rec):
     msg = rec.get('message')
     content = msg.get('content') if isinstance(msg, dict) else None
@@ -120,7 +145,8 @@ def parts(rec):
     """Yield (kind, text, extra) for one record. kind: user | assistant | tool_use | tool_result.
     user = something the human typed (injected context, notifications and delegated-task results removed).
     report = a worker's report that arrived as a user-role message (task notification, delegated-task result).
-    tool_use extra = (id, name, command, input); tool_result extra = (id, is_error)."""
+    tool_use extra = (id, name, command, input); tool_result extra = (id, is_error).
+    (iter_parts adds, for other harnesses, a fifth item is_shell to tool_use and a third item unknown to tool_result.)"""
     t = rec.get('type')
     if t == 'assistant':
         for b in _blocks(rec):
@@ -147,7 +173,7 @@ def parts(rec):
 def is_command_call(extra):
     """True for a tool_use that ran a command (allow-list COMMAND_TOOLS with a string input.command). A brief to a worker or the content of a
     written file can contain any text; only an executed command grounds a `tool_call` source."""
-    return bool(extra) and extra[1] in COMMAND_TOOLS and isinstance(extra[3].get('command'), str)
+    return bool(extra) and (extra[1] in COMMAND_TOOLS or (len(extra) > 4 and extra[4])) and isinstance(extra[3].get('command'), str)
 
 
 def url_text(extra):
@@ -177,6 +203,8 @@ class Query:
         self.found = False
         self.found_ok = False  # tool kind: found in a result that was not an error (is_error false)
         self.command_seen = False
+        self.unknown_seen = False  # tool kind: the call that ran the command has no recorded output or exit code (result unknown)
+        self.unknown = False       # tool kind: the only results found for it are unknown
 
     def too_short(self):
         for s in (self.text, self.command, self.excerpt):
@@ -187,6 +215,8 @@ class Query:
 
 def session_files(main_path):
     """{'main': path, 'agent-xxx': path, ...} for the session whose main transcript is main_path."""
+    if isinstance(main_path, neutral.NPath):
+        return neutral.session_files(main_path)
     out = {'main': main_path}
     sub = os.path.join(os.path.splitext(main_path)[0], 'subagents')
     if os.path.isdir(sub):
@@ -207,27 +237,29 @@ def resolve_queries(main_path, queries):
             continue
         stats[tid] = st = Stats()
         pending = {}  # tool_use id -> queries whose command matched
-        for rec in records(files[tid], st):
-            for kind, text, extra in parts(rec):
-                n = None
-                for q in qs:
-                    if q.found and (q.kind != 'tool' or q.found_ok):
-                        continue
-                    if q.kind in ('quote', 'url') and (kind in q.roles):
-                        n = norm(text) if n is None else n
-                        q.found = q.text in n
-                    elif q.kind == 'url' and kind == 'tool_use':
-                        seen = url_text(extra)
-                        q.found = seen is not None and q.text in norm(seen)
-                    elif q.kind == 'tool' and kind == 'tool_use' and is_command_call(extra) and q.command in norm(extra[2]):
-                        q.command_seen = True
-                        pending.setdefault(extra[0], []).append(q)
-                if kind == 'tool_result' and extra and extra[0] in pending:
-                    n = norm(text)
-                    for q in pending.pop(extra[0]):
-                        if q.excerpt in n:
-                            q.found = True
-                            q.found_ok = q.found_ok or not extra[1]
+        for _, _, kind, text, extra in iter_parts(files[tid], st):
+            n = None
+            for q in qs:
+                if q.found and (q.kind != 'tool' or q.found_ok):
+                    continue
+                if q.kind in ('quote', 'url') and (kind in q.roles):
+                    n = norm(text) if n is None else n
+                    q.found = q.text in n
+                elif q.kind == 'url' and kind == 'tool_use':
+                    seen = url_text(extra)
+                    q.found = seen is not None and q.text in norm(seen)
+                elif q.kind == 'tool' and kind == 'tool_use' and is_command_call(extra) and q.command in norm(extra[2]):
+                    q.command_seen = True
+                    pending.setdefault(extra[0], []).append(q)
+            if kind == 'tool_result' and extra and extra[0] in pending:
+                n = norm(text)
+                unknown = len(extra) > 2 and extra[2]
+                for q in pending.pop(extra[0]):
+                    q.unknown_seen = q.unknown_seen or unknown
+                    if q.excerpt in n:
+                        q.found = True
+                        q.found_ok = q.found_ok or not (extra[1] or unknown)
+                        q.unknown = not q.found_ok and bool(unknown) and not extra[1]
     return stats
 
 
@@ -313,6 +345,11 @@ def candidates(repo, top=3):
         out.append({'path': p, 'first_user': first_user_message(p), 'start': first, 'end': last, 'size': os.path.getsize(p),
                     'subagents': len(session_files(p)) - 1})
     return out
+
+
+def other_candidates(repo, top=3):
+    """Sessions of the other harnesses recorded in `repo`: [(harness, [candidate dict])], for the harnesses that have any."""
+    return neutral.candidates(os.path.realpath(repo), top)
 
 
 def code_shaped(v):
@@ -403,23 +440,22 @@ def _strings(o):
             yield from _strings(v)
 
 
-def learn(main_path):
+def learn(main_path, fmt='auto'):
     """Learn the credentials of a session from every text a `transcript` quote can match (what `parts` yields: user, report, assistant and
     tool_result text, plus tool-call inputs) in the main and worker files, so that a bare occurrence of the value, with no label before it,
     is recognised too. Returns how many values are known. Never raises."""
     try:
-        files = session_files(safe_path(main_path))
+        files = session_files(safe_path(main_path, fmt))
     except ExplainError:
         return len(_LEARNED)
     for path in files.values():
         try:
-            for rec in records(path, Stats()):
-                for kind, text, extra in parts(rec):
-                    if kind == 'tool_use':
-                        for t in _strings(extra[3] if extra else {}):
-                            _LEARNED.update(secret_values(t))
-                    else:
-                        _LEARNED.update(secret_values(text))
+            for _, _, kind, text, extra in iter_parts(path, Stats()):
+                if kind == 'tool_use':
+                    for t in _strings(extra[3] if extra else {}):
+                        _LEARNED.update(secret_values(t))
+                else:
+                    _LEARNED.update(secret_values(text))
         except OSError:
             continue
     return len(_LEARNED)
@@ -526,22 +562,22 @@ def digest(main_path, cap=DIGEST_CAP):
     for tid, path in session_files(main_path).items():
         st = Stats()
         uses = {}
-        for rec in records(path, st):
-            ts = (_stamp(rec) or '')[:16].replace('T', ' ')
-            for kind, text, extra in parts(rec):
-                if kind == 'user' and tid == 'main':
-                    masked = redact(norm(text)) != norm(text)
-                    users.append('  [u%d %s] %s%s' % (len(users) + 1, ts, _clip(text, 400), '  (value masked as %s: quote the words around it)' % MASK if masked else ''))
-                elif kind == 'tool_use' and is_command_call(extra) and (TEST_WORDS.search(extra[2]) or STRONG.search(invocation(extra[2]))):
-                    inline = bool(INLINE.search(extra[2]))
-                    strong = runs_strong(extra[2])
-                    if not strong and READ_ONLY.match(extra[2]):
-                        continue
-                    entry = {'tid': tid, 'ts': ts, 'cmd': extra[2], 'res': None, 'err': False, 'strong': strong, 'inline': inline}
-                    uses[extra[0]] = entry
-                    calls.append(entry)
-                elif kind == 'tool_result' and extra and extra[0] in uses:
-                    uses[extra[0]]['res'], uses[extra[0]]['err'] = text, extra[1]
+        for stamp, _, kind, text, extra in iter_parts(path, st):
+            ts = (stamp if isinstance(stamp, str) else '')[:16].replace('T', ' ')
+            if kind == 'user' and tid == 'main':
+                masked = redact(norm(text)) != norm(text)
+                users.append('  [u%d %s] %s%s' % (len(users) + 1, ts, _clip(text, 400), '  (value masked as %s: quote the words around it)' % MASK if masked else ''))
+            elif kind == 'tool_use' and is_command_call(extra) and (TEST_WORDS.search(extra[2]) or STRONG.search(invocation(extra[2]))):
+                inline = bool(INLINE.search(extra[2]))
+                strong = runs_strong(extra[2])
+                if not strong and READ_ONLY.match(extra[2]):
+                    continue
+                entry = {'tid': tid, 'ts': ts, 'cmd': extra[2], 'res': None, 'err': False, 'strong': strong, 'inline': inline, 'unknown': False}
+                uses[extra[0]] = entry
+                calls.append(entry)
+            elif kind == 'tool_result' and extra and extra[0] in uses:
+                uses[extra[0]]['res'], uses[extra[0]]['err'] = text, extra[1]
+                uses[extra[0]]['unknown'] = len(extra) > 2 and bool(extra[2])
         w = st.warning('transcript %s' % tid)
         if w:
             warnings.append(w)
@@ -549,7 +585,7 @@ def digest(main_path, cap=DIGEST_CAP):
     lines_c, lines_w, lines_i = [], [], []  # strong runs | other mentions | inline scripts that only mention a test word (lowest)
     for c in calls:
         res = norm(c['res'] or '(no result recorded)')
-        flag = 'ERROR' if c['err'] else ('exit!=0' if re.match(r'(?i)exit code [1-9]', res) else 'ok')
+        flag = 'ERROR' if c['err'] else ('result unknown' if c['unknown'] else 'exit!=0' if re.match(r'(?i)exit code [1-9]', res) else 'ok')
         shown = invocation(c['cmd']) if c['inline'] and not c['strong'] else c['cmd']
         (lines_c if c['strong'] else lines_i if c['inline'] else lines_w).append('  [%s %s] $ %s\n      -> %s  head: "%s"  tail: "%s"' % (
             c['tid'], c['ts'], _clip(shown, 260), flag, _clip(res, 160), redact(res[-160:]) if len(res) > 160 else ''))
