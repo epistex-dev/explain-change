@@ -105,53 +105,8 @@ class RepoCase(unittest.TestCase):
     def ref(self, file, line, snippet, **kw):
         return {'file': file, 'line': line, 'snippet': snippet, **kw}
 
-    def good_doc(self):
-        loop = self.ref('app/Svc.php', 7, 'foreach ($this->items() as $item)')
-        cond = self.ref('app/Svc.php', 8, '$item->skip() || $n >= $limit')
-        return {
-            'schema': 'explain-change/1', 'lang': 'vi', 'title': 'Giới hạn theo module',
-            'range': {'base': self.base, 'head': self.head, 'label': 'base..head'},
-            'why': {'conclusion': 'Một nhóm làm đói nhóm khác.', 'lines': ['Dòng một.', 'Dòng hai.'], 'refs': [cond]},
-            'changes': {'conclusion': '3 thay đổi.', 'items': [
-                {'id': 'c1', 'title': 'Đổi điều kiện dừng', 'summary': 'Dừng khi item.skip().', 'files': ['app/Svc.php'], 'refs': [cond]},
-                {'id': 'c2', 'title': 'Test và ghi chú', 'summary': 'Thêm test.', 'files': ['tests/SvcTest.php', 'tài-liệu/ghi-chú.md'],
-                 'refs': [self.ref('tests/SvcTest.php', 7, 'assertSame(2, (new Svc)->run(2))')]},
-                {'id': 'c3', 'title': 'Dọn', 'summary': 'Xóa Old, thêm logo.', 'files': ['app/Old.php', 'logo.png'],
-                 'refs': [self.ref('app/Old.php', 3, 'function oldHelper()')]},
-            ]},
-            'flows': {'conclusion': 'Một luồng.', 'items': [{
-                'id': 'f1', 'title': 'Chạy run', 'summary': 'Gọi run.',
-                'actors': [{'id': 'a', 'label': 'Người gọi'}, {'id': 's', 'label': 'Svc::run'}],
-                'steps': [{'from': 'a', 'to': 's', 'label': 'run(limit)', 'changed': False, 'ref': self.ref('app/Svc.php', 5, 'public function run(int $limit)')},
-                          {'from': 's', 'to': 's', 'label': 'dừng khi skip', 'changed': True, 'ref': cond}]}]},
-            'logic': {'conclusion': 'Một hàm.', 'items': [{
-                'id': 'l1', 'file': 'app/Svc.php', 'function': 'run', 'title': 'run dừng sớm', 'summary': 'Đếm tới limit.',
-                'kind': 'trace', 'refs': [loop],
-                'trace': {'input': [{'name': 'limit', 'value': '2'}],
-                          'steps': [{'text': 'n=0', 'value': '0', 'ref': self.ref('app/Svc.php', 6, '$n = 0;')}],
-                          'result': 'trả 2',
-                          'origin': {'kind': 'test', 'cite': self.ref('tests/SvcTest.php', 7, 'assertSame(2, (new Svc)->run(2))')}}}]},
-            'risks': {'conclusion': 'Ít rủi ro.', 'items': [{'kind': 'break', 'text': 'Trả -1 khi rỗng.', 'refs': [self.ref('app/Svc.php', 13, 'return $n > 0 ? $n : -1')]}]},
-            'quiz': {'items': [
-                {'q': 'run(2) trả gì?', 'a': '2.', 'refs': [loop]},
-                {'q': 'Vì sao có skip?', 'a': 'Để dừng.', 'refs': [cond]}]},
-        }
-
     def doc(self, mutate=None):
         d = self.good_doc()
         if mutate:
             mutate(d)
         return d
-
-    def validate(self, mutate=None):
-        from lib import check
-        return check.validate(self.doc(mutate), self.repo)
-
-    def assertValid(self, mutate=None):
-        errs, stats = self.validate(mutate)
-        self.assertEqual(errs, [])
-        return stats
-
-    def assertInvalid(self, mutate, needle):
-        errs, _ = self.validate(mutate)
-        self.assertTrue(any(needle in e for e in errs), 'expected %r in %r' % (needle, errs))

@@ -39,15 +39,6 @@ class RenderV2(V2Case):
         self.assertIn('id="stage"', html)
         self.assertNotIn('mermaid', html.lower())
 
-    def test_cli_still_renders_a_v1_doc_with_the_v1_page(self):
-        from helpers import RepoCase
-        _, r = self.cli(RepoCase.good_doc(self))
-        self.assertEqual(r.returncode, 0, r.stderr)
-        with open(os.path.join(self.repo, 'index.html'), encoding='utf-8') as fh:
-            html = fh.read()
-        self.assertNotIn('id="stage"', html)
-        self.assertIn('mermaid', html.lower())
-
     def test_invalid_v2_doc_writes_nothing(self):
         d = self.doc(lambda d: d['requests'][0].update(quote='một câu chưa ai nói'))
         _, r = self.cli(d)

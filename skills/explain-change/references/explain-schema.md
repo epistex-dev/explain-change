@@ -1,8 +1,6 @@
 # explain.json
 
-Schema v1 (`version` absent or 1) is described first; schema v2 (`version: 2`, the five-block page of layout 2) starts at "Schema v2" below. The `version` field picks the rules.
-
-`validate.py` enforces everything below and prints `path: reason` for each violation. All text fields are plain strings; `` `code` `` in a text field renders as code. Text is in the page language (`lang`).
+`"schema": "explain-change/2", "version": 2`. A doc with `version` 1 or no `version` is refused by `validate.py` and `render.py` (exit 1). `validate.py` enforces everything below and prints `path: reason` for each violation. All text fields are plain strings; `` `code` `` in a text field renders as code. Text is in the page language (`lang`).
 
 ## Ref (a grounded claim)
 
@@ -12,70 +10,10 @@ Schema v1 (`version` absent or 1) is described first; schema v2 (`version: 2`, t
 
 - `snippet` is copied from the code (indentation and whitespace are ignored; several lines allowed; at least 4 characters) and must occur within 3 lines of `line`.
 - It is checked against the head version; a deleted file is checked against the base version. `"side": "base"` checks a line that the change removed from a file that still exists.
-- `"inferred": true` replaces `snippet` for a claim with no matching line. It renders "suy luận" and is rejected where a verified ref is required (`trace.origin.cite`).
+- `"inferred": true` replaces `snippet` for a claim with no matching line. It renders "suy luận".
 - A verified ref renders "đã xác minh"; the reader clicks `file:line` to see the snippet.
 
-## Top level
-
-| field | content |
-| --- | --- |
-| `schema` | `"explain-change/1"` |
-| `lang` | `"vi"` or `"en"` |
-| `title` | what the change does, one line |
-| `range` | `{base, head, label}` copied from `summary.json` `range` |
-| `why` | `{conclusion, lines: [2 to 5 strings], refs: [Ref, ...]}` |
-| `changes` | `{conclusion, items: [{id, title, summary, files: [path, ...], refs: [Ref, ...]}]}` |
-| `flows` | `{conclusion, items: [Flow], none_reason?}` |
-| `logic` | `{conclusion, items: [Logic], skipped?: [{file, function, reason}], none_reason?}` |
-| `risks` | `{conclusion, items: [{kind: "break" or "similar", text, refs}]}` |
-| `quiz` | `{items: [{q, a, refs}]}`, 2 or 3 items |
-
-Every `conclusion` opens its section and answers it in one or two sentences. An empty `items` needs `none_reason`.
-
-`changes.items[].files` lists each changed file once across all items; +/- counts come from git.
-
-## Flow (sequence diagram)
-
-```json
-{"id": "f1", "title": "...", "summary": "...",
- "actors": [{"id": "cli", "label": "php artisan attachments:cleanup"}, {"id": "svc", "label": "AttachmentCleanup::run"}],
- "steps": [{"from": "cli", "to": "svc", "label": "run(dryRun, limit=100)", "kind": "call", "changed": false, "ref": {...}}]}
-```
-
-Every `actors[].id` and `changes.items[].id` is required, a non-empty string. `kind` is `call` (default), `return` or `async`. At least one step has `changed: true`; changed steps render highlighted. Every step has a `ref`.
-
-## Logic (one changed function)
-
-Common fields: `id` (required, unique non-empty string: it is the page anchor), `file, function` (the name `collect.py` printed), `title, summary, refs`, `kind`, and `change` (id of the sub-change it deepens; the page links both ways).
-
-`kind: "flowchart"` (3 or more branches, counted as outgoing edges of `decision` nodes):
-
-```json
-"flow": {"nodes": [{"id": "n1", "label": "limit reached?", "type": "decision", "changed": true}],
-         "edges": [{"from": "n1", "to": "n2", "label": "yes", "ref": {...}}]}
-```
-
-Node `type`: `start`, `step`, `decision`, `end`. Every edge has a `ref`. Draw one pass: no edge returns to an earlier node (a loop body ends in an `end` node that says "next item"); the validator rejects cycles.
-
-`kind: "trace"` (a worked example with concrete values):
-
-```json
-"trace": {"input": [{"name": "limit", "value": "2"}],
-          "steps": [{"text": "orders the ids, keeps the first 2", "value": "[11, 12]", "ref": {...}}],
-          "result": "2 files deleted, 1 left for the next run",
-          "origin": {"kind": "test", "cite": {...}}}
-```
-
-`origin.kind`: `test`, `fixture` or `seed` need `cite` (a verified Ref where the values come from); `run` needs `command` and `output` (what you ran and printed); `illustrative` renders "minh hoạ" for values you made up.
-
-## Coverage
-
-A changed non-test function with 2 or more branches (listed by `collect.py`) needs a Logic item with the same `file` and `function`, or an entry in `logic.skipped` with a reason.
-
-
-# Schema v2
-
-`"schema": "explain-change/2", "version": 2`. A page answers five questions in order, one block each: what was asked (`requests`), where it happened (`map`), how the logic changed (`logic`), why this way (`rationale`), what was proven (`evidence`). Every fact is tied to the diff, the code, the architecture file or the session transcript. A fact with no tie is labelled `inferred` and renders "suy luận". The page shows prose, diagrams and quotes; refs, commands and excerpts stay in the doc for `validate.py`.
+A page answers five questions in order, one block each: what was asked (`requests`), where it happened (`map`), how the logic changed (`logic`), why this way (`rationale`), what was proven (`evidence`). Every fact is tied to the diff, the code, the architecture file or the session transcript. A fact with no tie is labelled `inferred` and renders "suy luận". The page shows prose, diagrams and quotes; refs, commands and excerpts stay in the doc for `validate.py`.
 
 Workflow: `collect.py --v2` (add `--transcript <file>` once you know the session) prints the modules and the transcript digest, then `validate.py explain.json --transcript <file>` checks the doc. The doc may carry `"transcript": "<path>"` instead of the flag. A path outside `~/.claude/projects` is refused. With no session available (an unsupported harness, a missing or unreadable file, no agent session at all), set `"transcript_unavailable": "<reason>"`: one line of at most 200 characters, never together with a transcript (the validator refuses the pair, and the lack of both). The git, count, file-coverage, code-line and secret checks still run; quotes and commands are not compared (the validator warns and counts them), and the page reads "Not checked against the session: <reason>" with each run marked as the agent's own account.
 

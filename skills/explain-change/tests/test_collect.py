@@ -6,7 +6,7 @@ import time
 import unittest
 
 from helpers import SKILL, RepoCase, run
-from lib import check, collect, gitio, page
+from lib import collect, gitio
 
 COLLECT = os.path.join(SKILL, 'scripts', 'collect.py')
 
@@ -100,7 +100,7 @@ class Collect(RepoCase):
 
 
 class HugeDiff(RepoCase):
-    def test_huge_diff_summary_and_page_stay_usable(self):
+    def test_huge_diff_summary_stays_usable(self):
         self.write('big/data.php', '<?php\n' + ''.join('$v%d = %d;\n' % (i, i) for i in range(6500)))
         for i in range(60):
             self.write('big/part%02d.txt' % i, 'x\n' * 20)
@@ -113,18 +113,6 @@ class HugeDiff(RepoCase):
         with open(os.path.join(run_dir, 'summary.json'), encoding='utf-8') as fh:
             s = json.load(fh)
         self.assertGreater(s['totals']['patch_lines'], 5000)
-        # one sub-change per directory is enough to cover everything
-        doc = self.good_doc()
-        doc['range'] = {'base': s['range']['base'], 'head': s['range']['head'], 'label': 'wip'}
-        doc['changes']['items'] = [{'id': 'all', 'title': 'Mọi thứ', 'summary': 'Dữ liệu lớn.', 'files': [f['path'] for f in s['files']],
-                                    'refs': [self.ref('big/data.php', 2, '$v0 = 0;')]}]
-        for sec in ('flows', 'logic'):
-            doc[sec].update(items=[], none_reason='không có', skipped=[])
-        doc['logic']['skipped'] = []
-        errs, stats = check.validate(doc, self.repo)
-        self.assertEqual(errs, [])
-        out = page.render(doc, self.repo, with_mermaid=False)
-        self.assertIn('<details class="filelist">', out)  # long file list collapsed
         self.assertLess(time.time() - t0, 30)
 
 

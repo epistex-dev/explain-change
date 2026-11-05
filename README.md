@@ -235,6 +235,6 @@ Validate the plugin manifests with `claude plugin validate .` and the skill with
 
 ## License
 
-[MIT](LICENSE). Third-party fonts, icons and Mermaid keep their own licences: see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+[MIT](LICENSE). Third-party fonts and icons keep their own licences: see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 Contributing: see [CONTRIBUTING.md](CONTRIBUTING.md). Report a vulnerability privately: see [SECURITY.md](SECURITY.md).

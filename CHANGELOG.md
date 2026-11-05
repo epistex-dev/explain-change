@@ -13,6 +13,9 @@ All notable changes to this project are documented here. The format follows
 - `midnight` is now the theme a page opens in when `render.py` gets no `--theme` and the reader has no stored pick. A stored pick still wins, and the five earlier themes stay in the Appearance picker. The README screenshots show midnight.
 - The error for an unknown `--theme` now names six ids.
 
+### Removed
+- The v1 report page and Mermaid (`mermaid.min.js`, 5.5 MB). A change doc with `version` 1 or no `version` now makes `validate.py` and `render.py` exit 1 with `error: explain-change v1 docs are no longer supported; write version 2 (references/explain-schema.md)`. Docs with `version: 2` are unaffected.
+
 ## [0.1.0] - 2026-11-05
 
 ### Added

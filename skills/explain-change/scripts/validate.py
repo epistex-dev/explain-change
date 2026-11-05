@@ -2,7 +2,7 @@
 """Check explain.json: schema, file coverage, and that every cited snippet really occurs in the code.
 
 usage: validate.py <explain.json> [--repo PATH] [--transcript FILE] [--format auto|claude|copilot|codex|opencode|gemini|cursor-cli|cursor-ide]
-Schema v1 (version absent or 1), v2 (version 2), explain-session/1 (a whole session; see references/session-schema.md) and explain-flow/1 (a flow of existing code, each source read from the doc's commit; see references/explain-flow-schema.md) are checked; v2 also grounds quotes and tool calls in the session
+Schema v2 (version 2; a doc with version 1 or none exits 1 with one line), explain-session/1 (a whole session; see references/session-schema.md) and explain-flow/1 (a flow of existing code, each source read from the doc's commit; see references/explain-flow-schema.md) are checked; v2 also grounds quotes and tool calls in the session
 transcript (a file under ~/.claude/projects, or a session of Copilot CLI, Codex, OpenCode, Gemini CLI or Cursor under that harness's own folder; the
 format is detected unless --format names it; the doc's "transcript" field is used when the flag is absent).
 Prints one `path: reason` line per problem (exit 1), or `ok` plus per-section counts (exit 0).
@@ -26,6 +26,8 @@ def load_and_validate(path, repo=None, transcript=None, fmt='auto'):
     if check_session.is_session(doc):  # a whole-session doc has no repo and no git range
         errs, stats = check_session.validate(doc, transcript, base_dir=here, fmt=fmt)
         return doc, errs, stats
+    if not check_flow.is_flow(doc):
+        check.require_v2(doc)  # before any git call: a v1 doc is refused in any folder
     repo = repo or gitio.toplevel(here)
     if check_flow.is_flow(doc):  # a flow of existing code: no diff, no session; every source is read from the doc's own commit
         errs, stats = check_flow.validate(doc, repo)
@@ -86,6 +88,9 @@ def main(argv=None):
     a = ap.parse_args(argv)
     try:
         _, errs, stats = load_and_validate(a.explain_json, a.repo, a.transcript, a.format)
+    except check.LegacyDoc as e:
+        print('error: %s' % e, file=sys.stderr)
+        return 1
     except gitio.ExplainError as e:
         print('error: %s' % e, file=sys.stderr)
         return 2
@@ -96,13 +101,7 @@ def main(argv=None):
         return report_session(stats)
     if stats.get('kind') == 'flow':
         return report_flow(stats)
-    if stats.get('version') == 2:
-        return report_v2(stats)
-    print('ok')
-    print('files %d, covered %d | flows %d (steps %d) | functions to explain %d, explained %d | risks %d | quiz %d | refs verified %d, inferred %d' % (
-        *stats['files'], *stats['flows'], *stats['functions'], stats['risks'], stats['quiz'],
-        stats['refs']['verified'], stats['refs']['inferred']))
-    return 0
+    return report_v2(stats)
 
 
 if __name__ == '__main__':

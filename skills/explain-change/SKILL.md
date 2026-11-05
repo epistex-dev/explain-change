@@ -119,7 +119,7 @@ With no transcript, drop `--transcript` from both commands.
 
 `render.py` writes `index.html` next to the doc, plus one page per `change_doc`, and prints the page path last. The page shows no code, diff or file:line, and it has no risks and no quiz. Done when `validate.py` prints `ok` and you hold the page path.
 
-`render.py --theme <id>` sets the colour theme a session page or a change page (`explain-change/2`) opens in: `midnight` (the default), `navy`, `ocean`, `plum`, `graphite` or `pearl` (light). An unknown id exits 1 with one line naming the valid ids. The reader can switch the colour scheme with the "Appearance" picker in the page header; the pick is kept in the browser's `localStorage` under one key, so a pick made on a session page also opens its change pages, and the other way round. The flag sets the page's default for a session doc and for the change pages that render with it; the v1 report page ignores it.
+`render.py --theme <id>` sets the colour theme a session page or a change page (`explain-change/2`) opens in: `midnight` (the default), `navy`, `ocean`, `plum`, `graphite` or `pearl` (light). An unknown id exits 1 with one line naming the valid ids. The reader can switch the colour scheme with the "Appearance" picker in the page header; the pick is kept in the browser's `localStorage` under one key, so a pick made on a session page also opens its change pages, and the other way round. The flag sets the page's default for a session doc and for the change pages that render with it.
 
 Docs with `version` absent or 1 still validate and render with the older report page (`references/explain-schema.md`, top part).
 

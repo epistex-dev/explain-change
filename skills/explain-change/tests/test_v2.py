@@ -362,20 +362,6 @@ class HostileTranscripts(V2Case):
 
 
 class VersionDispatch(V2Case):
-    def test_v1_docs_still_validate_through_the_same_entry_point(self):
-        from helpers import RepoCase
-        v1 = RepoCase.good_doc(self)
-        errs, stats = check.validate(v1, self.repo)
-        self.assertEqual(errs, [])
-        v1['version'] = 1
-        self.assertEqual(check.validate(v1, self.repo)[0], [])
-
-    def test_unknown_version_is_an_error(self):
-        from helpers import RepoCase
-        v1 = RepoCase.good_doc(self)
-        v1['version'] = 3
-        self.assertTrue(any(e.startswith('version:') for e in check.validate(v1, self.repo)[0]))
-
     def test_v2_needs_both_markers(self):
         self.assertInvalid(lambda d: d.update(version=1), 'version: must be 2')
         self.assertInvalid(lambda d: d.update(schema='explain-change/1'), "schema: must be 'explain-change/2'")
