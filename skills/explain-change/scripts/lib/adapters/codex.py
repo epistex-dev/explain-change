@@ -29,7 +29,7 @@ SUBAGENT_THREADS = frozenset(('subagent', 'guardian_review'))
 # Text the harness puts in the user channel: a message wholly wrapped in one of these tags is not typed.
 INJECTED_TAGS = ('environment_context', 'user_instructions', 'system-reminder', 'turn_aborted',
                  'user_shell_command', 'subagent_notification', 'permissions', 'collaboration_mode')
-EXIT_HEADER = (re.compile(r'^Process exited with code (-?\d+)\s*$', re.M), re.compile(r'^Exit code: (-?\d+)\s*$', re.M))
+EXIT_HEADER = (re.compile(r'^Process exited with code (-?\d{1,18})\s*$', re.M), re.compile(r'^Exit code: (-?\d{1,18})\s*$', re.M))      # a longer number is not an exit code
 
 
 def default_root():

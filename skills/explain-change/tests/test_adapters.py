@@ -190,6 +190,11 @@ class CopilotExitCodes(TmpCase):
         t = self.one(cp_call('c1', 'view', {'path': '/x'}), cp_done('c1', result={'content': '<shellId: 1 completed with exit code 9>'}))
         self.assertEqual((t.exit_code, t.is_error), (None, False))
 
+    def test_a_number_over_18_digits_is_not_an_exit_code(self):
+        for digits, want in (('9' * 18, 10 ** 18 - 1), ('9' * 19, None), ('9' * 5000, None)):
+            t = self.one(cp_call('c1'), cp_done('c1', result={'content': 'x\n<shellId: demo completed with exit code %s>' % digits}))
+            self.assertEqual(t.exit_code, want)
+
     def test_user_bang_command_failure_shape(self):
         s = copilot.read(self.write('u/events.jsonl', [
             cp_start(), cp('tool.user_requested', {'toolCallId': 'u1', 'toolName': 'local_shell', 'arguments': {'command': 'false'}}),
@@ -320,6 +325,12 @@ class CodexOutputs(TmpCase):
         self.assertEqual((t.exit_code, t.is_error), (3, True))
         t = self.one(cx_call('c'), cx_out('c', 'Exit code: 2\nWall time: 1 seconds\nOutput:\nhi'))
         self.assertEqual((t.exit_code, t.is_error), (2, True))
+
+    def test_a_number_over_18_digits_is_not_an_exit_code(self):
+        for line in ('Process exited with code %s', 'Exit code: %s'):
+            for digits, want in (('9' * 18, 10 ** 18 - 1), ('9' * 19, None), ('9' * 5000, None)):
+                t = self.one(cx_call('c'), cx_out('c', 'Wall time: 1 seconds\n%s\nOutput:\nhi' % (line % digits)))
+                self.assertEqual(t.exit_code, want)
 
     def test_exit_text_in_the_body_is_not_the_exit_code(self):
         t = self.one(cx_call('c'), cx_out('c', 'Wall time: 1 seconds\nProcess exited with code 0\nOutput:\nProcess exited with code 7\nExit code: 9'))
@@ -456,7 +467,8 @@ CODEX = Harness(codex, '2026/11/04/rollout-%s.jsonl', cx_meta, cx_user,
                 lambda cid: cx_call(cid, 'shell_command', {'command': 'echo %s' % cid}), cx_out)
 
 
-class Hostile:
+class HostileFiles:
+    """Hostile-input tests that need only a header and user lines: every adapter of a JSON-lines transcript runs them."""
     H = None
 
     def make(self, lines, name='s', mode='w'):
@@ -508,16 +520,6 @@ class Hostile:
                        self.H.user('kept')])
         self.assertEqual([e.text for e in self.read(p).events], ['kept'])
 
-    def test_missing_fields_become_none(self):
-        p = self.make([{'type': 'session.start' if self.H is COPILOT else 'session_meta'}, {'type': 'tool.execution_complete', 'data': 5, 'payload': 5},
-                       {'type': 'assistant.message', 'data': {'toolRequests': [{}, 7, {'name': 'bash'}]}},
-                       {'type': 'response_item', 'payload': {'type': 'function_call'}},
-                       {'type': 'response_item', 'payload': {'type': 'function_call', 'name': 'shell_command'}}])
-        s = self.read(p)
-        self.assertEqual((s.id, s.cwd, s.started_at), (None, None, None))
-        for t in calls(s):
-            self.assertEqual((t.call_id, t.output, t.exit_code, t.is_error), (None, None, None, False))
-
     def test_a_file_that_grows_while_read_is_read_as_of_open(self):
         p = self.make([self.H.header(), self.H.user('one'), self.H.user('two')])
         it = _io.records(os.path.realpath(p))
@@ -546,20 +548,6 @@ class Hostile:
             stop.set()
             t.join()
 
-    def test_a_duplicated_call_id_pairs_in_order_and_a_repeated_output_is_ignored(self):
-        p = self.make([self.H.header(), self.H.call('d'), self.H.call('d'), self.H.out('d', 'first'), self.H.out('d', 'second'), self.H.out('d', 'third')])
-        self.assertEqual([t.output for t in calls(self.read(p))], ['first', 'second'])
-
-    def test_an_output_with_no_call_makes_no_event(self):
-        p = self.make([self.H.header(), self.H.out('ghost', 'orphan'), self.H.call('a'), self.H.out('a', 'mine')])
-        s = self.read(p)
-        self.assertEqual([(t.call_id, t.output) for t in calls(s)], [('a', 'mine')])
-
-    def test_a_call_with_no_output_keeps_none(self):
-        p = self.make([self.H.header(), self.H.call('a')])
-        t = calls(self.read(p))[0]
-        self.assertEqual((t.output, t.exit_code, t.is_error, t.command), (None, None, False, 'echo a'))
-
     def test_detect_and_registry(self):
         p = self.make([self.H.header()])
         self.assertTrue(self.H.mod.detect(p))
@@ -569,6 +557,37 @@ class Hostile:
         self.assertFalse(self.H.mod.detect(junk))
         self.assertIsNone(adapters.detect_format(junk))
         self.assertFalse(self.H.mod.detect(os.path.join(self.root, 'missing')))
+
+
+class Hostile(HostileFiles):
+    """Adds the tests that need tool calls and their output records."""
+
+    def test_missing_fields_become_none(self):
+        p = self.make([{'type': 'session.start' if self.H is COPILOT else 'session_meta'}, {'type': 'tool.execution_complete', 'data': 5, 'payload': 5},
+                       {'type': 'assistant.message', 'data': {'toolRequests': [{}, 7, {'name': 'bash'}]}},
+                       {'type': 'response_item', 'payload': {'type': 'function_call'}},
+                       {'type': 'response_item', 'payload': {'type': 'function_call', 'name': 'shell_command'}}])
+        s = self.read(p)
+        self.assertEqual((s.id, s.cwd, s.started_at), (None, None, None))
+        for t in calls(s):
+            self.assertEqual((t.call_id, t.output, t.exit_code, t.is_error), (None, None, None, False))
+
+
+    def test_a_duplicated_call_id_pairs_in_order_and_a_repeated_output_is_ignored(self):
+        p = self.make([self.H.header(), self.H.call('d'), self.H.call('d'), self.H.out('d', 'first'), self.H.out('d', 'second'), self.H.out('d', 'third')])
+        self.assertEqual([t.output for t in calls(self.read(p))], ['first', 'second'])
+
+
+    def test_an_output_with_no_call_makes_no_event(self):
+        p = self.make([self.H.header(), self.H.out('ghost', 'orphan'), self.H.call('a'), self.H.out('a', 'mine')])
+        s = self.read(p)
+        self.assertEqual([(t.call_id, t.output) for t in calls(s)], [('a', 'mine')])
+
+
+    def test_a_call_with_no_output_keeps_none(self):
+        p = self.make([self.H.header(), self.H.call('a')])
+        t = calls(self.read(p))[0]
+        self.assertEqual((t.output, t.exit_code, t.is_error, t.command), (None, None, False, 'echo a'))
 
 
 class Guards:

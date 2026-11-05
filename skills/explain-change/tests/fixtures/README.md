@@ -33,3 +33,18 @@
   - `chats/0f1e2d3c-aaaa-4bbb-8ccc-000000000001/sub-1.jsonl`: the sub-agent transcript of that session (`kind: subagent`).
   - `chats/session-2026-11-03T09-00-legacy-1.json`: a transcript in the older single-object format.
   - `tmp/other-project/`: a session recorded in another project, which `find_sessions` must not return.
+- `cursor-cli/projects/`: a Cursor CLI `~/.cursor/projects` directory. The transcripts are the Cursor fixtures of the agent-sessions project
+  (MIT, see `THIRD_PARTY_NOTICES.md`), unchanged in content and renamed to the layout `<project>/agent-transcripts/<uuid>/<uuid>.jsonl`
+  (sub-agents in `<uuid>/subagents/`) that the Cursor CLI writes:
+  - `work-repo/agent-transcripts/a1b2c3d4-e5f6-4890-abcd-ef1234567890/`: `AgentSessionsTests/Fixtures/Cursor/test-session.jsonl` (a `<user_query>`
+    message, injected text, two `Shell` calls) and its sub-agent `subagents/d88b213c-84e1-427d-bb5e-3859c1011087.jsonl` (`subagent-session.jsonl`).
+  - `.../0c1d2e3f-4a5b-4c6d-8e7f-a0b1c2d3e4f5/`: `Resources/Fixtures/stage0/agents/cursor/subagent/parent.jsonl` and `subagents/child.jsonl`.
+  - `.../11111111-2222-4333-8444-555555555555/` and `.../66666666-7777-4888-9999-aaaaaaaaaaaa/`: `stage0/agents/cursor/small.jsonl` and `schema_drift.jsonl`.
+  - `other-project/`: a copy of `test-session.jsonl`, a session of another project, which `find_sessions` must not return.
+  `work-repo` is the project folder name of `/work/repo`, the working directory the tests pass to `find_sessions`; `Session.cwd` is None for it because that directory does not exist on the test machine (the slug decoding is tested with a stand-in directory probe).
+- Cursor IDE (`adapters/cursor_ide.py`) has no fixture file: `tests/test_adapters_cursor_ide.py` (`build_fixture`) writes a small `state.vscdb` with
+  a `cursorDiskKV` table, from the record formats of SpecStory's `cursoride/CURSORIDE-FORMAT.md` (Apache-2.0). Its contents are written for this
+  repository: a Cursor 3 composer with inline `fullConversationHeadersOnly` and `toolFormerData` (shell calls with output, `completed`, `cancelled`
+  and `error` status; a `read_file_v2` call; a bubble no header lists), a composer whose headers are paged `composerConvHeaders:<id>:<page>` rows, an older
+  composer with an inline conversation and tool data in `capabilities[].data.bubbleDataMap`, a composer of another folder, one that records no folder, and
+  unrelated `checkpointId:` / `messageRequestContext:` keys. The size tests build larger databases (up to 74 MB) in a temporary directory.

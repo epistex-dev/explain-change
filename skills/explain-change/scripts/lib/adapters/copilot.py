@@ -23,7 +23,7 @@ SHELL_TOOLS = frozenset((
 
 NOTE_OPEN, NOTE_CLOSE = '<system_notification>', '</system_notification>'
 CROSS_SESSION_TAG = '<cross_session_message>'
-EXIT_LINE = re.compile(r'<shellId:[^>]*?completed with exit code (-?\d+)>')
+EXIT_LINE = re.compile(r'<shellId:[^>]*?completed with exit code (-?\d{1,18})>')      # a longer number is not an exit code
 
 
 def default_root():
