@@ -1,8 +1,20 @@
 # explain-session/1
 
-A session doc sketches a whole session, one task or many, for a reader who cannot follow it all: what was asked, what got done, what waits on the reader, what the agent decided alone, and what left the working copy. It is about the work, not the code: it shows no code, diff or file:line, and it has no risks section and no quiz. A theme that changed code links to its `explain-change/2` page for the detail.
+Read this when the user wants the context of a whole session or of several tasks, not one change. Set `S` (the folder of SKILL.md) and `REPO` as in [SKILL.md](../SKILL.md).
 
-Workflow: `collect.py --session` lists the candidate sessions; `collect.py --session --transcript <file>` prints the digest; write the doc; `validate.py <doc> --transcript <file>` checks it; `render.py <doc> --transcript <file>` writes the page. With no session available (an unsupported harness, a missing or unreadable file, no agent session at all), set `"transcript_unavailable": "<reason>"` (one line, at most 200 characters, never together with a transcript; a doc with neither is refused); the checks that need a session then stay off and `validate.py` prints "transcript checks off". The schema, theme, order and secret checks still run. The page reads "Not checked against the session: <reason>" and shows each outward count as the agent's own count, once.
+## Workflow
+
+1. Collect: `python3 $S/scripts/collect.py --session` lists the candidate sessions; `python3 $S/scripts/collect.py --session --transcript <file>` prints the digest (numbered turns, work between turns, repos, outward actions). With no session to read, take the no-transcript path ([transcripts.md](transcripts.md)): set `"transcript_unavailable": "<reason>"` instead of the transcript, take the turns and the outward actions from your own context (`order` counts your turns from 1), and drop `--transcript` from every command below.
+2. Write `session.json` (`explain-session/1`) in a folder of your own (`$RUN_DIR` of any run, or a new one): group the turns and the work into themes a reader would name, give each theme its events with the turn number as `order`, and fill `needs_you`, `decided` and `outward` from the digest (copy its counts, including the `scratch` count of deletes). A theme whose code you explained in a change doc gets `change_doc`, a relative path to that doc in the same folder. Ground only what the transcript shows: a delegated worker's own commands are not in it.
+3. Validate: `python3 $S/scripts/validate.py session.json --transcript <file>`.
+4. Render: `python3 $S/scripts/render.py session.json --transcript <file> --text [--theme <id>]`. It writes `index.html` next to the doc, plus one page per `change_doc`, and prints the page path last. `--theme` takes `midnight` (the default), `navy`, `ocean`, `plum`, `graphite` or `pearl` (light); an unknown id exits 1 with one line naming the valid ids.
+5. Show the page as in step 7 of SKILL.md.
+
+Done when `validate.py` prints `ok` and you hold the page path.
+
+## What a session doc is
+
+A session doc sketches a whole session, one task or many, for a reader who cannot follow it all: what was asked, what got done, what waits on the reader, what the agent decided alone, and what left the working copy. It is about the work, not the code: it shows no code, diff or file:line, and it has no risks section and no quiz. A theme that changed code links to its `explain-change/2` page for the detail.
 
 ## The page
 

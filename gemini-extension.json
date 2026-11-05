@@ -1,5 +1,5 @@
 {
   "name": "explain-change",
   "version": "0.1.0",
-  "description": "Explain what an agent just changed as one offline HTML page with a system map, so you understand the code instead of trusting it."
+  "description": "Turn a coding agent's change, session or code flow into one fact-checked, offline HTML explainer with a system map. Works with Claude Code, Codex, Gemini CLI, Copilot, Cursor and OpenCode."
 }

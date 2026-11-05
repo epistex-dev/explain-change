@@ -15,10 +15,15 @@ All notable changes to this project are documented here. The format follows
 - The two reference folders are one: `skills/explain-change/reference/examples` and `reference/ui` moved to `skills/explain-change/references/examples` and `references/ui`. The duplicate `reference/ui/LICENSES.txt` is gone (`assets/ui/LICENSES.txt` stays).
 - The test suite (`tests/`, with `red_check.py`) and the design notes (`docs/design.md`, was `DESIGN.md`) moved out of `skills/explain-change/`, so an install ships only the skill. Run the tests with `python3 -m unittest discover -s tests`.
 - A test pins the text colour of the flow page's error code (`E1`) on its red pill at 4.5:1 or better in every theme.
+- The docs are split by reader. The README is a short front page (what it does, install, quick start, supported harnesses); the detail moved to `docs/install.md`, `docs/how-it-works.md` and `docs/modes.md`, and the folder layout to `CONTRIBUTING.md`. Each fact lives in one place.
+- `SKILL.md` is lighter for agents: the transcript table and the no-transcript path moved to `references/transcripts.md`, and the whole-session and flow workflows moved to the top of `references/session-schema.md` and `references/explain-flow-schema.md`. The skill description now also triggers on "summarize this session".
+- The four manifests carry one description, and the three that allow it carry discovery keywords.
+- `docs/intro/DESIGN.md` is `docs/intro/brief.md`, so it no longer clashes with `docs/design.md` by case.
 
 ### Removed
 - The v1 report page and Mermaid (`mermaid.min.js`, 5.5 MB). A change doc with `version` 1 or no `version` now makes `validate.py` and `render.py` exit 1 with `error: explain-change v1 docs are no longer supported; write version 2 (references/explain-schema.md)`. Docs with `version: 2` are unaffected.
 - `docs/images/intro.webp` (7.6 MB). The README intro is the AVIF, linked to the mp4.
+- The 800 px theme screenshots that no page used (`docs/images/themes/*-800x900.png`, 12 files).
 - Seven README screenshots that were byte-identical copies of ones in `docs/images/themes/` (2.8 MB): `hero.png`, `session-1440x900.png`, `session-800x900.png` and the folder `no-transcript/`.
 
 ## [0.1.0] - 2026-11-05

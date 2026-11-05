@@ -531,7 +531,9 @@ class NeutralModel(unittest.TestCase):
 
 
 class Docs(unittest.TestCase):
-    """The harness table of README.md and SKILL.md is the table of the readers."""
+    """The harness table of README.md and references/transcripts.md is the table of the readers."""
+
+    PATHS = (os.path.join(SKILL, 'references', 'transcripts.md'), os.path.join(os.path.dirname(os.path.dirname(SKILL)), 'README.md'))
 
     def rows(self, path):
         with open(path, encoding='utf-8') as fh:
@@ -540,7 +542,7 @@ class Docs(unittest.TestCase):
 
     def test_each_row_names_the_folder_the_reader_uses(self):
         home = os.path.expanduser('~')
-        for path in (os.path.join(SKILL, 'SKILL.md'), os.path.join(os.path.dirname(os.path.dirname(SKILL)), 'README.md')):
+        for path in self.PATHS:
             rows = self.rows(path)
             self.assertEqual(sorted(rows), sorted(neutral.FORMATS), path)
             self.assertEqual(rows['claude'], '~/.claude/projects')
@@ -551,7 +553,7 @@ class Docs(unittest.TestCase):
                 self.assertEqual(rows[name], want, name)
 
     def test_the_docs_make_no_hedged_claims(self):
-        for path in (os.path.join(SKILL, 'SKILL.md'), os.path.join(os.path.dirname(os.path.dirname(SKILL)), 'README.md')):
+        for path in self.PATHS + (os.path.join(SKILL, 'SKILL.md'),):
             with open(path, encoding='utf-8') as fh:
                 text = fh.read().lower()
             for word in ('unverified', 'experimental', 'planned'):

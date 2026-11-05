@@ -318,7 +318,7 @@ MUTATIONS += [
      V3 + 'RunFolderName.test_without_a_slug_the_most_common_subject_among_in_scope_commits_names_it'),
     ('v3 slug: a tie goes to the newest commit', CL, 'key=lambda s: (subjects.count(s), -subjects.index(s))', 'key=lambda s: (subjects.count(s), subjects.index(s))',
      V3 + 'RunFolderName.test_tie_goes_to_the_newest_commit'),
-    ('v3 v2 output: no v1 hint', CL, "and not f['test'] and not v2 else", "and not f['test'] else", V3 + 'NoV1Hints.test_v2_output_has_no_explain_in_hint_and_v1_keeps_it'),
+    ('v3 v2 output: no v1 hint', CL, "and not f['test'] and not v2 else", "and not f['test'] else", V3 + 'NoV1Hints.test_v2_collect_output_has_no_v1_hints'),
     ('v3 digest: unittest is a strong run', TR, '|pytest|unittest|phpunit|', '|pytest|phpunit|', V3 + 'DigestPriority.test_strong_runs_in_workers_survive_two_hundred_noise_calls'),
     ('v3 digest: red_check and prove_fix are strong runs', TR, '|red_check|prove[_-]fix|check\\.mjs)(?![\\w-])', ')(?![\\w-])', V3 + 'DigestPriority.test_strong_runs_in_workers_survive_two_hundred_noise_calls'),
     ('v3 digest: an inline script that only mentions a runner is weak', TR, 'strong = runs_strong(extra[2])', 'strong = bool(STRONG.search(extra[2]))',
@@ -1304,7 +1304,7 @@ MUTATIONS += [
      "            first = transcript.redact((c['first_user'] or '(no user message)').replace('\\n', ' '))\n            out.append('  %d. [%s] %s'",
      "            first = (c['first_user'] or '(no user message)').replace('\\n', ' ')\n            out.append('  %d. [%s] %s'",
      W + 'Listing.test_a_credential_in_the_first_message_is_masked_in_the_listing'),
-    ('wire: SKILL.md names the folder of each reader', 'SKILL.md', '| Codex | `~/.codex/sessions` | `codex` |', '| Codex | `~/.codex/session` | `codex` |',
+    ('wire: transcripts.md names the folder of each reader', 'references/transcripts.md', '| Codex | `~/.codex/sessions` | `codex` |', '| Codex | `~/.codex/session` | `codex` |',
      W + 'Docs.test_each_row_names_the_folder_the_reader_uses'),
     ('wire: README.md names the folder of each reader', '../../README.md', '| Codex | `~/.codex/sessions` | `codex` |', '| Codex | `~/.codex/session` | `codex` |',
      W + 'Docs.test_each_row_names_the_folder_the_reader_uses'),
@@ -1364,8 +1364,8 @@ _NO_TRANSCRIPT = [
          'SessionPage.test_cli_renders_a_session_doc_without_a_transcript'),
         ('no transcript: collect --session names the way out', 'scripts/lib/collect2.py', '        if not others:\n            out.append(', '        if False:\n            out.append(',
          'CollectWithoutTranscript.test_session_listing_points_to_the_no_transcript_path'),
-        ('no transcript: SKILL.md has the path', 'SKILL.md', '### No transcript', '### Without a transcript',
-         'Docs.test_skill_md_has_the_no_transcript_path_for_each_harness_without_a_reader'),
+        ('no transcript: transcripts.md has the path', 'references/transcripts.md', '## No transcript', '## Without a transcript',
+         'Docs.test_transcripts_md_has_the_no_transcript_path_for_each_harness_without_a_reader'),
 ]
 MUTATIONS += [(name, rel, old, new, 'test_no_transcript.' + test) for name, rel, old, new, test in _NO_TRANSCRIPT]
 MUTATIONS += [

@@ -2,10 +2,10 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "explain-change",
   "version": "0.1.0",
-  "description": "Explain what an agent just changed as one offline HTML page with a system map, so you understand the code instead of trusting it.",
+  "description": "Turn a coding agent's change, session or code flow into one fact-checked, offline HTML explainer with a system map. Works with Claude Code, Codex, Gemini CLI, Copilot, Cursor and OpenCode.",
   "author": { "name": "epistex-dev", "url": "https://github.com/epistex-dev" },
   "homepage": "https://github.com/epistex-dev/explain-change",
   "repository": "https://github.com/epistex-dev/explain-change",
   "license": "MIT",
-  "keywords": ["code-explanation", "code-review", "diff", "agent-skills"]
+  "keywords": ["agent-skills", "explain-code-changes", "code-comprehension", "ai-generated-code", "diff-explainer", "session-report", "code-review", "claude-code", "codex", "gemini-cli"]
 }
