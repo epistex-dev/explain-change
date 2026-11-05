@@ -1,0 +1,22 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure git for the test repositories
+        run: |
+          git config --global user.email "ci@example.test"
+          git config --global user.name "CI"
+          git config --global init.defaultBranch main
+      - name: Run the test suite
+        run: python3 -m unittest discover -s skills/explain-change/tests

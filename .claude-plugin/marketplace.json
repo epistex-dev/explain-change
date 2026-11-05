@@ -1,0 +1,21 @@
+{
+  "name": "explain-change",
+  "owner": {
+    "name": "epistex-dev",
+    "url": "https://github.com/epistex-dev"
+  },
+  "metadata": {
+    "description": "explain-change: one-page, offline explanations of agent-written code changes."
+  },
+  "plugins": [
+    {
+      "name": "explain-change",
+      "source": "./",
+      "description": "Explain what an agent just changed as one offline HTML page with a system map, so you understand the code instead of trusting it.",
+      "version": "0.1.0",
+      "author": { "name": "epistex-dev" },
+      "category": "development",
+      "keywords": ["code-explanation", "code-review", "diff"]
+    }
+  ]
+}
