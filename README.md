@@ -136,6 +136,22 @@ python3 skills/explain-change/scripts/render.py \
 
 `--no-validate` skips the git and transcript checks, and the page says so.
 
+### Whole sessions
+
+After a long session, one task or many, ask for "explain this session". The agent runs `collect.py --session --transcript <file>`, writes an `explain-session/1` doc, checks it with `validate.py <doc> --transcript <file>` and renders it with `render.py <doc> --transcript <file>`. The page opens with a strip: what is done, what waits on you, what the agent decided for you (each marked reversible or not) and what left the working copy (pushes, force pushes, real deletes, pull requests). Below it, one lane per theme shows the events in order; select a marker to read the journey in the side panel, and open the theme's change page when it has one. It shows no code, diff or file:line.
+
+![A session page with one theme selected](docs/images/session-1440x900.png)
+
+To render the bundled sample:
+
+```bash
+python3 skills/explain-change/scripts/render.py \
+  skills/explain-change/reference/examples/portal-day.session.json \
+  --no-validate --out /tmp/session/index.html
+```
+
+The schema is in [`references/session-schema.md`](skills/explain-change/references/session-schema.md).
+
 Reading order for the skill itself: [`SKILL.md`](skills/explain-change/SKILL.md) (steps), [`references/explain-schema.md`](skills/explain-change/references/explain-schema.md) (doc fields and rules), [`DESIGN.md`](skills/explain-change/DESIGN.md) (page design and decisions).
 
 ## Development

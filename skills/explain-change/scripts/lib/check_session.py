@@ -193,7 +193,7 @@ def _validate(doc, transcript_path, base_dir):
     stats['needs_you'], stats['decided'], stats['irreversible'] = len(needs), len(as_list(doc.get('decided'))), irreversible
 
     # ---- outward
-    claimed = {}
+    claimed, scratch_claimed = {}, 0
     for i, o in enumerate(block('outward')):
         p = 'outward[%d]' % i
         if not isinstance(o, dict):
@@ -208,6 +208,14 @@ def _validate(doc, transcript_path, base_dir):
             err(p + '.count', 'a whole number, at least 1')
         elif k in outward.KINDS:
             claimed.setdefault(k, o['count'])
+        if 'scratch' in o:
+            sv = o['scratch']
+            if k != 'delete':
+                err(p + '.scratch', 'only a delete entry has scratch (deletes under /tmp/ or $TMPDIR, counted in count)')
+            elif not _is_int(sv) or sv < 0 or (_is_int(o.get('count')) and sv > o['count']):
+                err(p + '.scratch', 'a whole number from 0 to count: the deletes whose every target is under /tmp/ or $TMPDIR')
+            else:
+                scratch_claimed = sv
         ths = o.get('themes')
         if not isinstance(ths, list) or not ths:
             err(p + '.themes', 'required list of theme ids')
@@ -240,6 +248,8 @@ def _validate(doc, transcript_path, base_dir):
                 err('outward', '%s: the doc says %d, the transcript shows %d successful call(s)' % (k, claimed[k], have[k]))
             elif k not in claimed and have[k]:
                 err('outward', '%s: %d successful call(s) in the transcript but the doc does not list them' % (k, have[k]))
+        if 'delete' in claimed and scratch_claimed != sc.scratch():
+            err('outward', 'delete: the doc says scratch %d, the transcript shows %d delete(s) whose every target is under /tmp/ or $TMPDIR' % (scratch_claimed, sc.scratch()))
         turns = len(sc.users)
         wanted = [q for _, _, qs in order_checks for q in qs]
         where = session.quote_turns(tpath, wanted) if wanted else {}

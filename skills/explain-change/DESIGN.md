@@ -105,3 +105,31 @@ Edges are orthogonal routes through the gutters. The router is pure (boxes in, p
 | Known limit: a regex fragment or a synthetic test password in a command is still learned | no shape tells it from a credential; masking it hides test text only |
 | `url` sources count the `url`, `urls` and `query` of fetch, search and preview tools | the agent reads pages through those tools |
 | A user message holding a credential shows in the digest with the value as `[ẩn]` | the agent can still quote the words around it |
+
+## Session page (`explain-session/1`: `scripts/lib/page_session.py`, `assets/ui/session.{css,js}`, `assets/ui/fit.js`)
+
+Case: Extend. The project has a page, `page2.css` carries its tokens, and the request adds a second page that shares them. Reference: the approved mockup `design/mockups/session-mode/2-swimlanes.html` (commit `d0928e5`, branch `mockups/session-mode`) with its `NOTES.md` and `session.css`. The mockup's markers were too small, so the build enlarges them. No web survey was made: the mockup and the existing page answered every gap.
+
+| Item | Value |
+| --- | --- |
+| Subject | The owner reads one page after a whole session, one task or many, and gets the context without reading the code |
+| Primary action | Know in about a minute what is done, what waits on you, what the agent chose alone and what left the working copy |
+| Tiers | 0: a strip (summary with per-theme status segments, Needs you, Agent decided for you, Outward actions). 1: one lane per theme and a side panel. 2: an "Open change page" button when the theme has a `change_doc` |
+| Left out | Code, diffs, file:line, sources, commands, quotes; risks; quiz; any doubt label (no "unchecked" badge when `transcript_unavailable` is set) |
+| Device | Desktop first (1440 x 900); 800 x 900 must work; 390 stays usable |
+| Tokens added | `--mk: 32px` (40px under `pointer: coarse`), `--mk-gap: 8px`, `--lane-h: 56px`; every other value is the page's own |
+
+| Decision | Rationale |
+| --- | --- |
+| Markers are real `button`s of at least 32 px with at least 8 px between them; a marker never touches its neighbour | the user asked for large markers; the same size is a safe tap target on the desktop |
+| `fit.js` places markers on one shared time axis (the turn numbers), with integer positions: push right by one pitch, then pull back from the right edge. A lane with more events than `floor((W + gap) / (mk + gap))` merges its closest neighbours into count bubbles, never into a non-adjacent group | a lane must stay legible at any width and keep the order; integers keep the gap from shrinking to 7 px |
+| A count bubble is a marker too: it selects its range in the panel, highlights those events and says "events a to b of n" | the cluster is not a dead end |
+| Escape closes the panel and returns focus to the marker (or the bubble that now holds it, else the lane header); opening focuses the panel | the keyboard path is the mouse path |
+| At 1000 px and under the panel moves to sit under the selected lane; with no JS the markers wrap and every panel shows | the page stays readable offline and without scripts |
+| At wide widths theme 1 is selected on load | the panel is never an empty box on first sight |
+| Each fact is told once: an event only in the panel, a Needs you and a Decided item only in its card; the panel links to them with a chip | the sections are MECE and the page does not repeat itself |
+| Real deletes are outward cards; deletes whose every target is under `/tmp/` or `$TMPDIR` are one collapsed line ("Also N cleanups of temp folders (scratch), not listed") | scratch cleanup is noise, a real delete is not |
+| The "Irreversible on the remote" note from the mockup was dropped | it was not in the doc; the Decided cards already mark each item reversible or not |
+| Page text goes through `plain()`: credentials hidden, backticks dropped, the line number of `file.ext:NN` dropped | the page shows no code or file:line even when a doc line has one |
+
+Checker rounds (`check.mjs` on the sample page): round 1 at 390, 768 and 1440: 0 failures, tap-target WARNs at 390 only (markers 32 px, status chips 26 px, tally 38 px), accepted for a desktop-first page and the 32 px the user asked for; round 2 at 800 and 1440: 0 failures, 0 warnings. Tiles opened at 1440 and 800. Inconsistencies seen and left alone: the v2 page still has "Not checked" and "Inferred" labels (the session page has none).

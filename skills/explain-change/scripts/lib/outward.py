@@ -11,6 +11,16 @@ commands of a command string ran in.
 import os
 import re
 
+class Action(tuple):
+    """(kind, label) as a plain 2-tuple, plus `.scratch`: True for a delete whose every target is under /tmp/ or $TMPDIR (worker temp dirs)."""
+    scratch = False
+
+    def __new__(cls, kind, label, scratch=False):
+        a = tuple.__new__(cls, (kind, label))
+        a.scratch = bool(scratch)
+        return a
+
+
 KINDS = ('repo_created', 'push', 'force_push', 'history_rewrite', 'delete', 'deploy', 'pr', 'message', 'other')
 MAX_DEPTH = 8
 MAX_ACTIONS = 1000
@@ -34,8 +44,8 @@ PUSH_VALUE_FLAGS = frozenset(('-o', '--push-option', '--repo', '--receive-pack',
 SEP = ';&|\n()`'
 
 
-def classify(cmd):
-    """[(kind, label)] for one shell command; [] when nothing leaves the working copy. kind is one of KINDS; label names the action
+def classify(cmd, cwd=None):
+    """[(kind, label)] for one shell command (`cwd`: the directory it started in, which a relative delete target is read against); [] when nothing leaves the working copy. kind is one of KINDS; label names the action
     ("git push --force"). One entry per action: `git push && git push -f` gives two."""
     if isinstance(cmd, (bytes, bytearray)):
         cmd = bytes(cmd).decode('utf-8', 'replace')
@@ -43,7 +53,7 @@ def classify(cmd):
         return []
     out = []
     try:
-        _run(cmd, 0, out)
+        _run(cmd, 0, out, cwd)
     except RecursionError:  # pragma: no cover - MAX_DEPTH keeps the stack shallow
         pass
     return out[:MAX_ACTIONS]
@@ -65,11 +75,15 @@ def kinds(cmd, **kw):
 
 # ---- shell splitting -------------------------------------------------------------------------------------------------
 
-def _run(text, depth, out):
+def _run(text, depth, out, cwd=None):
+    cur = cwd
     for words, heredoc in _split(text, depth):
         if len(out) >= MAX_ACTIONS:
             return
-        _simple(words, heredoc, depth, out)
+        w = _peel(words)
+        if w and w[0] == 'cd' and len(w) > 1:  # a later relative delete is read against the new directory; subshell scope is not modelled
+            cur = _join(cur, w[-1])
+        _simple(words, heredoc, depth, out, cur)
 
 
 def _matching(s, i):
@@ -298,7 +312,7 @@ def _flags(args):
     return longs, shorts, pos
 
 
-def _simple(words, heredoc, depth, out):
+def _simple(words, heredoc, depth, out, cwd=None):
     w = _peel(words)
     if not w:
         return
@@ -307,19 +321,19 @@ def _simple(words, heredoc, depth, out):
         script = _dash_c(args)
         if script is not None:
             if depth < MAX_DEPTH:
-                _run(script, depth + 1, out)
+                _run(script, depth + 1, out, cwd)
         elif heredoc is not None and depth < MAX_DEPTH:
-            _run(heredoc, depth + 1, out)
+            _run(heredoc, depth + 1, out, cwd)
         return
     if prog == 'eval':
         if depth < MAX_DEPTH:
-            _run(' '.join(args), depth + 1, out)
+            _run(' '.join(args), depth + 1, out, cwd)
     elif prog == 'git':
-        _git(args, out)
+        _git(args, out, cwd)
     elif prog == 'gh':
         _gh(args, out)
     elif prog in ('rm', 'rmdir', 'find'):
-        _delete(prog, args, depth, out)
+        _delete(prog, args, depth, out, cwd)
     elif prog == 'vercel':
         _vercel(args, out)
     elif prog in DEPLOY:
@@ -330,7 +344,7 @@ def _simple(words, heredoc, depth, out):
         if prog == 'docker' and not hit and longs & {'--push'}:  # docker buildx build --push
             hit = {'push'}
         if hit:
-            out.append(('delete' if sorted(hit) == ['delete'] else 'deploy', '%s %s' % (prog, sorted(hit)[0])))
+            out.append(Action('delete' if sorted(hit) == ['delete'] else 'deploy', '%s %s' % (prog, sorted(hit)[0])))
 
 
 def _dash_c(args):
@@ -348,7 +362,7 @@ def _dry(longs):
     return any(f == '--dry-run' for f in longs)
 
 
-def _git(args, out):
+def _git(args, out, cwd=None):
     i = 0
     while i < len(args) and args[i].startswith('-') and args[i] != '--':
         i += 2 if args[i] in GIT_VALUE_FLAGS else 1
@@ -363,19 +377,19 @@ def _git(args, out):
         forced = bool(longs & {'--force', '--force-with-lease', '--force-if-includes', '--mirror'}) or 'f' in shorts or any(p.startswith('+') for p in pos)
         gone = bool(longs & {'--delete'}) or 'd' in shorts or any(p.startswith(':') for p in pos)
         if gone:
-            out.append(('delete', 'git push --delete'))
+            out.append(Action('delete', 'git push --delete'))
         else:
-            out.append(('force_push', 'git push --force') if forced else ('push', 'git push'))
+            out.append(Action('force_push', 'git push --force') if forced else Action('push', 'git push'))
     elif sub in ('filter-repo', 'filter-branch'):
-        out.append(('history_rewrite', 'git ' + sub))
+        out.append(Action('history_rewrite', 'git ' + sub))
     elif sub == 'worktree' and pos[:1] == ['remove']:
-        out.append(('delete', 'git worktree remove'))
+        out.append(Action('delete', 'git worktree remove', _scratch(pos[1:2], cwd)))
     elif sub == 'branch':
         forced = '--force' in longs or 'f' in shorts
         if 'D' in shorts or (forced and ('d' in shorts or '--delete' in longs)):
-            out.append(('delete', 'git branch -D'))
+            out.append(Action('delete', 'git branch -D'))
     elif sub == 'clean' and 'f' in shorts + ''.join(l[2:] for l in longs if l == '--force') and not (_dry(longs) or 'n' in shorts):
-        out.append(('delete', 'git clean'))
+        out.append(Action('delete', 'git clean'))
 
 
 def _push_positional(rest):
@@ -402,21 +416,21 @@ def _gh(args, out):
         return
     key = ' '.join(pos)
     if key == 'repo create':
-        out.append(('repo_created', 'gh repo create'))
+        out.append(Action('repo_created', 'gh repo create'))
         if '--push' in longs:
-            out.append(('push', 'git push'))
+            out.append(Action('push', 'git push'))
     elif key in ('pr create', 'pr merge'):
-        out.append(('pr', 'gh ' + key))
+        out.append(Action('pr', 'gh ' + key))
     elif key == 'release create':
-        out.append(('deploy', 'gh release create'))
+        out.append(Action('deploy', 'gh release create'))
     elif key in ('repo delete', 'release delete'):
-        out.append(('delete', 'gh ' + key))
+        out.append(Action('delete', 'gh ' + key))
     elif key in ('pr comment', 'pr review', 'issue create', 'issue comment'):
-        out.append(('message', 'gh ' + key))
+        out.append(Action('message', 'gh ' + key))
     elif pos[:1] == ['api']:
         method = _api_method(args[i:])
         if method and method != 'GET':
-            out.append(('other', 'gh api ' + method))
+            out.append(Action('other', 'gh api ' + method))
 
 
 def _api_method(args):
@@ -436,18 +450,23 @@ def _vercel(args, out):
     if _dry(longs):
         return
     if not pos or pos[0] in ('deploy', 'promote', 'rollback') or ('--prod' in longs and pos[0] not in VERCEL_QUIET):
-        out.append(('deploy', 'vercel ' + (pos[0] if pos else 'deploy')))
+        out.append(Action('deploy', 'vercel ' + (pos[0] if pos else 'deploy')))
 
 
-def _delete(prog, args, depth, out):
+def _delete(prog, args, depth, out, cwd):
     longs, shorts, pos = _flags(args)
     if prog == 'rmdir':
-        out.append(('delete', 'rmdir'))
+        out.append(Action('delete', 'rmdir', _scratch(pos, cwd)))
     elif prog == 'rm':
         if '--recursive' in longs or 'r' in shorts or 'R' in shorts or any(p.endswith('/') for p in pos):
-            out.append(('delete', 'rm -r'))
+            out.append(Action('delete', 'rm -r', _scratch(pos, cwd)))
     elif '-delete' in args:  # find: its single-dash tests are words, not flags
-        out.append(('delete', 'find -delete'))
+        roots = []
+        for a in args:
+            if a.startswith(('-', '(', '!')) and a != '-':
+                break
+            roots.append(a)
+        out.append(Action('delete', 'find -delete', _scratch(roots, cwd)))
     else:
         for j, a in enumerate(args):
             if a in ('-exec', '-execdir', '-ok', '-okdir'):
@@ -455,7 +474,33 @@ def _delete(prog, args, depth, out):
                 while k < len(args) and args[k] not in (';', '+'):
                     k += 1
                 if depth < MAX_DEPTH:
-                    _simple(args[j + 1:k], None, depth + 1, out)
+                    _simple(args[j + 1:k], None, depth + 1, out, cwd)
+
+
+def _scratch(paths, cwd=None):
+    """True when there is a target and every one lies under /tmp/ or $TMPDIR (a worker's temp dir). A relative path counts only against a known `cwd`
+    (the call's directory or an earlier absolute `cd`). `~`, a `$VAR` other than a leading $TMPDIR, a `..` that climbs out, or `/tmp` itself is not
+    scratch: the doubt goes to the real side, which the page shows."""
+    return bool(paths) and all(_is_scratch(p, cwd) for p in paths)
+
+
+def _is_scratch(p, cwd):
+    roots = ['/tmp']
+    t = os.environ.get('TMPDIR', '').rstrip('/')
+    if t.startswith('/') and t not in roots:
+        roots.append(t)
+    for var in ('${TMPDIR}', '$TMPDIR'):
+        if p.startswith(var + '/'):
+            p = '/tmp' + p[len(var):]
+            break
+    if '$' in p or '`' in p or p.startswith('~'):
+        return False
+    if not p.startswith('/'):
+        if not cwd or '$' in cwd:
+            return False
+        p = os.path.join(cwd, p)
+    p = os.path.normpath(p)
+    return any(p.startswith(r + '/') for r in roots)
 
 
 # ---- where git ran ---------------------------------------------------------------------------------------------------
@@ -469,9 +514,9 @@ def _join(cur, p):
     return os.path.normpath(os.path.join(cur, p)) if cur else None
 
 
-def repo_paths(cmd, cwd=None, _depth=0):
-    """Directories that the git and gh commands in `cmd` ran in, in order: `git -C dir` (each -C relative to the one before), `gh -R owner/name`,
-    else the directory the command started in (`cwd`) as moved by an earlier `cd`. A directory that cannot be named (a $VAR, `cd -`) is skipped."""
+def _git_calls(cmd, cwd=None, _depth=0):
+    """[(dir, prog, args)] for each git and gh command in `cmd`: `dir` is where it ran (`git -C dir`, each -C relative to the one before; `gh -R owner/name`;
+    else `cwd` as moved by an earlier `cd`; None when it cannot be named: a $VAR, `cd -`), `args` the words after the program with git's global flags removed."""
     out = []
     if not isinstance(cmd, str) or _depth > MAX_DEPTH:
         return out
@@ -484,7 +529,7 @@ def repo_paths(cmd, cwd=None, _depth=0):
         if prog in SHELLS:
             script = _dash_c(args)
             if script is not None:
-                out += repo_paths(script, cur, _depth + 1)
+                out += _git_calls(script, cur, _depth + 1)
         elif prog == 'cd' and args:
             cur = _join(cur, args[-1])
         elif prog == 'git':
@@ -493,10 +538,42 @@ def repo_paths(cmd, cwd=None, _depth=0):
                 if args[i] == '-C' and i + 1 < len(args):
                     d = _join(d, args[i + 1])
                 i += 2 if args[i] in GIT_VALUE_FLAGS else 1
-            if d:
-                out.append(d)
+            out.append((d, 'git', args[i:]))
         elif prog == 'gh':
             repo = next((args[i + 1] for i, a in enumerate(args[:-1]) if a in ('-R', '--repo')), None)
-            if repo or cur:
-                out.append(repo or cur)
+            out.append((repo or cur, 'gh', args))
     return out[:MAX_ACTIONS]
+
+
+def repo_paths(cmd, cwd=None):
+    """Directories that the git and gh commands in `cmd` ran in, in order (see _git_calls); a directory that cannot be named is skipped."""
+    return [d for d, _, _ in _git_calls(cmd, cwd) if d]
+
+
+WORKTREE_VALUE_FLAGS = frozenset(('-b', '-B', '--reason'))
+
+
+def worktree_adds(cmd, cwd=None):
+    """[(repo dir, worktree path)] for each `git [-C dir] worktree add [flags] <path> [<commit-ish>]` in `cmd`, both absolute. Reads the text only: the
+    paths may be gone, and nothing is run or looked up. A command with no path argument, or with a path or repo that cannot be named, gives nothing."""
+    out = []
+    for d, prog, args in _git_calls(cmd, cwd):
+        if prog != 'git' or not d or args[:2] != ['worktree', 'add']:
+            continue
+        rest, path, i = args[2:], None, 0
+        while i < len(rest):
+            a = rest[i]
+            if a == '--':
+                path = rest[i + 1] if i + 1 < len(rest) else None
+                break
+            if a in WORKTREE_VALUE_FLAGS:
+                i += 2
+                continue
+            if not a.startswith('-'):
+                path = a
+                break
+            i += 1
+        wt = _join(d, path)
+        if wt and wt != d:
+            out.append((d, wt))
+    return out

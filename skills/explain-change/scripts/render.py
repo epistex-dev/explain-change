@@ -2,7 +2,8 @@
 """Validate explain.json and render index.html next to it (self-contained, works offline).
 
 usage: render.py <explain.json> [--repo PATH] [--out FILE] [--transcript FILE] [--arch FILE] [--no-validate] [--text]
-Schema v1 renders the report page, schema v2 the layout-2 page (one file, fonts inlined, under 512 KB).
+Schema v1 renders the report page, schema v2 the layout-2 page, explain-session/1 the swimlane page of a whole session (one file, fonts inlined, under 512 KB).
+A session theme with a change_doc also gets its v2 page, written next to the session page (<change_doc without .json>.html) and linked from the theme's panel.
 A validation problem prints the same lines as validate.py, writes nothing, exits 1.
 On success prints the absolute path of the page. --text also writes <page>.txt, the words of a v2 page, for the cold-read gate.
 --arch and --no-validate (v2 only) render an archived doc whose git range is gone: nothing is checked, the page says validated=no.
@@ -14,7 +15,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lib import arch as archmod  # noqa: E402
-from lib import check2, check_session, collect2, gitio, page, page2, transcript  # noqa: E402
+from lib import check2, check_session, collect2, gitio, page, page2, page_session, transcript  # noqa: E402
 from validate import load_and_validate  # noqa: E402
 
 
@@ -48,8 +49,7 @@ def main(argv=None):
         here = os.path.dirname(os.path.abspath(a.explain_json))
         out = os.path.abspath(a.out or os.path.join(here, 'index.html'))
         if session_doc(a.explain_json):
-            print('error: render.py does not render explain-session/1 docs; check one with validate.py', file=sys.stderr)
-            return 2
+            return render_session(a, out)
         if v2(a.explain_json):
             return render_v2(a, out)
         doc, errs, stats = load_and_validate(a.explain_json, a.repo)
@@ -65,6 +65,57 @@ def main(argv=None):
     except (gitio.ExplainError, archmod.ArchError) as e:
         print('error: %s' % e, file=sys.stderr)
         return 2
+
+
+def render_session(a, out):
+    here = os.path.dirname(os.path.abspath(a.explain_json))
+    with open(a.explain_json, encoding='utf-8') as fh:
+        doc = json.load(fh)
+    if a.no_validate:
+        problems = page_session.shape_problems(doc)
+        if problems:
+            print('\n'.join(problems))
+            print('not rendered: the doc lacks fields the page needs', file=sys.stderr)
+            return 1
+        learn_from = a.transcript or doc.get('transcript')
+        if isinstance(learn_from, str) and learn_from:
+            transcript.learn(learn_from)  # an archived doc is still kept clear of the session's credentials
+        print('warning: not validated (--no-validate); nothing was checked against the transcript', file=sys.stderr)
+    else:
+        errs, stats = check_session.validate(doc, a.transcript, base_dir=here)
+        if errs:
+            print('\n'.join(errs))
+            print('not rendered: fix the problems above and rerun', file=sys.stderr)
+            return 1
+        for w in stats.get('warnings', []):
+            print('warning: ' + w, file=sys.stderr)
+    links = {}
+    for i, th in enumerate(doc['themes']):
+        cd = th.get('change_doc')
+        if not cd:
+            continue
+        name = page_session.change_page_name(cd)
+        sub = argparse.Namespace(explain_json=os.path.join(here, cd), repo=a.repo, out=os.path.join(os.path.dirname(out), name), transcript=None,
+                                 arch=a.arch, no_validate=a.no_validate, text=a.text)
+        try:
+            code = render_v2(sub, sub.out)
+        except (OSError, ValueError) as e:  # the doc is missing or is not JSON
+            print('error: cannot render the change page of theme %d from %s: %s' % (i + 1, cd, e), file=sys.stderr)
+            return 2
+        if code:
+            return code
+        links[i] = name
+    body = page_session.render(doc, links)
+    if len(body.encode('utf-8')) > page2.MAX_BYTES:
+        print('error: page is %d KB, over the %d KB limit of html_preview' % (len(body.encode('utf-8')) // 1024, page2.MAX_BYTES // 1024), file=sys.stderr)
+        return 2
+    with open(out, 'w', encoding='utf-8') as fh:
+        fh.write(body)
+    if a.text:
+        with open(out + '.txt', 'w', encoding='utf-8') as fh:
+            fh.write(page2.page_text(body))
+    print(out)
+    return 0
 
 
 def render_v2(a, out):

@@ -21,13 +21,38 @@ class Scan:
         self.users = []  # (n, ts, clipped text)
         self.groups = collections.OrderedDict()  # turn -> {'tools': Counter, 'first': ts, 'last': ts, 'cmd': excerpt}
         self.workers = {}  # tid -> {'calls': int, 'first': turn, 'last': turn}
-        self.repos = {}  # path -> [first turn, last turn, git calls]
-        self.outward = []  # (turn, kind, label, tid), in turn order
+        self.repos = {}  # path -> [first turn, last turn, git calls], as the commands named it (a worktree path stays itself)
+        self.worktrees = {}  # worktree path -> the repo its `git worktree add` named, from the commands alone
+        self.outward = []  # (turn, kind, label, tid, scratch), in turn order
         self.warnings = []
         self.calls = 0
 
     def counts(self):
-        return collections.Counter(k for _, k, _, _ in self.outward)
+        return collections.Counter(o[1] for o in self.outward)
+
+    def scratch(self):
+        """Deletes whose targets all lie under /tmp/ or $TMPDIR (worker temp dirs): a part of counts()['delete'], never added to it."""
+        return sum(1 for o in self.outward if o[4])
+
+    def main_repo(self, path):
+        """`path` as the repo it belongs to: a worktree added by `git -C <repo> worktree add <path>` (or a folder inside one) maps to <repo>, and a
+        worktree of a worktree on to the repo behind that. Text only: no git runs, so a path that is gone still maps."""
+        for _ in range(8):  # a cycle or a long chain stops here
+            hit = max((w for w in self.worktrees if path == w or path.startswith(w.rstrip('/') + '/')), key=len, default=None)
+            if hit is None or self.worktrees[hit] == path:
+                break
+            path = self.worktrees[hit]
+        return path
+
+    def repo_list(self):
+        """{repo: [first turn, last turn, git calls]} after the worktree mapping; (that dict, number of paths folded into another repo)."""
+        out, folded = {}, 0
+        for p, (a, b, n) in self.repos.items():
+            m = self.main_repo(p)
+            folded += m != p
+            r = out.setdefault(m, [a, b, 0])
+            r[0], r[1], r[2] = min(r[0], a), max(r[1], b), r[2] + n
+        return out, folded
 
 
 def _ts(rec):
@@ -58,7 +83,7 @@ def scan(main_path):
                 elif kind == 'tool_result' and extra and extra[0] in pending:
                     at, acts = pending.pop(extra[0])
                     if not outward.failed(extra[1], text[:64]):
-                        sc.outward += [(at, k, lbl, tid) for k, lbl in acts]
+                        sc.outward += [(at, a[0], a[1], tid, getattr(a, 'scratch', False)) for a in acts]
         w = st.warning('transcript %s' % tid)
         if w:
             sc.warnings.append(w)
@@ -87,10 +112,13 @@ def _call(sc, tid, turn, ts, extra, pending, cwd):
     if not transcript.is_command_call(extra):
         return
     cmd = extra[2]
-    for d in outward.repo_paths(cmd, cwd if isinstance(cwd, str) else None):
+    cwd = cwd if isinstance(cwd, str) else None
+    for d in outward.repo_paths(cmd, cwd):
         r = sc.repos.setdefault(d, [turn, turn, 0])
         r[0], r[1], r[2] = min(r[0], turn), max(r[1], turn), r[2] + 1
-    acts = outward.classify(cmd)
+    for repo, wt in outward.worktree_adds(cmd, cwd):
+        sc.worktrees.setdefault(wt, repo)
+    acts = outward.classify(cmd, cwd)
     if acts and extra[0]:
         pending[extra[0]] = (turn, acts)
 
@@ -133,13 +161,22 @@ def digest(main_path):
     out += _cap(lines, MAX_GROUPS) or ['  (none)']
     for tid, w in sorted(sc.workers.items()):
         out.append('  %s: %d calls, turns u%d..u%d' % (tid, w['calls'], w['first'], w['last']))
-    repos = sorted(sc.repos.items(), key=lambda kv: (kv[1][0], kv[0]))
-    out += ['', 'Repos touched (%d: the directory of each git or gh command, from -C, cd or the working directory; first..last turn, git calls):' % len(repos)]
+    rl, folded = sc.repo_list()
+    repos = sorted(rl.items(), key=lambda kv: (kv[1][0], kv[0]))
+    out += ['', 'Repos touched (%d: the directory of each git or gh command, from -C, cd or the working directory; a worktree made by `git worktree add` in this '
+            'transcript counts as its repo, %d path(s) folded; first..last turn, git calls):' % (len(repos), folded)]
     out += _cap(['  %s  u%d..u%d  %d' % (transcript.redact(p), a, b, n) for p, (a, b, n) in repos], MAX_REPOS) or ['  (none)']
     counts = sc.counts()
-    out += ['', 'Outward actions (%d, only from calls that succeeded; an outward[].count in the doc must equal its total):' % len(sc.outward)]
-    out += _cap(['  u%d  %s  %s%s' % (t, k, transcript.redact(lbl), '  [%s]' % tid if tid != 'main' else '') for t, k, lbl, tid in sc.outward], MAX_OUTWARD_LINES) or ['  (none)']
+    out += ['', 'Outward actions (%d, only from calls that succeeded; an outward[].count in the doc must equal its total; a delete whose every target is under /tmp/ or $TMPDIR is scratch and shown as one line):' % len(sc.outward)]
+    real = [o for o in sc.outward if not o[4]]
+    out += _cap(['  u%d  %s  %s%s' % (t, k, transcript.redact(lbl), '  [%s]' % tid if tid != 'main' else '') for t, k, lbl, tid, _ in real], MAX_OUTWARD_LINES) or ['  (none)']
+    scratch = [o for o in sc.outward if o[4]]
+    if scratch:
+        out.append('  + %d scratch delete(s), u%d..u%d, counted below, not listed (every target under /tmp/ or $TMPDIR)' % (len(scratch), scratch[0][0], scratch[-1][0]))
     out.append('  totals: ' + (', '.join('%s %d' % (k, counts[k]) for k in outward.KINDS if counts[k]) or 'none'))
+    if scratch:
+        out.append('  delete %d = %d real + %d scratch: write {"kind": "delete", "count": %d, "scratch": %d, ...}' % (
+            counts['delete'], counts['delete'] - len(scratch), len(scratch), counts['delete'], len(scratch)))
     return '\n'.join(out), sc.warnings
 
 

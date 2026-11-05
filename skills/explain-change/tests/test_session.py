@@ -84,7 +84,7 @@ def good_doc():
             {'kind': 'repo_created', 'count': 1, 'themes': ['backup'], 'evidence': [src_tool(GH, 'Created repository')]},
             {'kind': 'push', 'count': 2, 'themes': ['backup'], 'evidence': [src_tool(PUSH, 'set up to track')]},
             {'kind': 'force_push', 'count': 1, 'themes': ['polish'], 'evidence': [src_tool(FORCE, 'forced update')]},
-            {'kind': 'delete', 'count': 1, 'themes': ['cleanup'], 'evidence': [src_tool(RM, 'removed')]}]}
+            {'kind': 'delete', 'count': 1, 'scratch': 1, 'themes': ['cleanup'], 'evidence': [src_tool(RM, 'removed')]}]}
 
 
 class Case(unittest.TestCase):
