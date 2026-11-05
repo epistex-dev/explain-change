@@ -12,7 +12,7 @@
 ![license](https://img.shields.io/badge/license-MIT-blue)
 ![python](https://img.shields.io/badge/python-3%20stdlib%20only-3776ab)
 
-<img src="docs/images/hero.png" alt="The explain-change page for a sample change, in the midnight theme: a system map in the centre, a side panel with the Requests tab open" width="900">
+<img src="docs/images/themes/change-midnight-1440x900.png" alt="The explain-change page for a sample change, in the midnight theme: a system map in the centre, a side panel with the Requests tab open" width="900">
 
 <sub>Sample page rendered from the bundled fixture <code>reference/examples/password-autofill.v2.json</code>. The change is synthetic.</sub>
 
@@ -162,7 +162,7 @@ python3 skills/explain-change/scripts/render.py \
 
 After a long session, one task or many, ask for "explain this session". The agent runs `collect.py --session --transcript <file>`, writes an `explain-session/1` doc, checks it with `validate.py <doc> --transcript <file>` and renders it with `render.py <doc> --transcript <file>`. The page opens with a band: what is done, and what waits on you. Below it, one lane per theme shows the events in order, next to a side panel that lists what the agent decided for you (each marked reversible or not) and what left the working copy (pushes, force pushes, real deletes, pull requests). Select a marker to read that theme's journey in the same panel, and open the theme's change page when it has one. It shows no code, diff or file:line.
 
-![The session page in the midnight theme at 1440 x 900](docs/images/session-1440x900.png)
+![The session page in the midnight theme at 1440 x 900](docs/images/themes/midnight-1440x900.png)
 
 #### Colour themes
 

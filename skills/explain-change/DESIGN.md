@@ -210,7 +210,7 @@ Case: Extend. Both pages and their tokens exist (`page2.css`, `session.css`); th
 | The two `.nt` CSS rules are added to the page only when it has no session behind it | a page grounded in a session stays byte-identical to what it was |
 | Quotes, commands and file:line stay off both pages | "Không cần code" |
 
-Screenshots (bundled fixtures with the reason set, 1440 x 900 and 800 x 900): `docs/images/no-transcript/`. Every README and DESIGN image is captured from the README's own render commands (`--no-validate`), after animations end, twice, and kept only when both captures are byte-identical. Tests: `NoSessionLayout` in `tests/test_page_session.py` (last lane's markers end at or above y = 900 and the note adds no height; header height is the same with no reason and with a 200-character one, at 1440 and 800, en and vi).
+Screenshots (bundled fixtures with the reason set, 1440 x 900 and 800 x 900): `docs/images/themes/change-midnight-*.png` and `docs/images/themes/midnight-*.png` (the bundled fixtures render with the reason set, so these are the same bytes). Every README and DESIGN image is captured from the README's own render commands (`--no-validate`), after animations end, twice, and kept only when both captures are byte-identical. Tests: `NoSessionLayout` in `tests/test_page_session.py` (last lane's markers end at or above y = 900 and the note adds no height; header height is the same with no reason and with a 200-character one, at 1440 and 800, en and vi).
 
 ## Flow page (`explain-flow/1`: `scripts/lib/page_flow.py`, `assets/ui/flow.{css,js}`)
 
