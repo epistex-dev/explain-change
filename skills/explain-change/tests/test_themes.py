@@ -71,7 +71,7 @@ def ratio(a, b):
 
 
 def measure(t):
-    """(min text contrast, min ring contrast, min white-on-fill contrast) of a theme, the way design/mockups/themes/NOTES.md measures them: text, text-2, text-3
+    """(min text contrast, min ring contrast, min white-on-fill contrast) of a theme, the way the theme prototype notes measure them: text, text-2, text-3
     on surface-solid, raised, hl and the page ground; the status colours on surface-solid and hl; each status ring (its colour at the ring alpha over surface-solid) against surface-solid."""
     c = lambda k: rgb(t[k])[0]
     grounds = [c('surface-solid'), c('raised'), c('hl')]
