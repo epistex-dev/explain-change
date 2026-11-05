@@ -9,7 +9,7 @@ import re
 
 from .i18n2 import STR2, count
 from .page2 import UI, _read, esc, font_faces, ic, jdump
-from .page_session import _sprite, txt
+from .page_session import _sprite, plain, txt
 from .themes import THEME_KEY, THEMES, head_script, picker
 
 END = 'end'
@@ -98,8 +98,8 @@ class Builder:
         if not nums:
             return ''
         t = self.t
-        btn = ''.join('<button type="button" data-step="%d" aria-label="%s">%d</button>' % (n, esc(t['fl_step_aria'] % (n, plain_name(self.steps[n - 1]))), n) for n in nums)
-        return '<div class="f-pills" role="group" aria-label="%s">%s</div>' % (esc(t['fl_steps_in'] % plain_name(p)), btn)
+        btn = ''.join('<button type="button" data-step="%d" aria-label="%s">%d</button>' % (n, esc(t['fl_step_aria'] % (n, plain(self.steps[n - 1]['name']))), n) for n in nums)
+        return '<div class="f-pills" role="group" aria-label="%s">%s</div>' % (esc(t['fl_steps_in'] % plain(p['name'])), btn)
 
     def node(self, p, i):
         k = self.kind[p['id']]
@@ -152,7 +152,7 @@ class Builder:
         return '<nav aria-label="%s"><ol class="a-route">%s</ol></nav>' % (esc(t['fl_route_label']), lis)
 
     def stats(self):
-        t, d = self.t, self.doc
+        t = self.t
         n_err = sum(len(s.get('errors', [])) for s in self.steps)
         n_br = sum(1 for s in self.steps if s.get('branches'))
         items = [('', 'fl_steps', len(self.steps)), ('', 'fl_branches_n', n_br), ('bad', 'fl_errors_n', n_err), ('', 'fl_parts', len(self.parts))]
@@ -160,7 +160,7 @@ class Builder:
         return '<ul class="f-stats" aria-label="%s">%s</ul>' % (esc(t['fl_counts']), lis)
 
     def summary(self):
-        s = plain_text(self.doc['summary'])
+        s = plain(self.doc['summary'])
         m = re.search(r'(?<=[.!?])\s+', s)
         head, rest = (s[:m.start()], s[m.end():]) if m else (s, '')
         return '<p class="f-sum"><b>%s</b>%s</p>' % (esc(head), (' ' + esc(rest)) if rest else '')
@@ -231,8 +231,7 @@ class Builder:
 
     def build(self):
         t, d = self.t, self.doc
-        mods = [self.steps[i]['part'] for i in range(len(self.steps))]
-        data = {'mod': mods, 'edges': self.edges(), 'key': THEME_KEY, 't': {'of': t['fl_step_of']}}
+        data = {'mod': [s['part'] for s in self.steps], 'edges': self.edges(), 'key': THEME_KEY, 't': {'of': t['fl_step_of']}}
         panel = self.panel()  # before the map: it numbers the error exits
         main = ('<main class="a-grid" id="main"><div class="a-main"><p class="f-q"><b>%s</b>%s</p>%s%s'
                 '<h2 class="f-h2">%s</h2>%s<h2 class="f-h2" id="map-h">%s</h2><p class="f-hint">%s</p>%s%s</div>%s</main>') % (
@@ -264,11 +263,3 @@ class Builder:
 ''' % {'lang': t['html_lang'], 'theme': self.theme, 'title': txt(d['title']), 'head_js': head_script(), 'css': _css(), 'sprite': _sprite(), 'skip': esc(t['fl_skip']),
        'i_map': ic('map'), 'kind': esc(t['fl_kind']), 'picker': picker(t, self.theme), 'main': main, 'footer': self.footer(), 'data': jdump(data), 'js': _read(os.path.join(UI, 'flow.js'))}
 
-
-def plain_text(s):
-    from .page_session import plain
-    return plain(s)
-
-
-def plain_name(obj):
-    return plain_text(obj['name'])
