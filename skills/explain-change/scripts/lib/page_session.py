@@ -4,7 +4,6 @@ Tier 0 is a band: the summary with a count per status, and what needs the reader
 order, and a side panel that shows what the agent decided and what left the working copy until a theme or marker is selected, then that theme's journey.
 Tier 2 is a link from a theme's panel to the sibling change page. Sources, commands and quotes never reach the page; every doc string is escaped.
 """
-import json
 import os
 import re
 
