@@ -1,0 +1,502 @@
+{
+ "schema": "explain-session/1",
+ "lang": "en",
+ "title": "Acme Portal: one working day",
+ "summary": "Seven of eight pieces of work are finished and one is in progress; three things wait on you and one choice cannot be undone.",
+ "transcript_unavailable": "synthetic sample: no session stands behind it",
+ "themes": [
+  {
+   "id": "design",
+   "title": "Export report design",
+   "status": "done",
+   "outcome": "The new export report has a five-block layout and passed two review rounds.",
+   "events": [
+    {
+     "kind": "asked",
+     "text": "Design the new export report for Acme Portal",
+     "order": 1,
+     "source": {
+      "kind": "user_reported",
+      "quote": "design the new export report"
+     }
+    },
+    {
+     "kind": "decided",
+     "text": "Five-block page, centred on a map of the modules",
+     "order": 1,
+     "source": {
+      "kind": "report",
+      "quote": "five blocks, map in the middle"
+     }
+    },
+    {
+     "kind": "redirected",
+     "text": "Two review rounds sent it back for fixes",
+     "order": 2,
+     "source": {
+      "kind": "report",
+      "quote": "review round two found blocking issues"
+     }
+    },
+    {
+     "kind": "done",
+     "text": "About 10 blocking findings fixed",
+     "order": 3,
+     "source": {
+      "kind": "tool_call",
+      "command": "python3 -m unittest",
+      "excerpt": "OK"
+     }
+    }
+   ]
+  },
+  {
+   "id": "leak",
+   "title": "Test credential leak",
+   "status": "done_needs_you",
+   "outcome": "A test credential reached a fixture file; local history was cleaned and a scan found no copies.",
+   "events": [
+    {
+     "kind": "blocked",
+     "text": "A worker committed a real test password into a fixture file",
+     "order": 4,
+     "source": {
+      "kind": "report",
+      "quote": "the fixture holds a real password"
+     }
+    },
+    {
+     "kind": "outward",
+     "text": "Local git history rewritten to purge it",
+     "order": 5,
+     "source": {
+      "kind": "tool_call",
+      "command": "git filter-repo --invert-paths --path tests/fixtures/creds.txt",
+      "excerpt": "Parsed 14 commits"
+     }
+    },
+    {
+     "kind": "done",
+     "text": "Scan found 0 copies",
+     "order": 5,
+     "source": {
+      "kind": "tool_call",
+      "command": "gitleaks detect --redact",
+      "excerpt": "no leaks found"
+     }
+    }
+   ]
+  },
+  {
+   "id": "ci",
+   "title": "CI runner outage",
+   "status": "done_by_user",
+   "outcome": "A hook script lost its exec bit and blocked every tool call; you restored it.",
+   "events": [
+    {
+     "kind": "blocked",
+     "text": "A hook script lost its exec bit and blocked every tool call",
+     "order": 6,
+     "source": {
+      "kind": "transcript",
+      "quote": "hook script is not executable"
+     }
+    },
+    {
+     "kind": "done",
+     "text": "You ran chmod on the script",
+     "order": 7,
+     "source": {
+      "kind": "user_reported",
+      "quote": "i ran chmod +x on it"
+     }
+    }
+   ]
+  },
+  {
+   "id": "login",
+   "title": "Saved-login fix and 6 small fixes",
+   "status": "done",
+   "outcome": "The browser keeps the saved admin login; six small fixes shipped with it.",
+   "change_doc": "password-autofill.v2.json",
+   "events": [
+    {
+     "kind": "done",
+     "text": "Saved-login fix added",
+     "order": 8,
+     "source": {
+      "kind": "tool_call",
+      "command": "python3 -m unittest tests.test_login",
+      "excerpt": "OK (4 tests)"
+     }
+    },
+    {
+     "kind": "done",
+     "text": "6 small fixes made, 342 tests pass",
+     "order": 9,
+     "source": {
+      "kind": "tool_call",
+      "command": "python3 -m unittest",
+      "excerpt": "Ran 342 tests"
+     }
+    }
+   ]
+  },
+  {
+   "id": "cleanup",
+   "title": "Cleanup",
+   "status": "done",
+   "outcome": "Temporary folders and servers from the session are gone.",
+   "events": [
+    {
+     "kind": "outward",
+     "text": "Temp dirs deleted",
+     "order": 10,
+     "source": {
+      "kind": "tool_call",
+      "command": "rm -rf /tmp/portal-build-1 && echo removed",
+      "excerpt": "removed"
+     }
+    },
+    {
+     "kind": "outward",
+     "text": "An old preview folder inside the project removed",
+     "order": 10,
+     "source": {
+      "kind": "tool_call",
+      "command": "rm -rf preview-cache",
+      "excerpt": "removed"
+     }
+    },
+    {
+     "kind": "done",
+     "text": "Temp files and servers cleaned up",
+     "order": 10,
+     "source": {
+      "kind": "report",
+      "quote": "nothing left running"
+     }
+    }
+   ]
+  },
+  {
+   "id": "backup",
+   "title": "Config backup",
+   "status": "done",
+   "outcome": "Your tool settings are backed up in a private repo.",
+   "events": [
+    {
+     "kind": "asked",
+     "text": "Back up my tool settings to GitHub",
+     "order": 11,
+     "source": {
+      "kind": "user_reported",
+      "quote": "back up my settings to github"
+     }
+    },
+    {
+     "kind": "blocked",
+     "text": "There was no remote to push to",
+     "order": 11,
+     "source": {
+      "kind": "transcript",
+      "quote": "no remote configured"
+     }
+    },
+    {
+     "kind": "outward",
+     "text": "Private repo notes-config created",
+     "order": 12,
+     "source": {
+      "kind": "tool_call",
+      "command": "gh repo create notes-config --private --source . --remote origin",
+      "excerpt": "Created repository"
+     }
+    },
+    {
+     "kind": "decided",
+     "text": "3 scanner hits were all synthetic and went into an ignore file",
+     "order": 12,
+     "source": {
+      "kind": "report",
+      "quote": "all three hits are synthetic"
+     }
+    },
+    {
+     "kind": "outward",
+     "text": "Pushed, then force-pushed once after the ignore file",
+     "order": 13,
+     "source": {
+      "kind": "tool_call",
+      "command": "git push --force-with-lease origin main",
+      "excerpt": "forced update"
+     }
+    }
+   ]
+  },
+  {
+   "id": "lib",
+   "title": "Library repo",
+   "status": "done",
+   "outcome": "The shared library has its own private repo with a manifest and a README.",
+   "events": [
+    {
+     "kind": "asked",
+     "text": "Publish the library as its own repo",
+     "order": 14,
+     "source": {
+      "kind": "user_reported",
+      "quote": "publish the library as its own repo"
+     }
+    },
+    {
+     "kind": "outward",
+     "text": "Private repo created",
+     "order": 14,
+     "source": {
+      "kind": "tool_call",
+      "command": "gh repo create portal-lib --private --source . --remote origin",
+      "excerpt": "Created repository"
+     }
+    },
+    {
+     "kind": "done",
+     "text": "One-commit history, manifest, README",
+     "order": 15,
+     "source": {
+      "kind": "report",
+      "quote": "manifest and README added"
+     }
+    },
+    {
+     "kind": "redirected",
+     "text": "4 polish fixes",
+     "order": 16,
+     "source": {
+      "kind": "user_reported",
+      "quote": "fix the four polish items"
+     }
+    },
+    {
+     "kind": "outward",
+     "text": "Pushed, then force-pushed after amending the commit",
+     "order": 17,
+     "source": {
+      "kind": "tool_call",
+      "command": "git push --force-with-lease origin main",
+      "excerpt": "forced update"
+     }
+    },
+    {
+     "kind": "done",
+     "text": "A real install of the library passed",
+     "order": 18,
+     "source": {
+      "kind": "tool_call",
+      "command": "pip install ./portal-lib",
+      "excerpt": "Successfully installed"
+     }
+    }
+   ]
+  },
+  {
+   "id": "ui",
+   "title": "UI evaluation and tagline",
+   "status": "in_progress",
+   "outcome": "The tagline is chosen; mockups for the session view are still being made.",
+   "events": [
+    {
+     "kind": "asked",
+     "text": "Does this UI fit most cases?",
+     "order": 19,
+     "source": {
+      "kind": "user_reported",
+      "quote": "does this ui fit most cases"
+     }
+    },
+    {
+     "kind": "decided",
+     "text": "Tagline: \"Your agent did the work. Now you understand it.\"",
+     "order": 20,
+     "source": {
+      "kind": "report",
+      "quote": "tagline chosen"
+     }
+    },
+    {
+     "kind": "in_progress",
+     "text": "Session-view mockups in progress",
+     "order": 21,
+     "source": {
+      "inferred": true
+     }
+    }
+   ]
+  }
+ ],
+ "needs_you": [
+  {
+   "text": "Change the shared test password",
+   "theme": "leak",
+   "source": {
+    "kind": "report",
+    "quote": "the old password was shown in the transcript"
+   }
+  },
+  {
+   "text": "Review the uncommitted settings change",
+   "theme": "backup",
+   "source": {
+    "kind": "report",
+    "quote": "another session changed settings"
+   }
+  },
+  {
+   "text": "Decide on the symlink",
+   "theme": "lib",
+   "source": {
+    "kind": "report",
+    "quote": "one source of truth needs a symlink"
+   }
+  }
+ ],
+ "decided": [
+  {
+   "text": "MIT licence",
+   "reversible": true,
+   "theme": "lib",
+   "source": {
+    "inferred": true
+   }
+  },
+  {
+   "text": "English README",
+   "reversible": true,
+   "theme": "lib",
+   "source": {
+    "inferred": true
+   }
+  },
+  {
+   "text": "Repo path under the Projects folder",
+   "reversible": true,
+   "theme": "lib",
+   "source": {
+    "inferred": true
+   }
+  },
+  {
+   "text": "Version 0.1.0",
+   "reversible": true,
+   "theme": "lib",
+   "source": {
+    "inferred": true
+   }
+  },
+  {
+   "text": "Amend and force-push on a fresh private repo",
+   "reversible": false,
+   "theme": "lib",
+   "source": {
+    "kind": "tool_call",
+    "command": "git push --force-with-lease origin main",
+    "excerpt": "forced update"
+   }
+  },
+  {
+   "text": "3 scanner hits marked as false positives",
+   "reversible": true,
+   "theme": "backup",
+   "source": {
+    "kind": "report",
+    "quote": "all three hits are synthetic"
+   }
+  }
+ ],
+ "outward": [
+  {
+   "kind": "repo_created",
+   "count": 2,
+   "themes": [
+    "backup",
+    "lib"
+   ],
+   "evidence": [
+    {
+     "kind": "tool_call",
+     "command": "gh repo create notes-config --private --source . --remote origin",
+     "excerpt": "Created repository"
+    },
+    {
+     "kind": "tool_call",
+     "command": "gh repo create portal-lib --private --source . --remote origin",
+     "excerpt": "Created repository"
+    }
+   ]
+  },
+  {
+   "kind": "push",
+   "count": 2,
+   "themes": [
+    "backup",
+    "lib"
+   ],
+   "evidence": [
+    {
+     "kind": "tool_call",
+     "command": "git push -u origin main",
+     "excerpt": "new branch"
+    }
+   ]
+  },
+  {
+   "kind": "force_push",
+   "count": 2,
+   "themes": [
+    "backup",
+    "lib"
+   ],
+   "evidence": [
+    {
+     "kind": "tool_call",
+     "command": "git push --force-with-lease origin main",
+     "excerpt": "forced update"
+    }
+   ]
+  },
+  {
+   "kind": "history_rewrite",
+   "count": 1,
+   "themes": [
+    "leak"
+   ],
+   "evidence": [
+    {
+     "kind": "tool_call",
+     "command": "git filter-repo --invert-paths --path tests/fixtures/creds.txt",
+     "excerpt": "Parsed 14 commits"
+    }
+   ]
+  },
+  {
+   "kind": "delete",
+   "count": 3,
+   "themes": [
+    "cleanup"
+   ],
+   "evidence": [
+    {
+     "kind": "tool_call",
+     "command": "rm -rf /tmp/portal-build-1 && echo removed",
+     "excerpt": "removed"
+    },
+    {
+     "kind": "tool_call",
+     "command": "rm -rf preview-cache",
+     "excerpt": "removed"
+    }
+   ],
+   "scratch": 2
+  }
+ ]
+}

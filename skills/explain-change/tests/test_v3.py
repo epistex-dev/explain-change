@@ -487,6 +487,25 @@ class LearnedValues(V2Case):
             self.assertEqual(transcript.secret_values('token: ' + v + ' ;'), set(), v)
         self.assertTrue(transcript.secret_values('token: Abc12345'))  # a bare word with a digit can be a real password
 
+    CSS_FORMS = ('--mk:32px', 'a{--mk:32px;--mk-gap:8px}', '--mk:32px;--mk-gap:8px', '.mk:hover', 'a.mk:hover{top:1px}', '.mk:nth-child(2)', 'a--mk:32px')
+    SECRET_FORMS = ('tk_mk: hunter2xyz', 'tk-mk: hunter2xyz', 'my_mk=hunter2xyz', 'MY_MK=hunter2xyz', 'user.mk: hunter2xyz', 'login.mk=hunter2xyz',
+                    '--mk=hunter2xyz', '-mk=hunter2xyz', '\u01a1mk: hunter2xyz', 'mk: hunter2xyz', '--mk: hunter2xyz', 'a.mk: "hunter2xyz"', '--mk:hunter2xyz', 'user.mk:hunter2xyz')
+
+    def test_a_label_inside_a_css_name_is_not_a_label(self):
+        for css in self.CSS_FORMS:
+            self.assertEqual(transcript.secret_values(css), set(), css)
+            self.assertFalse(transcript.has_secret(css), css)
+
+    def test_a_label_in_a_longer_name_or_a_flag_still_teaches(self):
+        for text in self.SECRET_FORMS:
+            self.assertIn('hunter2xyz', transcript.secret_values(text), text)
+            self.assertTrue(transcript.has_secret(text), text)
+
+    def test_a_label_after_a_space_or_punctuation_still_teaches(self):
+        for text, v in (('mk: hunter2xyz', 'hunter2xyz'), ('mật khẩu: hunter2xyz', 'hunter2xyz'), ('password=hunter2xyz', 'hunter2xyz'),
+                        ('đổi rồi (mk: hunter2xyz)', 'hunter2xyz'), ('db_password=hunter2xyz', 'hunter2xyz'), ('mysql --password=hunter2xyz', 'hunter2xyz'), ('x\nMK = hunter2xyz', 'hunter2xyz')):
+            self.assertIn(v, transcript.secret_values(text), text)
+
     def test_a_typed_credential_is_learned_among_the_noise_and_a_bare_quote_is_rejected(self):
         self.assertEqual(self.learn(self.recs + self.noise), frozenset({self.value}) | {self.value.strip(transcript.TRIM)})
         self.assertInvalid(lambda d: d['requests'][0].update(quote='thử lại với ' + self.value), 'password, token or key')
