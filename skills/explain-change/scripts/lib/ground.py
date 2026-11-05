@@ -116,6 +116,8 @@ class Grounder:
                     'a message of the user' if q.roles == {'user'} else 'any message', q.tid, q.text[:80]))
             elif q.kind == 'url':
                 err(path, 'URL not found anywhere in the transcript: %s' % q.text[:100])
+            elif q.command_seen and q.unknown_seen:
+                err(path, 'the call that ran this command has no recorded result (output or exit code missing, result unknown), so it grounds nothing (transcript %s)' % q.tid)
             elif q.command_seen:
                 err(path, 'the result excerpt is not in the result of the call that ran this command (transcript %s)' % q.tid)
             else:
@@ -125,6 +127,13 @@ class Grounder:
 def only_errors(tool_queries):
     """True when every tool call that matched a source ran with an error result: an errored run cannot back a pass or a done."""
     return bool(tool_queries) and all(q.found and not q.found_ok for q in tool_queries)
+
+
+def backing_error(tool_queries, claim):
+    """The error line for a `claim` ("passed" or "done") whose tool calls (all of them) are errors or have an unknown result."""
+    if all(q.unknown for q in tool_queries):
+        return '"%s" rests on tool calls whose result is unknown (no output or no exit code recorded); an unknown result cannot back it' % claim
+    return None
 
 
 def sweep(node, err, path='', is_snippet=None, in_snippet=False):
