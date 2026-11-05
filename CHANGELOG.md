@@ -3,7 +3,15 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project follows
 [Semantic Versioning](https://semver.org/).
+
 ## [Unreleased]
+
+### Added
+- A sixth colour theme, `midnight`, in the colours of the intro video: glassy gradient surfaces, a lit ring and faint violet and blue glows in the corners of the page. It is on the session page, the change page and the flow page, and keeps the contrast of the other themes.
+
+### Changed
+- `midnight` is now the theme a page opens in when `render.py` gets no `--theme` and the reader has no stored pick. A stored pick still wins, and the five earlier themes stay in the Appearance picker. The README screenshots show midnight.
+- The error for an unknown `--theme` now names six ids.
 
 ## [0.1.0] - 2026-11-05
 

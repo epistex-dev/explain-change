@@ -7,7 +7,7 @@ A doc with a `kind` that is not explain-flow/1 exits 1 with one line.
 A session theme with a change_doc also gets its v2 page, written next to the session page (<change_doc without .json>.html) and linked from the theme's panel.
 A validation problem prints the same lines as validate.py, writes nothing, exits 1.
 On success prints the absolute path of the page. --text also writes <page>.txt, the words of a v2 page, for the cold-read gate.
---theme ID sets the colour theme a session page or a change page (v2) opens in (navy, ocean, plum, graphite or pearl; default navy); the reader can still pick another on the page,
+--theme ID sets the colour theme a session page or a change page (v2) opens in (midnight, navy, ocean, plum, graphite or pearl; default midnight); the reader can still pick another on the page,
 and the pick carries across both pages. An unknown id exits 1 with one line naming the valid ids. The v1 report page ignores it.
 --arch and --no-validate (v2 only) render an archived doc whose git range is gone: nothing is checked, the page says validated=no.
 """

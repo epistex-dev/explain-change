@@ -207,7 +207,7 @@ class Copy(unittest.TestCase):
         d['lang'] = 'vi'
         vi_html = page(d)
         vi = words(vi_html)
-        self.assertIn('<html lang="vi" data-theme="navy">', vi_html)
+        self.assertIn('<html lang="vi" data-theme="midnight">', vi_html)
         for key in ('ses_sec_needs', 'ses_sec_decided', 'ses_sec_out', 'ses_sec_journey', 'ses_k_blocked', 'ses_rev', 'ses_irrev', 'ses_t2_btn'):
             self.assertIn(STR2['vi'][key], vi if key != 'ses_t2_btn' else page(dict(d), {3: 'x.html'}))
             self.assertIn(STR2['en'][key], en if key != 'ses_t2_btn' else page(sample(), {3: 'x.html'}))

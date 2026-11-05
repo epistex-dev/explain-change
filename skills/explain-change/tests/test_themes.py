@@ -29,10 +29,12 @@ def read(path):
 
 
 def blocks():
-    """{theme id: {property: value}} from page2.css, where navy is the :root and the other themes are one [data-theme] block each."""
+    """{theme id: {property: value}} from page2.css, where navy is the :root and every other theme is one [data-theme] block."""
     css = read(BASE)
     out = {}
-    for tid in page_session.THEMES[1:]:
+    for tid in page_session.THEMES:
+        if tid == 'navy':
+            continue
         m = re.search(r'\[data-theme="%s"\]\{(.*?)\n\}' % tid, css, re.S)
         assert m, tid
         out[tid] = dict(re.findall(r'(--[\w-]+|color-scheme):([^;]+);', m.group(1)))
@@ -74,6 +76,10 @@ def measure(t):
     c = lambda k: rgb(t[k])[0]
     grounds = [c('surface-solid'), c('raised'), c('hl')]
     page_ground = [c('bg-0'), c('bg-1'), c('bg-2')]  # the header text sits on the page gradient itself
+    page_ground += [over(*rgb(t[k]), g) for k in ('glow-a', 'glow-b') for g in page_ground[:3]]  # ... and on the glows in the corners, at their full strength
+    for stop in re.findall(r'rgba?\([^)]*\)', t['surface']):  # the surface is translucent (a gradient in midnight): composite each of its stops over the page ground
+        sc, sa = rgb(stop)
+        grounds += [over(sc, sa, g) for g in page_ground[:3]]
     text = min(ratio(c(k), g) for k in ('text', 'text-2', 'text-3') for g in grounds + page_ground)
     status = min(ratio(c(k), g) for k in ('accent-text', 'ok', 'warn', 'bad', 'n-ui', 'n-service') for g in (grounds[0], grounds[2]))
     white = min(ratio((255, 255, 255), c(k)) for k in ('accent', 'ok-fill'))
@@ -98,11 +104,12 @@ class ThemeTokens(unittest.TestCase):
         self.css = read(BASE)
         self.t = {k: {n.lstrip('-'): v for n, v in d.items()} for k, d in blocks().items()}
 
-    def test_every_theme_is_one_data_theme_block_and_navy_is_the_default(self):
-        self.assertEqual(page_session.THEMES[0], 'navy')
+    def test_every_theme_is_one_data_theme_block_and_midnight_is_the_default(self):
+        self.assertEqual(page_session.THEMES[0], 'midnight')
+        self.assertEqual(page_session.THEMES, ('midnight', 'navy', 'ocean', 'plum', 'graphite', 'pearl'))
         self.assertEqual(set(self.t), set(page_session.THEMES))
         self.assertNotIn('forest', self.css)
-        for tid in page_session.THEMES[1:]:
+        for tid in set(page_session.THEMES) - {'navy'}:
             self.assertEqual(len(re.findall(r'\[data-theme="%s"\]\{' % tid, self.css)), 1, tid)
         for lang in ('vi', 'en'):
             for tid in page_session.THEMES:
@@ -120,9 +127,8 @@ class ThemeTokens(unittest.TestCase):
               'warn warn-soft bad bad-soft n-ui n-service n-data n-test n-external shadow glow-a glow-b ok-rgb accent-rgb bar-rgb bad-rgb ui-rgb ring-rgb surf-rgb well-rgb zone').split()
 
     def test_every_theme_sets_every_colour_token(self):
-        for tid in page_session.THEMES[1:]:
+        for tid in page_session.THEMES:
             self.assertEqual(sorted(set(self.COLOUR) - set(self.t[tid])), [], tid)
-        self.assertEqual(sorted(set(self.COLOUR) - set(self.t['navy'])), [])
 
     def test_wcag_aa_text_and_rings_in_every_theme(self):
         self.assertRegex(read(BASE), r'\.hl \.chip,\.ba\.after \.chip\{background:var\(--chip-hl\)\}')  # the rule the measured chip ground comes from
@@ -153,12 +159,12 @@ class ThemeFlag(unittest.TestCase):
             self.assertIn('<option value="%s" selected>' % tid, h)
             self.assertEqual(h.count(' selected>'), 1)
 
-    def test_no_flag_keeps_navy(self):
+    def test_no_flag_opens_in_midnight(self):
         self.assertEqual(self.run_render().returncode, 0)
-        self.assertIn('<html lang="en" data-theme="navy">', read(os.path.join(self.tmp.name, 'index.html')))
+        self.assertIn('<html lang="en" data-theme="midnight">', read(os.path.join(self.tmp.name, 'index.html')))
 
     def test_an_unknown_id_exits_1_with_one_line_naming_the_valid_ids(self):
-        for bad in ('forest', 'NAVY', '', 'a" onload="x'):
+        for bad in ('forest', 'NAVY', 'Midnight', '', 'a" onload="x'):
             p = self.run_render('--theme', bad)
             self.assertEqual(p.returncode, 1, (bad, p.stdout, p.stderr))
             self.assertEqual(p.stdout, '')
@@ -167,6 +173,8 @@ class ThemeFlag(unittest.TestCase):
             self.assertTrue(lines[0].startswith('error: unknown theme'))
             for tid in page_session.THEMES:
                 self.assertIn(tid, lines[0])
+            self.assertIn('midnight', lines[0])
+            self.assertEqual(len(re.findall(r'\b(?:midnight|navy|ocean|plum|graphite|pearl)\b', lines[0].split('valid ids:')[1])), 6)
             self.assertFalse(os.path.exists(os.path.join(self.tmp.name, 'index.html')))
 
     def test_the_renderer_refuses_an_unknown_id_too(self):
@@ -201,7 +209,7 @@ class Head(unittest.TestCase):
         for tid in page_session.THEMES:
             self.assertNotRegex(en['ses_theme_' + tid], r'(?i)theme')
         self.assertNotRegex(en['ses_theme_label'], r'(?i)theme')
-        self.assertEqual([vi['ses_theme_' + t] for t in page_session.THEMES], ['Xanh đêm', 'Đại dương', 'Tím mận', 'Than chì', 'Ngọc trai (sáng)'])
+        self.assertEqual([vi['ses_theme_' + t] for t in page_session.THEMES], ['Nửa đêm', 'Xanh đêm', 'Đại dương', 'Tím mận', 'Than chì', 'Ngọc trai (sáng)'])
         self.assertNotIn('Hải quân', vi.values())
 
     def test_landmarks_and_the_nav_targets(self):
@@ -279,7 +287,7 @@ class Dom(unittest.TestCase):
     def test_the_picker_applies_the_pick_and_stores_it(self):
         r = self.run_dom(sample(), self.PICK)
         self.assertEqual((r['attr'], r['stored'], r['value'], r['sel'], r['errs']), ('plum', 'plum', 'plum', 'SELECT', []))
-        self.assertEqual(r['first'], 'navy')  # the baked default until a pick exists
+        self.assertEqual(r['first'], 'midnight')  # the baked default until a pick exists
 
     def test_a_stored_pick_is_applied_before_the_body_and_selected_in_the_picker(self):
         r = self.run_dom(sample(), "out.first=window.__first;out.attr=document.documentElement.getAttribute('data-theme');out.value=$('#skin').value;out.js=document.documentElement.classList.contains('js')",

@@ -66,8 +66,29 @@
   --on-fill:#fff; --kdot-ring:55%; --mk-ring:60%;
 }
 
-/* colour themes: navy is :root above (the default); each block below overrides the same properties. The session page inlines this file up to the
+/* colour themes: :root above holds the shared tokens and the navy values; each [data-theme] block below (midnight, the default, first) overrides the same properties. The session page inlines this file up to the
    header marker, so the themes and the picker sit before it. */
+/* Midnight / Nửa đêm: the intro video's colours, the default. Glassy gradient surfaces, a lit ring, violet and blue glows in the page corners */
+[data-theme="midnight"]{
+  color-scheme:dark;
+  --r-panel:20px; --r-card:16px; --r-node:16px; --r-ctl:12px;
+  --bg-0:#0b0f33; --bg-1:#0a0d2b; --bg-2:#080b25; --dot:rgba(160,180,255,.06);
+  --surface:linear-gradient(180deg,rgba(44,54,130,.62),rgba(22,29,80,.7)); --surface-solid:#1b2268;
+  --raised:#262e82; --raised-a:rgba(60,72,170,.34); --hl:#2c3592;
+  --ring:rgba(150,166,255,.26); --ring-strong:rgba(150,166,255,.7);
+  --text:#f5f6ff; --text-2:#d0d6fb; --text-3:#b3bcf2; --muted:#9aa4e6;
+  --accent:#bb3e95; --accent-bar:#f08ad0; --accent-text:#f9b6e2; --accent-soft:rgba(240,138,208,.14);
+  --ok-fill:#228163; --ok-fill-hover:#1d7658; --ok:#5fd9ae; --ok-soft:rgba(95,217,174,.14);
+  --warn:#f5c26b; --warn-soft:rgba(245,194,107,.14); --bad:#ff98a6; --bad-soft:rgba(255,152,166,.14);
+  --n-ui:#8fb4ff; --n-service:#b9a4ff; --n-data:#5eead4; --n-test:#f5c26b; --n-external:#b3bcf2;
+  --shadow:0 1px 0 rgba(255,255,255,.08) inset,0 22px 40px -18px rgba(2,4,24,.9),0 0 30px -10px rgba(110,130,255,.4);
+  --shadow-float:0 1px 0 rgba(255,255,255,.08) inset,0 30px 56px -24px rgba(2,4,24,.9),0 0 40px -12px rgba(110,130,255,.4);
+  --glow-a:rgba(42,47,143,.7); --glow-b:rgba(107,42,143,.5);
+  --ok-rgb:95,217,174; --accent-rgb:240,138,208; --bar-rgb:240,138,208; --bad-rgb:255,152,166; --ui-rgb:143,180,255; --ring-rgb:150,166,255;
+  --surf-rgb:44,54,130; --well-rgb:10,13,43; --well-k:1; --zone:rgba(60,72,170,.16);
+  --chip-hl:rgba(10,13,43,.6); --on-fill:#fff; --kdot-ring:55%; --mk-ring:60%;
+}
+
 /* Deep ocean / aurora / Đại dương sâu / cực quang */
 [data-theme="ocean"]{
   color-scheme:dark;
