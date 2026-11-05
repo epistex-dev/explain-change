@@ -423,6 +423,89 @@ def run_test(root, test_id):
     return p.returncode == 0, p.stderr.strip().splitlines()[-1] if p.stderr.strip() else ''
 
 
+# transcript adapters (scripts/lib/adapters): (guard, file, original text, broken text, test id)
+AD, IO, CPX, CXX = 'scripts/lib/adapters/', 'scripts/lib/adapters/_io.py', 'scripts/lib/adapters/copilot.py', 'scripts/lib/adapters/codex.py'
+T = 'test_adapters.'
+GUARDS = ('CopilotGuards', 'CodexGuards')
+
+
+def both(prefix, name):
+    return [T + prefix[0] + '.' + name, T + prefix[1] + '.' + name]
+
+
+ROOT_CHECK = "    if real != real_root and not real.startswith(real_root.rstrip(os.sep) + os.sep):"
+for _label, _file, _old, _new, _names in [
+    ('adapter root guard', IO, ROOT_CHECK, '    if False:', ['test_a_transcript_outside_the_root_is_refused']),
+    ('adapter root guard: sibling dir with the same prefix', IO, "real.startswith(real_root.rstrip(os.sep) + os.sep)", "real.startswith(real_root.rstrip(os.sep))",
+     ['test_a_sibling_directory_sharing_the_roots_name_prefix_is_outside']),
+    ('adapter symlink escape', IO, "    real = os.path.realpath(path)\n    if real != real_root", "    real = os.path.abspath(path)\n    if real != real_root",
+     ['test_a_symlinked_directory_that_escapes_the_root_is_refused']),   # a symlinked file is also stopped by O_NOFOLLOW
+    ('adapter reads only regular files', IO, "if not stat.S_ISREG(os.fstat(fd).st_mode):", "if False:", ['test_a_fifo_or_directory_is_not_read']),
+]:
+    for _id in both(GUARDS, _names[0]) + [T + g + '.' + n for n in _names[1:] for g in GUARDS]:
+        MUTATIONS.append(('%s (%s)' % (_label, _id.split('.')[1].replace('Guards', '')), _file, _old, _new, _id))
+MUTATIONS += [
+    ('adapter default root is not moved by the environment', CXX, "return os.path.join(os.path.expanduser('~'), '.codex', 'sessions')",
+     "return os.path.join(os.environ.get('CODEX_HOME', os.path.expanduser('~/.codex')), 'sessions')",
+     T + 'CodexGuards.test_the_default_root_is_the_harness_directory_and_no_environment_variable_moves_it'),
+    ('adapter oversized line is skipped', IO, "if not raw.endswith(b'\\n') and len(raw) > MAX_LINE:", 'if False:', T + 'CopilotHostile.test_a_line_over_the_cap_is_skipped_and_reading_continues'),
+    ('adapter invalid UTF-8 is replaced', IO, "raw.decode('utf-8', 'replace')", "raw.decode('utf-8')", T + 'CodexHostile.test_invalid_utf8_is_replaced_not_fatal'),
+    ('adapter reads a snapshot of a growing file', IO, 'limit = os.fstat(fh.fileno()).st_size', 'limit = 1 << 62',
+     T + 'CopilotHostile.test_a_file_that_grows_while_read_is_read_as_of_open'),
+    # Copilot
+    ('copilot: success:true with exit 1 is an error', CPX, 'tool.is_error = failed or tool.exit_code not in (None, 0)', 'tool.is_error = failed',
+     T + 'CopilotExitCodes.test_success_true_does_not_hide_a_failed_command'),
+    ('copilot: success:true with exit 1 is an error (real capture)', CPX, 'tool.is_error = failed or tool.exit_code not in (None, 0)', 'tool.is_error = failed',
+     T + 'CopilotFixtures.test_success_true_with_exit_one_is_an_error'),
+    ('copilot: exit code from the structured field', CPX, "code = shell.get('exitCode')", "code = None",
+     T + 'CopilotExitCodes.test_exit_zero_is_not_an_error'),
+    ('copilot: injected sources are not user text', CPX, "    if source not in ('', 'user'):\n        return None", "    if False:\n        return None",
+     T + 'CopilotClassification.test_only_typed_prompts_are_user_text'),
+    ('copilot: a runtime notice is not user text', CPX, 'if content.startswith(NOTE_OPEN) and content.endswith(NOTE_CLOSE):', 'if False:',
+     T + 'CopilotClassification.test_only_typed_prompts_are_user_text'),
+    ('copilot: a message inside a sub-agent is never user text', CPX, "elif kind == 'user' and sess is main:", "elif kind == 'user':",
+     T + 'CopilotClassification.test_a_user_message_inside_a_subagent_is_not_user_text'),
+    ('copilot: a message from another session is not user text', CPX, 'if CROSS_SESSION_TAG in', 'if False and CROSS_SESSION_TAG in',
+     T + 'CopilotClassification.test_message_from_another_session_is_not_user_text'),
+    ('copilot: sub-agent records form child sessions', CPX, 'sess = child(key, parent_call, ts) if key else main', 'sess = main',
+     T + 'CopilotFixtures.test_subagents_are_child_sessions_linked_to_their_task_call'),
+    ('copilot: find_sessions matches the cwd', CPX, "if hdr and _io.same_dir(hdr['cwd'], cwd):", 'if hdr:', T + 'CopilotFind.test_find_sessions_matches_by_recorded_cwd'),
+    ('copilot: an exit line quoted by a non-shell tool is not an exit code', CPX, 'if is_shell and output:', 'if output:',
+     T + 'CopilotExitCodes.test_a_file_that_mentions_an_exit_line_is_not_a_shell_exit'),
+    # Codex
+    ('codex: a forked rollout drops the replayed parent history', CXX, "replaying = bool(fork['forked_from'])", 'replaying = False',
+     T + 'CodexFork.test_replayed_parent_turns_are_dropped'),
+    ('codex: fork dedup on the real-format fixture', CXX, "replaying = bool(fork['forked_from'])", 'replaying = False',
+     T + 'CodexFixtures.test_user_fork_does_not_repeat_the_parents_turns'),
+    ('codex: replay ends only at the child\'s own turn', CXX, "    if turn != child:\n        return turn > child", "    if turn != child:\n        return True",
+     T + 'CodexFork.test_a_task_started_for_an_ancestors_turn_does_not_announce_it'),
+    ('codex: same-millisecond turn of a sub-agent needs task_started', CXX, "    return user_fork or turn_id in announced      # same millisecond: a user fork has no task_started",
+     "    return True", T + 'CodexFork.test_same_millisecond_turn_needs_a_task_started_unless_a_user_fork'),
+    ('codex: injected context is not user text', CXX, 'injected = sess.kind == SUBAGENT or is_injected_text(text)', 'injected = False',
+     T + 'CodexFixtures.test_user_text_versus_injected'),
+    ('codex: a sub-agent prompt is not user text', CXX, 'injected = sess.kind == SUBAGENT or is_injected_text(text)', 'injected = is_injected_text(text)',
+     T + 'CodexOutputs.test_injected_wrappers_and_subagent_prompts'),
+    ('codex: compacted is never user text', CXX, "sess.add(COMPACTION, ts, _io.s(payload.get('message')), loc=loc)", "sess.add(USER_TEXT, ts, _io.s(payload.get('message')), loc=loc)",
+     T + 'CodexFixtures.test_compacted_record_is_never_user_text'),
+    ('codex: item_completed user messages are read', CXX, "    if t == 'item_completed':", '    if False:', T + 'CodexOutputs.test_item_completed_user_message'),
+    ('codex: exec_command_end sets the exit code', CXX, 'if cid in ended:\n                    code = ended[cid]', 'if False:\n                    code = ended[cid]',
+     T + 'CodexOutputs.test_exec_command_end_wins_whenever_it_arrives'),
+    ('codex: exit code is read from the output header only', CXX, "    head = re.split(r'^Output:\\s*$', head, maxsplit=1, flags=re.M)[0]\n", '',
+     T + 'CodexOutputs.test_exit_text_in_the_body_is_not_the_exit_code'),
+    ('codex: Process exited with code N', CXX, "re.compile(r'^Process exited with code (-?\\d+)\\s*$', re.M), ", '',
+     T + 'CodexOutputs.test_header_exit_code_forms'),
+    ('codex: JSON metadata exit code', CXX, "code = c if isinstance(c, int) and not isinstance(c, bool) else None", 'code = None',
+     T + 'CodexOutputs.test_json_metadata_exit_code'),
+    ('codex: a sub-agent rollout is a child of its parent', CXX, "if hdr and hdr['kind'] == SUBAGENT and hdr['parent_id'] == sess.id:", 'if False:',
+     T + 'CodexFixtures.test_subagent_is_a_child_of_its_parent'),
+    ('codex: sub-agent rollouts are not listed as sessions', CXX, "if hdr and hdr['kind'] == MAIN and _io.same_dir(hdr['cwd'], cwd):", "if hdr and _io.same_dir(hdr['cwd'], cwd):",
+     T + 'CodexFixtures.test_find_sessions_returns_main_and_fork_but_not_the_subagent'),
+    ('codex: find_sessions matches the cwd', CXX, "if hdr and hdr['kind'] == MAIN and _io.same_dir(hdr['cwd'], cwd):", "if hdr and hdr['kind'] == MAIN:",
+     T + 'CodexFind.test_find_sessions_matches_by_session_meta_cwd'),
+    ('codex: a duplicated call id pairs in order', CXX, 'tool = queue.pop(0).tool', 'tool = queue[0].tool', T + 'CodexHostile.test_a_duplicated_call_id_pairs_in_order_and_a_repeated_output_is_ignored'),
+]
+
+
 def main():
     bad = 0
     only = sys.argv[1] if len(sys.argv) > 1 else ''  # optional: run only the guards whose name contains this text
