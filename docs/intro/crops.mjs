@@ -1,7 +1,7 @@
 // node docs/intro/crops.mjs <session.html> <out-dir>
 // Cuts the three real-page crops (journey, "Agent decided for you", "Outward actions") from the session page rendered from the
 // bundled sample, in the navy theme, at 440 css px wide and 3x. Render the page first:
-//   python3 skills/explain-change/scripts/render.py skills/explain-change/reference/examples/portal-day.session.json \
+//   python3 skills/explain-change/scripts/render.py skills/explain-change/references/examples/portal-day.session.json \
 //     --out /tmp/x/session.html --theme navy --no-validate
 // Needs puppeteer-core (PUPPETEER_CORE=<path to puppeteer-core.js>) and CHROMIUM=/usr/bin/chromium.
 // The page's own hint lines are hidden: they carry the sample caveats ("not compared with a session"), which must not appear in a frame.

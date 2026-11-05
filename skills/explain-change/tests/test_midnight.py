@@ -17,7 +17,7 @@ from lib import themes  # noqa: E402
 from test_page_session import RENDER, chromium  # noqa: E402
 
 SKILL = os.path.dirname(HERE)
-EXAMPLES = os.path.join(SKILL, 'reference', 'examples')
+EXAMPLES = os.path.join(SKILL, 'references', 'examples')
 DOCS = {'change': 'password-autofill.v2.json', 'session': 'portal-day.session.json', 'flow': 'claim-check.flow.json'}
 PROBE = ("<script>addEventListener('load',()=>{const r=getComputedStyle(document.documentElement),b=getComputedStyle(document.body);"
          "const o={attr:document.documentElement.getAttribute('data-theme'),sel:document.querySelector('#skin').value,accent:r.getPropertyValue('--accent-text').trim(),"

@@ -19,8 +19,8 @@ from lib import outward, page2, page_session  # noqa: E402
 from lib.i18n2 import STR2, count  # noqa: E402
 
 SKILL = os.path.dirname(HERE)
-SAMPLE = os.path.join(SKILL, 'reference', 'examples', 'portal-day.session.json')
-CHANGE = os.path.join(SKILL, 'reference', 'examples', 'password-autofill.v2.json')
+SAMPLE = os.path.join(SKILL, 'references', 'examples', 'portal-day.session.json')
+CHANGE = os.path.join(SKILL, 'references', 'examples', 'password-autofill.v2.json')
 RENDER = os.path.join(SKILL, 'scripts', 'render.py')
 DRIVER = os.path.join(HERE, 'fit_driver.js')
 MK, GAP = 32, 8

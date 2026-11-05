@@ -18,7 +18,7 @@ from lib.i18n2 import STR2  # noqa: E402
 
 SKILL = os.path.dirname(HERE)
 RENDER = os.path.join(SKILL, 'scripts', 'render.py')
-EXAMPLES = os.path.join(SKILL, 'reference', 'examples')
+EXAMPLES = os.path.join(SKILL, 'references', 'examples')
 EXCERPT = 'text = open(path).read()'
 
 

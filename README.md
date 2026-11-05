@@ -14,7 +14,7 @@
 
 <img src="docs/images/themes/change-midnight-1440x900.png" alt="The explain-change page for a sample change, in the midnight theme: a system map in the centre, a side panel with the Requests tab open" width="900">
 
-<sub>Sample page rendered from the bundled fixture <code>reference/examples/password-autofill.v2.json</code>. The change is synthetic.</sub>
+<sub>Sample page rendered from the bundled fixture <code>references/examples/password-autofill.v2.json</code>. The change is synthetic.</sub>
 
 </div>
 
@@ -152,7 +152,7 @@ To render the bundled sample without a repo or session:
 
 ```bash
 python3 skills/explain-change/scripts/render.py \
-  skills/explain-change/reference/examples/password-autofill.v2.json \
+  skills/explain-change/references/examples/password-autofill.v2.json \
   --no-validate --out /tmp/sample.html
 ```
 
@@ -180,7 +180,7 @@ To render the bundled sample:
 
 ```bash
 python3 skills/explain-change/scripts/render.py \
-  skills/explain-change/reference/examples/portal-day.session.json \
+  skills/explain-change/references/examples/portal-day.session.json \
   --no-validate --out /tmp/session/index.html
 ```
 
@@ -194,7 +194,7 @@ To understand how existing code runs, with no change and no session to read, ask
 
 ```bash
 python3 skills/explain-change/scripts/render.py \
-  skills/explain-change/reference/examples/claim-check.flow.json \
+  skills/explain-change/references/examples/claim-check.flow.json \
   --no-validate --out /tmp/flow/index.html
 ```
 
@@ -213,8 +213,7 @@ skills/explain-change/
   SKILL.md             the skill
   scripts/             collect.py, validate.py, render.py, lib/
   assets/              page CSS and JS, fonts, icons
-  references/          the explain.json schema
-  reference/           UI tokens and the bundled sample doc
+  references/          the doc schemas, examples/ (bundled sample docs) and ui/ (UI tokens)
   tests/               unit tests and the red check
 docs/images/           screenshots used in this README
 ```

@@ -481,7 +481,7 @@ class PluralCounts(unittest.TestCase):
 
     def test_rendered_en_page_never_says_1_files_or_1_caveats(self):
         here = os.path.dirname(os.path.abspath(__file__))
-        sample = os.path.join(here, '..', 'reference', 'examples', 'password-autofill.v2.json')
+        sample = os.path.join(here, '..', 'references', 'examples', 'password-autofill.v2.json')
         with open(sample, encoding='utf-8') as fh:
             doc = json.load(fh)
         doc['lang'] = 'en'

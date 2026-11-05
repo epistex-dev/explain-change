@@ -66,7 +66,7 @@ A lit path across a tilted plane. The camera drifts along the flow, dives into t
 - Not applicable: `prefers-reduced-motion`, focus, tap targets, responsive widths, performance budget (a recorded video, not a page).
 
 ## Content rules kept
-- Data only from `skills/explain-change/reference/examples/portal-day.session.json` (`build.mjs` writes `data.js` from it, and refuses an unknown status).
+- Data only from `skills/explain-change/references/examples/portal-day.session.json` (`build.mjs` writes `data.js` from it, and refuses an unknown status).
 - Status colour, icon and name come from each theme's `status`: Done, Done, needs you (the page's own wording, with a comma), Done by you, In progress.
 - Each theme keeps its title from the sample, in the chart and on the page.
 - Text in the real-page crops is the page's own 12 px and up, shown at 1.64x to 1.66x: 19.7 px or more. The page's hint lines (sample caveats) are cut from the crops, and the summary card never appears.

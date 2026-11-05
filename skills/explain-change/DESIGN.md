@@ -28,7 +28,7 @@ motion:
 
 # explain-change page design
 
-Design tokens live in `reference/ui/theme.css`; the renderer carries the same values in `assets/ui/page2.css`, which also holds the four other colour themes (see "Colour themes on the change page"). Contrast numbers are in that file's comments.
+Design tokens live in `references/ui/theme.css`; the renderer carries the same values in `assets/ui/page2.css`, which also holds the four other colour themes (see "Colour themes on the change page"). Contrast numbers are in that file's comments.
 
 ## Brief
 | Item | Value |

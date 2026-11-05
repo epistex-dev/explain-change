@@ -15,7 +15,7 @@ from helpers2 import tool_use as _tool_use  # noqa: E402
 from lib import check_session, page_session, session, transcript  # noqa: E402
 
 SKILL = os.path.dirname(HERE)
-SAMPLE = os.path.join(SKILL, 'reference', 'examples', 'portal-day.session.json')
+SAMPLE = os.path.join(SKILL, 'references', 'examples', 'portal-day.session.json')
 SECRET = 'Zq9-fake-Cred7'  # synthetic, only for this test
 U1, U2 = 'back up my settings to github please', 'fix the four polish items'
 GH = 'cd /tmp/r && gh repo create notes-config --private --source . --remote origin'

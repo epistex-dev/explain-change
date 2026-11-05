@@ -2,7 +2,7 @@
 
 A flow doc explains how an existing piece of code runs, for a reader who did not write it: what the parts of the system are, the steps in order, what each step takes in and gives back, where the flow branches, and what happens when it goes wrong. It needs no diff and no agent session. It is about the code at one commit: it shows no code, diff or file:line, but every step and every error is tied to the lines it was read from, and `validate.py` reads those lines.
 
-Workflow: `collect.py --flow [--path <dir or file>]... [--slug <text>]` prints the full SHA of HEAD, the modules (`floorplan/architecture.json`, else one per directory, as `--v2` does) and the files under each `--path`, and `RUN_DIR=…`; it writes `summary.json` there, needs no diff and never exits 3. Write the doc by reading the code; `validate.py <doc>` checks it. The example `reference/examples/claim-check.flow.json` explains how a claim is checked before the page renders.
+Workflow: `collect.py --flow [--path <dir or file>]... [--slug <text>]` prints the full SHA of HEAD, the modules (`floorplan/architecture.json`, else one per directory, as `--v2` does) and the files under each `--path`, and `RUN_DIR=…`; it writes `summary.json` there, needs no diff and never exits 3. Write the doc by reading the code; `validate.py <doc>` checks it. The example `references/examples/claim-check.flow.json` explains how a claim is checked before the page renders.
 
 ## Top level
 

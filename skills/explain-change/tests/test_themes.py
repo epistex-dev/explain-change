@@ -145,7 +145,7 @@ class ThemeFlag(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.doc = os.path.join(self.tmp.name, 'day.session.json')
         shutil.copy(SAMPLE, self.doc)
-        shutil.copy(os.path.join(SKILL, 'reference', 'examples', 'password-autofill.v2.json'), os.path.join(self.tmp.name, 'password-autofill.v2.json'))
+        shutil.copy(os.path.join(SKILL, 'references', 'examples', 'password-autofill.v2.json'), os.path.join(self.tmp.name, 'password-autofill.v2.json'))
 
     def run_render(self, *args):
         return subprocess.run([sys.executable, RENDER, self.doc, '--no-validate', *args], capture_output=True, text=True)

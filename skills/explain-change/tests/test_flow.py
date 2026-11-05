@@ -12,7 +12,7 @@ SKILL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(SKILL, 'scripts'))
 VALIDATE = os.path.join(SKILL, 'scripts', 'validate.py')
 COLLECT = os.path.join(SKILL, 'scripts', 'collect.py')
-EXAMPLES = os.path.join(SKILL, 'reference', 'examples')
+EXAMPLES = os.path.join(SKILL, 'references', 'examples')
 
 PARSE = ['def load(path):', '    text = open(path).read()', '    return text', '', 'def check(doc):', '    if not doc:', '        raise ValueError("empty")',
          '    return True', '', 'def show(doc):', '    print(doc)']

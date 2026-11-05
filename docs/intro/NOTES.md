@@ -27,7 +27,7 @@ The three crops in `assets/page/` come from the real page: render the sample wit
 
 ## Data (only the bundled sample, never a real session)
 
-Source file: `skills/explain-change/reference/examples/portal-day.session.json` (`explain-session/1`, synthetic). `build.mjs` reads it and writes `data.js`; the crops are rendered from the same file.
+Source file: `skills/explain-change/references/examples/portal-day.session.json` (`explain-session/1`, synthetic). `build.mjs` reads it and writes `data.js`; the crops are rendered from the same file.
 
 | On screen | Value | Source field |
 |---|---|---|
