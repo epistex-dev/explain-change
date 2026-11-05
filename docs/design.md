@@ -177,7 +177,7 @@ Checker (`check.mjs`, 390 / 768 / 1440 px) on the sample change page rendered in
 
 ## Midnight theme, the default (round 4)
 
-Case: Extend (a sixth theme on existing pages; layout unchanged). The user asked for the intro video's colours so the page and the demo match, and for the page to look less generic ("A · Video" from three mockups). Tokens come from `docs/intro/DESIGN.md`; the approved mockup measured them on rendered pixels.
+Case: Extend (a sixth theme on existing pages; layout unchanged). The user asked for the intro video's colours so the page and the demo match, and for the page to look less generic ("A · Video" from three mockups). Tokens come from `docs/intro/brief.md`; the approved mockup measured them on rendered pixels.
 
 | Decision | Why |
 | --- | --- |

@@ -318,7 +318,7 @@ MUTATIONS += [
      V3 + 'RunFolderName.test_without_a_slug_the_most_common_subject_among_in_scope_commits_names_it'),
     ('v3 slug: a tie goes to the newest commit', CL, 'key=lambda s: (subjects.count(s), -subjects.index(s))', 'key=lambda s: (subjects.count(s), subjects.index(s))',
      V3 + 'RunFolderName.test_tie_goes_to_the_newest_commit'),
-    ('v3 v2 output: no v1 hint', CL, "and not f['test'] and not v2 else", "and not f['test'] else", V3 + 'NoV1Hints.test_v2_output_has_no_explain_in_hint_and_v1_keeps_it'),
+    ('v3 v2 output: no v1 hint', CL, "and not f['test'] and not v2 else", "and not f['test'] else", V3 + 'NoV1Hints.test_v2_collect_output_has_no_v1_hints'),
     ('v3 digest: unittest is a strong run', TR, '|pytest|unittest|phpunit|', '|pytest|phpunit|', V3 + 'DigestPriority.test_strong_runs_in_workers_survive_two_hundred_noise_calls'),
     ('v3 digest: red_check and prove_fix are strong runs', TR, '|red_check|prove[_-]fix|check\\.mjs)(?![\\w-])', ')(?![\\w-])', V3 + 'DigestPriority.test_strong_runs_in_workers_survive_two_hundred_noise_calls'),
     ('v3 digest: an inline script that only mentions a runner is weak', TR, 'strong = runs_strong(extra[2])', 'strong = bool(STRONG.search(extra[2]))',
