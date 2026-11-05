@@ -1,0 +1,11 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "explain-change",
+  "version": "0.1.0",
+  "description": "Explain what an agent just changed as one offline HTML page with a system map, so you understand the code instead of trusting it.",
+  "author": { "name": "epistex-dev", "url": "https://github.com/epistex-dev" },
+  "homepage": "https://github.com/epistex-dev/explain-change",
+  "repository": "https://github.com/epistex-dev/explain-change",
+  "license": "MIT",
+  "keywords": ["code-explanation", "code-review", "diff", "agent-skills"]
+}
