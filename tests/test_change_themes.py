@@ -17,7 +17,7 @@ from lib import page2, page_session, themes  # noqa: E402
 from lib.i18n2 import STR2  # noqa: E402
 from test_page_session import CHANGE, RENDER, SAMPLE, chromium  # noqa: E402
 
-SKILL = os.path.dirname(HERE)
+SKILL = os.path.join(os.path.dirname(HERE), 'skills', 'explain-change')
 UI = os.path.join(SKILL, 'assets', 'ui')
 KEY = themes.THEME_KEY
 PRE_BLOCKED = ("Object.defineProperty(window,'localStorage',{get(){throw new DOMException('blocked','SecurityError')}});"

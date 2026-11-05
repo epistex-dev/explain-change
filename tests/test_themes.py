@@ -17,7 +17,7 @@ from lib import page_session  # noqa: E402
 from lib.i18n2 import STR2  # noqa: E402
 from test_page_session import RENDER, SAMPLE, busy_doc, chromium, page, sample  # noqa: E402
 
-SKILL = os.path.dirname(HERE)
+SKILL = os.path.join(os.path.dirname(HERE), 'skills', 'explain-change')
 CSS = os.path.join(SKILL, 'assets', 'ui', 'session.css')
 BASE = os.path.join(SKILL, 'assets', 'ui', 'page2.css')
 KEY = page_session.THEME_KEY

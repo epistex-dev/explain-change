@@ -13,6 +13,7 @@ All notable changes to this project are documented here. The format follows
 - `midnight` is now the theme a page opens in when `render.py` gets no `--theme` and the reader has no stored pick. A stored pick still wins, and the five earlier themes stay in the Appearance picker. The README screenshots show midnight.
 - The error for an unknown `--theme` now names six ids.
 - The two reference folders are one: `skills/explain-change/reference/examples` and `reference/ui` moved to `skills/explain-change/references/examples` and `references/ui`. The duplicate `reference/ui/LICENSES.txt` is gone (`assets/ui/LICENSES.txt` stays).
+- The test suite (`tests/`, with `red_check.py`) and the design notes (`docs/design.md`, was `DESIGN.md`) moved out of `skills/explain-change/`, so an install ships only the skill. Run the tests with `python3 -m unittest discover -s tests`.
 
 ### Removed
 - The v1 report page and Mermaid (`mermaid.min.js`, 5.5 MB). A change doc with `version` 1 or no `version` now makes `validate.py` and `render.py` exit 1 with `error: explain-change v1 docs are no longer supported; write version 2 (references/explain-schema.md)`. Docs with `version: 2` are unaffected.

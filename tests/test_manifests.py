@@ -4,8 +4,8 @@ import os
 import re
 import unittest
 
-SKILL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-REPO = os.path.abspath(os.path.join(SKILL, '..', '..'))
+SKILL = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'skills', 'explain-change')
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def load(*parts):

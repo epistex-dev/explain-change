@@ -1,2 +1,2 @@
 # Synthetic test credential in a unit test that checks secrets are masked (not a real secret).
-skills/explain-change/tests/test_v2_collect.py:curl-auth-header:171
+tests/test_v2_collect.py:curl-auth-header:171

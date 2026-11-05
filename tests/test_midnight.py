@@ -16,7 +16,7 @@ from helpers import SKILL  # noqa: E402,F401  (puts scripts/ on sys.path)
 from lib import themes  # noqa: E402
 from test_page_session import RENDER, chromium  # noqa: E402
 
-SKILL = os.path.dirname(HERE)
+SKILL = os.path.join(os.path.dirname(HERE), 'skills', 'explain-change')
 EXAMPLES = os.path.join(SKILL, 'references', 'examples')
 DOCS = {'change': 'password-autofill.v2.json', 'session': 'portal-day.session.json', 'flow': 'claim-check.flow.json'}
 PROBE = ("<script>addEventListener('load',()=>{const r=getComputedStyle(document.documentElement),b=getComputedStyle(document.body);"

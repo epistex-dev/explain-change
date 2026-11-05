@@ -13,7 +13,7 @@ from helpers2 import rec, tool_result, write_jsonl  # noqa: E402
 from helpers2 import tool_use as _tool_use  # noqa: E402
 from lib import check_session, outward, session, transcript  # noqa: E402
 
-SKILL = os.path.dirname(HERE)
+SKILL = os.path.join(os.path.dirname(HERE), 'skills', 'explain-change')
 SCRIPT = os.path.join(SKILL, 'scripts', 'collect.py')
 
 

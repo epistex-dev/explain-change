@@ -14,7 +14,7 @@ from helpers2 import V2Case  # noqa: E402
 from lib import check, check_session, page2, page_session, transcript  # noqa: E402
 from test_session import good_doc  # noqa: E402
 
-SKILL = os.path.dirname(HERE)
+SKILL = os.path.join(os.path.dirname(HERE), 'skills', 'explain-change')
 REASON = 'Windsurf keeps no readable session log'
 MAX_REASON = 200  # the longest reason a page shows
 CRED = 'Zq9!fakeCred7x'  # synthetic, only for these tests

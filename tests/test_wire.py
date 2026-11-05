@@ -24,7 +24,7 @@ import test_adapters_cursor_ide as tide  # noqa: E402
 import test_adapters_opencode as toc  # noqa: E402
 
 FIX = os.path.join(HERE, 'fixtures')
-SKILL = os.path.dirname(HERE)
+SKILL = os.path.join(os.path.dirname(HERE), 'skills', 'explain-change')
 CWD = '/work/repo'
 CODEX_MAIN = 'rollout-2026-11-04T10-00-00-019a0000-0001-7000-8000-000000000001.jsonl'
 GEMINI_MAIN = 'session-2026-11-04T10-00-0f1e2d3c.jsonl'

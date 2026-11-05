@@ -16,7 +16,7 @@ from test_flow import FlowCase, src  # noqa: E402  (puts scripts/ on sys.path)
 from lib import page_flow, themes  # noqa: E402
 from lib.i18n2 import STR2  # noqa: E402
 
-SKILL = os.path.dirname(HERE)
+SKILL = os.path.join(os.path.dirname(HERE), 'skills', 'explain-change')
 RENDER = os.path.join(SKILL, 'scripts', 'render.py')
 EXAMPLES = os.path.join(SKILL, 'references', 'examples')
 EXCERPT = 'text = open(path).read()'

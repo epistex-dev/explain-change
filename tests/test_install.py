@@ -6,7 +6,7 @@ import tempfile
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.abspath(os.path.join(HERE, '..', '..', '..'))
+REPO = os.path.dirname(HERE)
 INSTALL = os.path.join(REPO, 'install.sh')
 VALID = 'agents claude codex gemini copilot cursor opencode goose amp kiro windsurf cline roo'
 # harness -> user-level skills dir relative to HOME

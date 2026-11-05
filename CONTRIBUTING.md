@@ -7,12 +7,12 @@ Python 3 and git. The scripts use the standard library only, so there is nothing
 ```bash
 git clone https://github.com/epistex-dev/explain-change
 cd explain-change
-python3 -m unittest discover -s skills/explain-change/tests
+python3 -m unittest discover -s tests
 ```
 
 The full suite takes about 80 seconds. CI runs it on every push and pull request (Python 3.12). The tests create throwaway git repositories, so `git config user.name` and `user.email` must be set.
 
-A change that adds a guard should also be covered by `python3 skills/explain-change/tests/red_check.py`, which removes each guard in a copy and requires its test to fail.
+A change that adds a guard should also be covered by `python3 tests/red_check.py`, which removes each guard in a copy and requires its test to fail.
 
 ## Pull requests
 

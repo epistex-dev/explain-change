@@ -5,7 +5,7 @@ import sys
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(os.path.dirname(HERE), 'scripts'))
+sys.path.insert(0, os.path.join(os.path.dirname(HERE), 'skills', 'explain-change', 'scripts'))
 sys.path.insert(0, HERE)
 
 from lib import adapters  # noqa: E402

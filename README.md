@@ -200,7 +200,7 @@ python3 skills/explain-change/scripts/render.py \
 
 The schema is in [`references/explain-flow-schema.md`](skills/explain-change/references/explain-flow-schema.md).
 
-Reading order for the skill itself: [`SKILL.md`](skills/explain-change/SKILL.md) (steps), [`references/explain-schema.md`](skills/explain-change/references/explain-schema.md) (doc fields and rules), [`DESIGN.md`](skills/explain-change/DESIGN.md) (page design and decisions).
+Reading order for the skill itself: [`SKILL.md`](skills/explain-change/SKILL.md) (steps), [`references/explain-schema.md`](skills/explain-change/references/explain-schema.md) (doc fields and rules), [`docs/design.md`](docs/design.md) (page design and decisions).
 
 ## Development
 
@@ -214,20 +214,20 @@ skills/explain-change/
   scripts/             collect.py, validate.py, render.py, lib/
   assets/              page CSS and JS, fonts, icons
   references/          the doc schemas, examples/ (bundled sample docs) and ui/ (UI tokens)
-  tests/               unit tests and the red check
-docs/images/           screenshots used in this README
+tests/                 unit tests and the red check
+docs/                  design notes (design.md), screenshots (images/), the intro video source (intro/)
 ```
 
 Run the tests:
 
 ```bash
-python3 -m unittest discover -s skills/explain-change/tests
+python3 -m unittest discover -s tests
 ```
 
 The red check removes each guard in a throwaway copy of the skill and requires its test to go red:
 
 ```bash
-python3 skills/explain-change/tests/red_check.py
+python3 tests/red_check.py
 ```
 
 Validate the plugin manifests with `claude plugin validate .` and the skill with `skills-ref validate skills/explain-change` ([agentskills](https://github.com/agentskills/agentskills/tree/main/skills-ref)). CI runs the unit tests on every push and pull request (one job, Python 3.12).

@@ -7,13 +7,14 @@ import secrets
 import subprocess
 import unittest
 
+from helpers import SKILL
 from helpers2 import USER_1, V2Case, main_records, rec, run, tool_result, tool_use, worker_records, write_jsonl
 from lib import arch as A
 from lib import gitio, page2, transcript
 from test_v2 import drop_module_refs
 
 SELF_FILES = [
-    'skills/explain-change/DESIGN.md',
+    'docs/design.md',
     'skills/explain-change/SKILL.md',
     'skills/explain-change/assets/ui/LICENSES.txt',
     'skills/explain-change/assets/ui/fonts/inter-latin.woff2',
@@ -24,13 +25,6 @@ SELF_FILES = [
     'skills/explain-change/assets/ui/page2.js',
     'skills/explain-change/assets/ui/route.js',
     'skills/explain-change/references/examples/password-autofill.v2.json',
-    'skills/explain-change/references/ui/LICENSES.txt',
-    'skills/explain-change/references/ui/layout-2.html',
-    'skills/explain-change/references/ui/layout-2.notes.md',
-    'skills/explain-change/references/ui/shots/floorplan-1440x900.png',
-    'skills/explain-change/references/ui/shots/v3-layout2-1440-node-selected.png',
-    'skills/explain-change/references/ui/shots/v3-layout2-1440.png',
-    'skills/explain-change/references/ui/shots/v3-layout2-800.png',
     'skills/explain-change/references/ui/theme.css',
     'skills/explain-change/references/explain-schema.md',
     'skills/explain-change/scripts/collect.py',
@@ -43,18 +37,18 @@ SELF_FILES = [
     'skills/explain-change/scripts/lib/transcript.py',
     'skills/explain-change/scripts/render.py',
     'skills/explain-change/scripts/validate.py',
-    'skills/explain-change/tests/fixtures/geometry-fixture-1440.json',
-    'skills/explain-change/tests/fixtures/geometry-fixture-800.json',
-    'skills/explain-change/tests/fixtures/geometry-autofill-1440.json',
-    'skills/explain-change/tests/fixtures/geometry-autofill-800.json',
-    'skills/explain-change/tests/helpers2.py',
-    'skills/explain-change/tests/red_check.py',
-    'skills/explain-change/tests/route_driver.js',
-    'skills/explain-change/tests/test_render2.py',
-    'skills/explain-change/tests/test_route.py',
-    'skills/explain-change/tests/test_v2.py',
-    'skills/explain-change/tests/test_v2_collect.py',
-    'skills/explain-change/tests/test_v2_hardening.py',
+    'tests/fixtures/geometry-fixture-1440.json',
+    'tests/fixtures/geometry-fixture-800.json',
+    'tests/fixtures/geometry-autofill-1440.json',
+    'tests/fixtures/geometry-autofill-800.json',
+    'tests/helpers2.py',
+    'tests/red_check.py',
+    'tests/route_driver.js',
+    'tests/test_render2.py',
+    'tests/test_route.py',
+    'tests/test_v2.py',
+    'tests/test_v2_collect.py',
+    'tests/test_v2_hardening.py',
 ]
 
 
@@ -66,14 +60,20 @@ def ids(paths):
 
 
 class FallbackRule(unittest.TestCase):
+    def test_the_self_run_file_list_names_real_files(self):
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.assertEqual([f for f in SELF_FILES if not os.path.isfile(os.path.join(root, f))], [])
+
     def test_the_self_run_file_list_scoped_gives_three_to_eight_modules(self):
         got = ids(SELF_FILES)
         self.assertTrue(3 <= len(got) <= 8, got)
         self.assertIn('tests', got)
-        self.assertIn('scripts', got)
+        self.assertIn('skills/explain-change/scripts', got)
 
     def test_the_self_run_whole_range_no_longer_piles_into_one_node(self):
-        files = SELF_FILES + ['CLAUDE.md', 'agents/worker.md', 'agents/worker-leaf.md', 'hooks/guard.sh', 'hooks/orch-guard.py',
+        root = os.path.dirname(os.path.dirname(SKILL))
+        skill_tree = sorted(os.path.relpath(os.path.join(d, f), root) for d, _, fs in os.walk(SKILL) for f in fs if '__pycache__' not in d)  # the skill is most of the range
+        files = sorted(set(SELF_FILES + skill_tree)) + ['CLAUDE.md', 'agents/worker.md', 'agents/worker-leaf.md', 'hooks/guard.sh', 'hooks/orch-guard.py',
                               'hooks/tests/test_guard.py', 'hooks/tests/test_orch_guard.py', 'hooks/git/pre-commit', 'orchestrator/ui.md', 'orchestrator/work.md']
         mods = A.fallback_modules(files)
         got = sorted(set(mods.values()))
@@ -238,7 +238,7 @@ class FallbackValidation(V2Case):
         self.assertEqual(self.run_validate(d, run_dir).returncode, 1)
 
     def test_the_schema_says_the_same_as_the_validator(self):
-        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'references', 'explain-schema.md'), encoding='utf-8') as fh:
+        with open(os.path.join(SKILL, 'references', 'explain-schema.md'), encoding='utf-8') as fh:
             text = fh.read()
         self.assertIn('`_other` is allowed only with an architecture', text)
         self.assertIn('--path', text)
@@ -572,7 +572,7 @@ class RationaleReport(V2Case):
         self.assertInvalid(lambda d: d['rationale']['chosen'].update(source={'kind': 'report', 'quote': 'câu chưa ai báo cáo'}), 'quote not found')
 
     def test_schema_table_lists_report_for_rationale(self):
-        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'references', 'explain-schema.md'), encoding='utf-8') as fh:
+        with open(os.path.join(SKILL, 'references', 'explain-schema.md'), encoding='utf-8') as fh:
             text = fh.read()
         self.assertRegex(text, r'\| Rationale items \| `source`: transcript, report, code, url; or inferred \|')
 

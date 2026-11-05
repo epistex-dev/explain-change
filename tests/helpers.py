@@ -6,7 +6,7 @@ import sys
 import tempfile
 import unittest
 
-SKILL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SKILL = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'skills', 'explain-change')
 sys.path.insert(0, os.path.join(SKILL, 'scripts'))
 
 from lib import gitio  # noqa: E402

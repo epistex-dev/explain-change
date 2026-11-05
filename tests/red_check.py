@@ -9,7 +9,8 @@ import subprocess
 import sys
 import tempfile
 
-SKILL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SKILL = os.path.join(REPO, 'skills', 'explain-change')
 
 # (guard, file, original text, broken text, test id)
 PS, JS = 'scripts/lib/page_session.py', 'assets/ui/session.js'
@@ -1409,12 +1410,15 @@ def main():
         if only not in guard or i % shards != shard:
             continue
         with tempfile.TemporaryDirectory(prefix='red-check-') as d:
-            root = os.path.join(d, 'repo', 'skills', 'explain-change')  # the repo layout, so install.sh finds its skill
-            shutil.copytree(SKILL, root, ignore=shutil.ignore_patterns('__pycache__', '.git'))
+            top = os.path.join(d, 'repo')  # the repo layout, so install.sh finds its skill and the tests find theirs
+            root = os.path.join(top, 'skills', 'explain-change')
+            ignore = shutil.ignore_patterns('__pycache__', '.git')
+            shutil.copytree(SKILL, root, ignore=ignore)
+            shutil.copytree(os.path.join(REPO, 'tests'), os.path.join(top, 'tests'), ignore=ignore)
             for extra in ('install.sh', 'plugin.json', 'gemini-extension.json', 'CHANGELOG.md', 'README.md'):
-                shutil.copy(os.path.join(SKILL, '..', '..', extra), os.path.join(d, 'repo', extra))
-            shutil.copytree(os.path.join(SKILL, '..', '..', '.claude-plugin'), os.path.join(d, 'repo', '.claude-plugin'))
-            green, _ = run_test(root, test)
+                shutil.copy(os.path.join(REPO, extra), os.path.join(top, extra))
+            shutil.copytree(os.path.join(REPO, '.claude-plugin'), os.path.join(top, '.claude-plugin'))
+            green, _ = run_test(top, test)
             path = os.path.join(root, rel)
             with open(path, encoding='utf-8') as fh:
                 text = fh.read()
@@ -1424,7 +1428,7 @@ def main():
                 continue
             with open(path, 'w', encoding='utf-8') as fh:
                 fh.write(text.replace(old, new))
-            red, last = run_test(root, test)
+            red, last = run_test(top, test)
             ok = green and not red
             bad += not ok
             print('%-5s %-48s green->%s guard removed->%s  %s' % ('OK' if ok else 'FAIL', guard, 'pass' if green else 'FAIL',

@@ -8,7 +8,7 @@ import sys
 import tempfile
 import unittest
 
-SKILL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SKILL = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'skills', 'explain-change')
 sys.path.insert(0, os.path.join(SKILL, 'scripts'))
 VALIDATE = os.path.join(SKILL, 'scripts', 'validate.py')
 COLLECT = os.path.join(SKILL, 'scripts', 'collect.py')

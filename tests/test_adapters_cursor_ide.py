@@ -10,7 +10,7 @@ import tracemalloc
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(os.path.dirname(HERE), 'scripts'))
+sys.path.insert(0, os.path.join(os.path.dirname(HERE), 'skills', 'explain-change', 'scripts'))
 sys.path.insert(0, HERE)
 
 from lib import adapters  # noqa: E402
@@ -483,7 +483,7 @@ class Bounded(Store):
                   'ref = cursor_ide.find_sessions(%r, %r)[0]\n'
                   'n = len(cursor_ide.read(ref, %r).events)\n'
                   'print(n, resource.getrusage(resource.RUSAGE_SELF).ru_maxrss - base)\n') % (
-            os.path.join(os.path.dirname(HERE), 'scripts'), CWD, self.root, self.root)
+            os.path.join(os.path.dirname(HERE), 'skills', 'explain-change', 'scripts'), CWD, self.root, self.root)
         out = subprocess.run([sys.executable, '-I', '-c', script], capture_output=True, text=True, timeout=120)
         self.assertEqual(out.returncode, 0, out.stderr)
         events, grown_kb = map(int, out.stdout.split())

@@ -13,8 +13,8 @@ import unittest
 from helpers import SKILL
 from lib import page2
 
-DRIVER = os.path.join(SKILL, 'tests', 'route_driver.js')
-FIXTURES = os.path.join(SKILL, 'tests', 'fixtures')
+DRIVER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'route_driver.js')
+FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures')
 EPS = .5
 SEP, BORDER_AUDIT = 8, 5  # runs of two edges on shared ground are SEP apart; no run lies within BORDER_AUDIT of a zone side
 GAP, PAD, LABEL_H = 24, 16, 30

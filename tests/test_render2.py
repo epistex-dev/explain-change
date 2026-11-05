@@ -3,7 +3,7 @@ import os
 import re
 import unittest
 
-from helpers2 import DECISION, PHPUNIT, PHPUNIT_OUT, USER_1, V2Case
+from helpers2 import DECISION, PHPUNIT, PHPUNIT_OUT, SKILL, USER_1, V2Case
 from lib import collect2, page2
 
 EVIL = '<script>alert(1)</script>'
@@ -445,7 +445,7 @@ class ReviewFixes(V2Case):
 
 class DocsStateTheRule(V2Case):
     def read(self, rel):
-        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), rel), encoding='utf-8') as fh:
+        with open(os.path.join(SKILL, rel), encoding='utf-8') as fh:
             return fh.read()
 
     def test_schema_and_skill_state_each_fact_once_and_the_see_field(self):
@@ -480,8 +480,7 @@ class PluralCounts(unittest.TestCase):
         self.assertEqual(count(t, 'caveats', 2), '2 lưu ý')
 
     def test_rendered_en_page_never_says_1_files_or_1_caveats(self):
-        here = os.path.dirname(os.path.abspath(__file__))
-        sample = os.path.join(here, '..', 'references', 'examples', 'password-autofill.v2.json')
+        sample = os.path.join(SKILL, 'references', 'examples', 'password-autofill.v2.json')
         with open(sample, encoding='utf-8') as fh:
             doc = json.load(fh)
         doc['lang'] = 'en'

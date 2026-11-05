@@ -18,7 +18,7 @@ from helpers import SKILL  # noqa: E402,F401  (puts scripts/ on sys.path)
 from lib import outward, page2, page_session  # noqa: E402
 from lib.i18n2 import STR2, count  # noqa: E402
 
-SKILL = os.path.dirname(HERE)
+SKILL = os.path.join(os.path.dirname(HERE), 'skills', 'explain-change')
 SAMPLE = os.path.join(SKILL, 'references', 'examples', 'portal-day.session.json')
 CHANGE = os.path.join(SKILL, 'references', 'examples', 'password-autofill.v2.json')
 RENDER = os.path.join(SKILL, 'scripts', 'render.py')
