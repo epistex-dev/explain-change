@@ -184,6 +184,20 @@ python3 skills/explain-change/scripts/render.py \
 
 The schema is in [`references/session-schema.md`](skills/explain-change/references/session-schema.md).
 
+### Explain a flow
+
+To understand how existing code runs, with no change and no session to read, ask "how does X work" or "luồng này chạy thế nào". The agent reads the code, writes an `explain-flow/1` doc (the parts of the system, the steps in order, what each takes in and gives back, the branches and the error exits, each tied to lines of one commit), checks it with `validate.py`, and `render.py` draws one offline page: the question and summary, the numbered route, a map of the parts and a panel for the selected step. It shows no code, diff or file:line, and its footer names the commit it was checked against. The page has the same five themes; `#step-N` in the URL opens step N, and without JS every step is on the page.
+
+![The flow page in the pearl (light) theme at 1440 x 900](docs/images/flow-1440x900.png)
+
+```bash
+python3 skills/explain-change/scripts/render.py \
+  skills/explain-change/reference/examples/claim-check.flow.json \
+  --no-validate --theme pearl --out /tmp/flow/index.html
+```
+
+The schema is in [`references/explain-flow-schema.md`](skills/explain-change/references/explain-flow-schema.md).
+
 Reading order for the skill itself: [`SKILL.md`](skills/explain-change/SKILL.md) (steps), [`references/explain-schema.md`](skills/explain-change/references/explain-schema.md) (doc fields and rules), [`DESIGN.md`](skills/explain-change/DESIGN.md) (page design and decisions).
 
 ## Development
