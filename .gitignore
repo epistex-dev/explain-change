@@ -1,0 +1,13 @@
+# explain-change output pages (they come from real sessions)
+.explain/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Editors and OS
+.DS_Store
+.idea/
+.vscode/
+*.swp

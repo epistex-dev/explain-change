@@ -1,0 +1,4 @@
+# Synthetic test credential in a unit test that checks secrets are masked (not a real secret).
+skills/explain-change/tests/test_v2_collect.py:curl-auth-header:171
+# Vendored minified Mermaid 12.3.0: a long identifier string flagged as an API key (not a secret).
+skills/explain-change/assets/mermaid.min.js:generic-api-key:634
