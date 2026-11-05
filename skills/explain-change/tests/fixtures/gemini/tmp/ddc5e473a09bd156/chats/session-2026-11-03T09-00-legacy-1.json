@@ -1,0 +1,44 @@
+{
+  "sessionId": "legacy-1",
+  "projectHash": "ddc5e473a09bd156b4eb7c426367aa59c37909a35241b49fbfa0631b9b532a39",
+  "startTime": "2026-11-03T09:00:00.000Z",
+  "lastUpdated": "2026-11-03T09:01:00.000Z",
+  "kind": "main",
+  "messages": [
+    {
+      "id": "m1",
+      "timestamp": "2026-11-03T09:00:01.000Z",
+      "type": "user",
+      "content": "Run the linter"
+    },
+    {
+      "id": "m2",
+      "timestamp": "2026-11-03T09:00:05.000Z",
+      "type": "gemini",
+      "content": "Linter finished with one error.",
+      "toolCalls": [
+        {
+          "id": "l1",
+          "name": "run_shell_command",
+          "args": {
+            "command": "ruff check .",
+            "description": "ruff check ."
+          },
+          "result": [
+            {
+              "functionResponse": {
+                "id": "l1",
+                "name": "run_shell_command",
+                "response": {
+                  "output": "<untrusted_context>\nOutput: client.py:3: F401 unused import\nError: ruff reported problems\nExit Code: 1\nProcess Group PGID: 77\n</untrusted_context>"
+                }
+              }
+            }
+          ],
+          "status": "success",
+          "timestamp": "2026-11-04T10:00:05.000Z"
+        }
+      ]
+    }
+  ]
+}
