@@ -1,6 +1,6 @@
 /* explain-session/1 page. Tokens, fonts and the base reset come from page2.css (inlined before this file); layout and the colour themes are added here.
    --mk (marker size) and --mk-gap (space between markers): session.js reads both, so the CSS stays the single source.
-   Colour themes: page2.css :root is navy, the default, and the other four themes are [data-theme] blocks right after it, shared with the change page. No rule here
+   Colour themes: page2.css :root holds the shared tokens and the navy values, and the other themes (midnight, the default, first) are [data-theme] blocks right after it, shared with the change page. No rule here
    holds a literal colour. The *-rgb helpers there feed rgba(var(--x-rgb),a) where an alpha of a status colour is needed. */
 :root{--mk:32px;--mk-gap:8px;--lane-h:48px}
 @media (pointer:coarse){:root{--mk:40px}}
