@@ -18,8 +18,7 @@ MAX_RESULT = 160  # a request's `result` is one short sentence; the detail lives
 DUP_RUN = 6  # words in a row that two blocks must not share
 MAX_STEP_LABEL = 60
 CONCLUSIONS = ('requests', 'map', 'logic', 'rationale', 'evidence')
-QUOTE_ROLES = ('user', 'assistant', 'tool_result', 'report')
-URL_ROLES = QUOTE_ROLES
+QUOTE_ROLES = ground.QUOTE_ROLES  # one definition; the red check swaps it into a request's quote lookup
 BLOCK_ALLOW = {  # grounding kinds each block accepts
     'step': ('refs', 'code', 'transcript', 'url', 'inferred'),
     'example': ('evidence_id', 'tool_call', 'transcript', 'code', 'inferred'),
