@@ -20,7 +20,7 @@ After any agent edit, ask for "explain this change", or review a diff, commit or
 | **Where it changed** | Which parts of the system changed and which stayed as they were? (the system map) |
 | **How the new logic runs** | How did the logic run before, and how does it run now? (before and after pictures) |
 | **Why** | Why this way, and which options were rejected? |
-| **Evidence checked** | What was proven, how, and what was not checked? |
+| **Evidence checked** | What was proven, how, and what was left open? |
 
 The map is the centre of the page. Click a box to filter the other four blocks to that part of the system.
 

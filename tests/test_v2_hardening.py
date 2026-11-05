@@ -346,7 +346,7 @@ class Secrets(V2Case):
 
 # ------------------------------------------------------------------------------------------------ follow-ups
 class NoSessionBadge(V2Case):
-    BADGE = 'Chưa đối chiếu với phiên làm việc'
+    BADGE = 'Không có log phiên'
 
     def run_render(self, doc, *args):
         path = os.path.join(self.repo, 'doc.json')
@@ -377,7 +377,7 @@ class NoSessionBadge(V2Case):
 
     def test_english_page_says_it_in_english(self):
         r, html = self.run_render(self.doc(lambda d: d.update(transcript_unavailable='gone', lang='en')))
-        self.assertIn('Not checked against the session', html)
+        self.assertIn('No session log', html)
 
 
 class BadArchitecture(V2Case):

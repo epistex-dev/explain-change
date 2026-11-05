@@ -50,6 +50,12 @@ MUTATIONS = [
      'test_samples_checked.SampleEnvCli.test_a_bad_output_path_is_one_line_not_a_traceback'),
     ('sample_env: architecture has no undrawn node', '../../tests/sample_env.py', "    nodes = []\n", "    nodes = [{'id': 'acme', 'label': 'System', 'kind': 'service', 'summary': 'x', 'paths': ['src/**']}]\n",
      'test_samples_checked.Pages.test_the_rendered_change_page_draws_every_module_of_the_architecture'),
+    ('map: a group holding a drawn module is not an unrelated part', 'scripts/lib/page2.py', "len(set(ids) | self.arch.holders(ids))", "len(set(ids))",
+     'test_map_groups.Groups.test_a_root_that_holds_drawn_modules_is_their_frame_and_not_an_unrelated_part'),
+    ('map: a frame never repeats its only card', 'scripts/lib/page2.py', "norm(z['mods'][0]['name']) == norm(z['label']):", "False:",
+     'test_map_groups.Groups.test_no_frame_repeats_the_title_of_its_only_card'),
+    ('labels: the left-open list is not called not checked', 'scripts/lib/i18n2.py', "'nc_h': 'Left open'", "'nc_h': 'Not checked'",
+     'test_samples_checked.Pages.test_the_rendered_change_page_does_not_say_it_is_not_checked'),
 ]
 
 

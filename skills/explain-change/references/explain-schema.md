@@ -15,7 +15,7 @@
 
 A page answers five questions in order, one block each: what was asked (`requests`), where it happened (`map`), how the logic changed (`logic`), why this way (`rationale`), what was proven (`evidence`). Every fact is tied to the diff, the code, the architecture file or the session transcript. A fact with no tie is labelled `inferred` and renders "suy luận". The page shows prose, diagrams and quotes; refs, commands and excerpts stay in the doc for `validate.py`.
 
-Workflow: `collect.py --v2` (add `--transcript <file>` once you know the session) prints the modules and the transcript digest, then `validate.py explain.json --transcript <file>` checks the doc. The doc may carry `"transcript": "<path>"` instead of the flag. A path is read only inside its harness's own folder (Claude Code: `~/.claude/projects`; the table in [transcripts.md](transcripts.md) lists the others), after symlinks are resolved; a file outside it is refused. With no session available (an unsupported harness, a missing or unreadable file, no agent session at all), set `"transcript_unavailable": "<reason>"`: one line of at most 200 characters, never together with a transcript (the validator refuses the pair, and the lack of both). The git, count, file-coverage, code-line and secret checks still run; quotes and commands are not compared (the validator warns and counts them), and the page reads "Not checked against the session: <reason>" with each run marked as the agent's own account.
+Workflow: `collect.py --v2` (add `--transcript <file>` once you know the session) prints the modules and the transcript digest, then `validate.py explain.json --transcript <file>` checks the doc. The doc may carry `"transcript": "<path>"` instead of the flag. A path is read only inside its harness's own folder (Claude Code: `~/.claude/projects`; the table in [transcripts.md](transcripts.md) lists the others), after symlinks are resolved; a file outside it is refused. With no session available (an unsupported harness, a missing or unreadable file, no agent session at all), set `"transcript_unavailable": "<reason>"`: one line of at most 200 characters, never together with a transcript (the validator refuses the pair, and the lack of both). The git, count, file-coverage, code-line and secret checks still run; quotes and commands are not compared (the validator warns and counts them), and the page reads "No session log: <reason>" with each run marked as the agent's own account.
 
 ## Top level
 
@@ -48,7 +48,7 @@ A `Source` ties one claim to its origin. Each block accepts the kinds in its row
 | `tool_call` | `{kind, command, excerpt, transcript?}` | `command` occurs in a tool call and `excerpt` in the result of that same call |
 | `code` | `{kind, ref: Ref}` | the Ref rules above |
 | `url` | `{kind, url}` | the URL occurs in a message, or in a Bash command, or in the `url`, `urls` (a string or a list) or `query` of a fetch, search or preview tool call (`WebFetch`, `web_fetch`, `web_search`, `preview_navigate`, `preview_open`) |
-| inferred | `{"inferred": true}` | not checked; flagged |
+| inferred | `{"inferred": true}` | no source confirms it; flagged |
 
 Quotes and excerpts are pieces of the original text (whitespace collapsed, Unicode NFC, case-sensitive, at least 4 characters); copy a short distinctive piece. `transcript` is `"main"` (default) or a worker id such as `"agent-a1b2c3"`; the digest prints the ids and which one ran each command. User messages exist only in main: a worker's "user" message is a brief from the agent that launched it.
 
@@ -117,7 +117,7 @@ Module ids come from `floorplan/architecture.json`, found at the repo root or up
 {"id?": "e1", "what": "...", "result": "passed" | "failed" | "mixed", "detail": "...", "modules?": [...], "source": Source | [Source]}
 ```
 
-`detail` states what the source shows. A number in `detail` that no cited excerpt contains draws a warning. `not_checked` lists what stays unproven, each with `why` when known.
+`detail` states what the source shows. A number in `detail` that no cited excerpt contains draws a warning. `not_checked` (the page's "Left open" list) lists what stays unproven, each with `why` when known.
 
 ## Page rules (renderer)
 
@@ -126,7 +126,7 @@ Module ids come from `floorplan/architecture.json`, found at the repo root or up
 - **Edges** are routed in the gutters between boxes (`assets/ui/route.js`): a run keeps 6 px off every zone side and zone title, runs of different edges on shared ground are at least 8 px apart (two edges that leave one port share their first stretch), and an arch label sits on, or beside, a free run.
 - **Map layout** is automatic: a zone per top-level architecture node (outside actors in one dashed zone), columns in flow order, tests under the outside actors. Changed modules glow and show `what_changed` and their files with +/- counts (at most 4 file rows, the biggest change first, then a "+N file" line; the node's tag keeps the full count); unchanged ones show the architecture summary. Plan for 1 to about 12 listed modules.
 - A `flow` edge between changed modules, or from an outside actor into a changed module, is drawn magenta; `tests` edges are dashed. Edge labels show on the map only for `arch` edges (the architecture's own label is used when the doc has none); a flow label appears in the card of the selected module.
-- `hidden_count` is derived: architecture nodes minus listed modules that are architecture nodes (an outside actor or `_other` never is). It renders as "+N phần không liên quan"; with no architecture it is 0 and shows nothing.
+- `hidden_count` is derived: architecture nodes minus listed modules that are architecture nodes (an outside actor or `_other` never is) and minus the groups that hold a listed module (a parent node is drawn as the frame of its modules, so it is not an unrelated part). A frame never repeats the title of its only card: that card is drawn bare. It renders as "+N phần không liên quan"; with no architecture it is 0 and shows nothing.
 - An item tied to modules (`modules`) shows when one of them is selected on the map; an item with none shows only in the full view. A step needs both `label` and `text`: the label is the step's title on the page.
 - `inferred` items (and steps, cases, examples, rejected options, notes) carry a "Suy luận" chip. An `evidence.ran` item whose sources are all `report` is labelled a worker's report and counted in the Bằng chứng tab; one with any tool call or user quote is not.
 - An example's `evidence_id` links to that run; the run is highlighted.

@@ -151,6 +151,19 @@ class Architecture:
             d += 1
         return d
 
+    def holders(self, ids):
+        """The nodes that are an ancestor of one of `ids`: groups the page draws as the frame of those modules."""
+        out = set()
+        for nid in ids:
+            if nid not in self.nodes:
+                continue
+            seen = {nid}
+            while (p := self.parent(nid)) is not None and p not in seen:
+                seen.add(p)
+                out.add(p)
+                nid = p
+        return out
+
     def top_label(self, nid):
         seen = {nid}
         while (p := self.parent(nid)) is not None and p not in seen:

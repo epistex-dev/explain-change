@@ -194,7 +194,7 @@ class Docs(unittest.TestCase):
             text = fh.read()
         self.assertIn('## No transcript', text)
         body = text.split('## No transcript', 1)[1].split('\n## ', 1)[0]
-        for h in ('Windsurf', 'Cline', 'Roo', 'Kiro', 'Aider', 'transcript_unavailable', 'Not checked against the session', "agent's own"):
+        for h in ('Windsurf', 'Cline', 'Roo', 'Kiro', 'Aider', 'transcript_unavailable', 'No session log', "agent's own"):
             self.assertIn(h, body, h)
 
 
@@ -262,19 +262,19 @@ class ChangePageNote(V2Case):
 
     def test_vi_note_has_the_reason(self):
         t = text_of(self.render('vi'))
-        self.assertIn('Chưa đối chiếu với phiên làm việc', t)
-        self.assertNotIn('Chưa đối chiếu với phiên làm việc: ', t)  # the badge is the short form; the reason is its own line in the Evidence tab
+        self.assertIn('Không có log phiên', t)
+        self.assertNotIn('Không có log phiên: ', t)  # the badge is the short form; the reason is its own line in the Evidence tab
         self.assertIn('Không có phiên làm việc để đối chiếu: ' + REASON, t)
 
     def test_en_note_has_the_reason(self):
         t = text_of(self.render('en'))
-        self.assertIn('Not checked against the session', t)
-        self.assertNotIn('Not checked against the session: ', t)
+        self.assertIn('No session log', t)
+        self.assertNotIn('No session log: ', t)
         self.assertIn('No session to compare with: ' + REASON, t)
 
     def test_a_checked_page_has_no_note(self):
         html = page2.render(self.doc(), self.repo, session_checked=True)
-        self.assertNotIn('Chưa đối chiếu', html)
+        self.assertNotIn('Không có log phiên', html)
         self.assertNotIn('own account', html)
 
     def test_claims_that_need_the_session_say_they_are_the_agents_account(self):
@@ -308,8 +308,8 @@ class SessionPage(unittest.TestCase):
             self.assertIn(needle, h)
 
     def test_the_note_has_the_reason_in_both_languages(self):
-        self.assertIn('Not checked against the session: ' + REASON, text_of(page_session.render(self.doc('en'), {})))
-        self.assertIn('Chưa đối chiếu với phiên làm việc: ' + REASON, text_of(page_session.render(self.doc('vi'), {})))
+        self.assertIn('No session log: ' + REASON, text_of(page_session.render(self.doc('en'), {})))
+        self.assertIn('Không có log phiên: ' + REASON, text_of(page_session.render(self.doc('vi'), {})))
 
     def test_outward_counts_are_the_agents_own_and_it_says_so_once(self):
         for lang, phrase in (('en', "agent's own count"), ('vi', 'số đếm của agent')):
@@ -318,7 +318,7 @@ class SessionPage(unittest.TestCase):
 
     def test_a_checked_session_page_has_neither(self):
         h = page_session.render(self.doc(), {}, session_checked=True)
-        self.assertNotIn('Not checked', h)
+        self.assertNotIn('No session log', h)
         self.assertNotIn("own count", h)
         self.assertNotIn('.nt{', h)
         self.assertIn('Counts only', h)
@@ -336,7 +336,7 @@ class SessionPage(unittest.TestCase):
             for script, args in (('validate.py', []), ('render.py', ['--text'])):
                 p = subprocess.run([sys.executable, os.path.join(SKILL, 'scripts', script), path, *args], capture_output=True, text=True)
                 self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
-            self.assertIn('Not checked against the session: ' + REASON, open(os.path.join(tmp, 'index.html.txt'), encoding='utf-8').read())
+            self.assertIn('No session log: ' + REASON, open(os.path.join(tmp, 'index.html.txt'), encoding='utf-8').read())
 
     def test_cli_session_without_the_pair_exits_1(self):
         with tempfile.TemporaryDirectory(prefix='nt-sess-') as tmp:

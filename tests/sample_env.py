@@ -38,15 +38,16 @@ KINDS = {'browser': 'external', 'web.admin': 'feature', 'web.auth': 'feature', '
 
 
 def architecture():
-    """floorplan/architecture.json of the synthetic repo, taken from the change sample's own map so the module ids cannot drift. Every node is a module the map draws: a node the map does not draw (a root "System" node, say) would show as "+1 unrelated part"."""
+    """floorplan/architecture.json of the synthetic repo, taken from the change sample's own map so the module ids cannot drift. The root "System" node holds the modules, so the page draws it as their one frame and counts no unrelated part."""
     with open(CHANGE, encoding='utf-8') as fh:
         m = json.load(fh)['map']
     nodes = []
     for x in (x for x in m['modules'] if not x.get('outside')):  # a module marked outside is not in the code base
-        n = {'id': x['id'], 'label': x['name'], 'kind': KINDS[x['id']], 'summary': x['summary']}
+        n = {'id': x['id'], 'parent': 'acme', 'label': x['name'], 'kind': KINDS[x['id']], 'summary': x['summary']}
         if x['id'] in PATHS:
             n['paths'] = PATHS[x['id']]
         nodes.append(n)
+    nodes.insert(0, {'id': 'acme', 'label': 'System', 'kind': 'service', 'summary': 'The whole made-up web app.', 'paths': ['src/**', 'server/**', 'tests/**']})
     return {'project': {'name': 'Acme Portal'}, 'nodes': nodes, 'edges': [{'from': e['from'], 'to': e['to'], 'kind': 'data', 'label': e.get('label', 'uses')} for e in m['edges'] if 'browser' not in (e['from'], e['to'])]}
 
 

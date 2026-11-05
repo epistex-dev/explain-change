@@ -276,7 +276,7 @@ class Landmarks(PageCase):
 
 class Contract(unittest.TestCase):
     """The change page and the session page render the same bytes as before the flow page was added (sha256 of the example renders; the pins moved when midnight became the default theme and when the samples gained their transcripts)."""
-    PINS = {'password-autofill.v2.json': '03096c9e0b53c5adbe04770b1ccb043dd172aa20cc4c69de827eb27bd96115fe',
+    PINS = {'password-autofill.v2.json': 'd99d744bdf52324856b5487786a25a6a5b961be6bf4234cce757e377e76bbe40',
             'portal-day.session.json': '1c7b2ca05a8f77d664e391061c15f3759e78e76c7b95d5123c60500f6f0a5803'}
 
     def test_existing_pages_render_byte_identical_html(self):

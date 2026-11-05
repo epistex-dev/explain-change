@@ -234,7 +234,7 @@ class RenderV2(V2Case):
         out = self.page(lambda d: d.update(lang='en'))
         self.assertIn('<html lang="en"', out)
         self.assertIn('Requests', out)
-        self.assertIn('Not checked', out)
+        self.assertIn('Left open', out)
         self.assertNotIn('Yêu cầu', out)
 
     # ---- map layout

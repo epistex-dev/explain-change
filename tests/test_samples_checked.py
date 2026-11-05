@@ -16,7 +16,15 @@ import sample_env as env  # noqa: E402
 from helpers import SKILL  # noqa: E402,F401  (puts scripts/ on sys.path)
 from lib import transcript  # noqa: E402
 
-UNCHECKED = re.compile(r'not checked|chưa kiểm|unverified', re.I)
+# the labels the pages used to carry for "no proof here"; none may come back on a checked sample page, in en or vi
+UNCHECKED = re.compile(r'not checked|unchecked|unverified|not compared|chưa kiểm|chưa có bằng chứng|chưa xác minh|chưa đối chiếu|chua kiem', re.I)
+
+
+def shown(path):
+    """What a reader sees of a page file: its html without styles, scripts and tags (class names such as "unchecked" are not words)."""
+    with open(path, encoding='utf-8') as fh:
+        text = fh.read()
+    return re.sub(r'<[^>]*>', ' ', re.sub(r'<(style|script)\b.*?</\1>', ' ', text, flags=re.S | re.I))
 
 
 class Case(unittest.TestCase):
@@ -86,20 +94,46 @@ class Validates(Case):
 
 
 class Pages(Case):
-    def render(self, kind):
-        out = os.path.join(self.tmp, 'pages-' + kind)
+    def render(self, kind, lang=None):
+        out = os.path.join(self.tmp, 'pages-%s-%s' % (kind, lang or 'doc'))
         os.makedirs(out, exist_ok=True)
         doc = env.CHANGE if kind == 'change' else env.SESSION
+        if lang:  # copies of both docs (the session doc names the change doc beside it) with the page language set
+            src = os.path.join(out, 'src')
+            os.makedirs(src, exist_ok=True)
+            for name in (os.path.basename(env.CHANGE), os.path.basename(env.SESSION)):
+                with open(os.path.join(env.EXAMPLES, name), encoding='utf-8') as fh:
+                    d = json.load(fh)
+                d['lang'] = lang
+                with open(os.path.join(src, name), 'w', encoding='utf-8') as fh:
+                    json.dump(d, fh, ensure_ascii=False)
+            doc = os.path.join(src, os.path.basename(doc))
         p = env.script('render.py', doc, '--repo', self.repo, '--out', os.path.join(out, 'index.html'), '--text', home=self.home)
         self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
         return sorted(os.path.join(out, f) for f in os.listdir(out) if f.endswith(('.html', '.txt')))
 
+    def read(self, files, suffix):
+        return ''.join(open(f, encoding='utf-8').read() for f in files if f.endswith(suffix))
+
+    def test_the_change_sample_lists_what_is_left_open_in_en_and_vi(self):
+        for lang, label in (('en', 'Left open'), ('vi', 'Còn để ngỏ')):
+            text = self.read(self.render('change', lang), 'index.html.txt')
+            self.assertIn(label, text, lang)
+            self.assertIn('Prompt in the deployed build', text, lang)
+            self.assertNotIn('No session log', text, lang)  # a checked page carries no badge
+
+    def test_the_change_sample_conclusion_agrees_with_its_open_items(self):
+        with open(env.CHANGE, encoding='utf-8') as fh:
+            d = json.load(fh)
+        self.assertEqual(len(d['evidence']['not_checked']), 3)
+        self.assertIn('Three things stay open', d['conclusions']['evidence'])
+
     def test_the_rendered_change_page_does_not_say_it_is_not_checked(self):
-        files = self.render('change')
-        self.assertEqual(len(files), 2)
-        for f in files:
-            with open(f, encoding='utf-8') as fh:
-                self.assertIsNone(UNCHECKED.search(fh.read()), f)
+        for lang in (None, 'en', 'vi'):
+            files = self.render('change', lang)
+            self.assertEqual(len(files), 2)
+            for f in files:
+                self.assertIsNone(UNCHECKED.search(shown(f)), (lang, f))
 
     def test_the_rendered_change_page_draws_every_module_of_the_architecture(self):
         for f in self.render('change'):
@@ -109,11 +143,11 @@ class Pages(Case):
             self.assertNotIn('class="hidden-note"', text, f)
 
     def test_the_rendered_session_page_and_its_change_page_do_not_say_it_is_not_checked(self):
-        files = self.render('session')
-        self.assertEqual(len(files), 4)  # the session page, the change page it links, and the text of each
-        for f in files:
-            with open(f, encoding='utf-8') as fh:
-                self.assertIsNone(UNCHECKED.search(fh.read()), f)
+        for lang in (None, 'en', 'vi'):
+            files = self.render('session', lang)
+            self.assertEqual(len(files), 4, lang)  # the session page, the change page it links, and the text of each
+            for f in files:
+                self.assertIsNone(UNCHECKED.search(shown(f)), (lang, f))
 
     def test_the_session_page_does_not_call_the_outward_counts_the_agents_own(self):
         txt = [f for f in self.render('session') if f.endswith('index.html.txt')][0]
