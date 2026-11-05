@@ -19,6 +19,7 @@ MAX_LINE bytes is skipped, and invalid UTF-8 is replaced; the text of a sub-agen
 INJECTED, not the user's; the model-facing `Command exited with code N.` item is not part of a shell output.
 """
 import json
+import math
 import os
 import re
 import sqlite3
@@ -35,7 +36,7 @@ SHELL_TOOLS = frozenset(('shell', 'bash'))
 SUBAGENT_TOOLS = frozenset(('subagent', 'task'))
 MAX_DEPTH = 8                      # nesting of sub-agent sessions followed
 MAX_CHILDREN = 1000
-EXIT_ITEM = re.compile(r'Command exited with code (-?\d+)\.')
+EXIT_ITEM = re.compile(r'Command exited with code (-?\d{1,18})\.')
 V2_TABLES = ('session_v2', 'session_message')
 V1_TABLES = ('session', 'message', 'part')
 
@@ -80,7 +81,8 @@ def detect(path):
     """Whether the file is an SQLite database with OpenCode's session tables (2.x or 1.x)."""
     if _is_tree(path):
         try:
-            return isinstance(_tree_json(os.path.realpath(path)).get('id'), str) and os.path.basename(os.path.dirname(os.path.dirname(path))) == 'session'
+            real = os.path.realpath(path)
+            return isinstance(_tree_json(real).get('id'), str) and os.path.basename(os.path.dirname(os.path.dirname(real))) == 'session'
         except OSError:
             return False
     try:
@@ -132,7 +134,10 @@ def _db_sessions(root, dirs):
         return []
     finally:
         con.close()
-    return found
+    newest = {}
+    for updated, ref in found:                  # a session held by both tables is listed once
+        newest[ref] = max(updated, newest.get(ref, 0))
+    return [(updated, ref) for ref, updated in newest.items()]
 
 
 def _tree_found(root, dirs):
@@ -170,7 +175,7 @@ def _int(v):
         return None
     if isinstance(v, int):
         return v
-    if isinstance(v, float) and v == int(v):
+    if isinstance(v, float) and math.isfinite(v) and v == int(v):
         return int(v)
     if isinstance(v, str) and re.fullmatch(r'\s*-?\d{1,18}\s*', v):
         return int(v)

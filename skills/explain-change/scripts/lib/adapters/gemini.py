@@ -241,7 +241,7 @@ def shell_exit_code(text, status):
             n -= 1
     m = EXIT_LINE.fullmatch(lines[n - 1]) if n else None
     if m:
-        return int(m.group(1))
+        return int(m.group(1)) if len(m.group(1)) <= 18 else None        # a longer number is not an exit code
     if status == 'success' and body.startswith('Output:') and not signalled:
         return 0
     return None

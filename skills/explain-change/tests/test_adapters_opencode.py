@@ -221,6 +221,24 @@ class ShellTools(Store):
         t = self.tool('read', [{'type': 'text', 'text': 'x'}, {'type': 'text', 'text': 'Command exited with code 9.'}])
         self.assertEqual((t.exit_code, t.is_error), (None, False))
 
+    def test_a_number_that_is_not_an_exit_code_does_not_break_the_read(self):
+        for raw in ('NaN', 'Infinity', '-Infinity', '1e400'):
+            con = None
+            if os.path.exists(self.db):
+                os.unlink(self.db)
+            con = build_v2(self.db)
+            v2_session(con, 's1')
+            insert(con, 'session_message', dict(id='m_shell', session_id='s1', type='shell', seq=1, time_created=1790000000001,
+                                                time_updated=1790000000001, data='{"command": "ls", "exit": %s, "output": {"output": "x"}}' % raw))
+            v2_msg(con, 's1', 2, 'assistant', {'content': [v2_tool('c1', 'shell', {'command': 'x'}, content=[{'type': 'text', 'text': 'out'}], metadata={'exit': 'NaN'})]})
+            con.execute("UPDATE session_message SET data = replace(data, '\"NaN\"', ?) WHERE seq = 2", (raw,))
+            con.commit()
+            con.close()
+            tools = calls(self.read('s1'))
+            self.assertEqual([(t.exit_code, t.output) for t in tools], [(None, 'x'), (None, 'out')], raw)
+        t = self.tool('shell', [{'type': 'text', 'text': 'out'}, {'type': 'text', 'text': 'Command exited with code %s.' % ('9' * 5000)}])
+        self.assertEqual((t.exit_code, t.is_error), (None, False))
+
     def test_status_error_and_a_thrown_error_are_failures(self):
         t = self.tool('read', [], status='error', error={'type': 'x', 'message': 'File not found'})
         self.assertEqual((t.is_error, t.output, t.exit_code), (True, 'File not found', None))
@@ -289,6 +307,15 @@ class Schemas(Store):
         self.assertEqual(sorted(opencode.find_sessions(CWD, self.root)), sorted([self.ref('ses_new'), self.ref('ses_old')]))
         self.assertEqual([e.text for e in self.read('ses_new').events], ['from v2'])
         self.assertEqual([e.text for e in self.read('ses_old').events], ['from v1'])
+
+    def test_a_session_held_by_both_tables_is_listed_once(self):
+        con = build_v2(self.db)
+        con.executescript(V1_SCHEMA)
+        v2_session(con, 'ses_both', updated=1790000005000)
+        self.add_v1(con, 'ses_both')
+        con.commit()
+        con.close()
+        self.assertEqual(opencode.find_sessions(CWD, self.root), [self.ref('ses_both')])
 
     def test_a_1x_session_table_without_parent_id_lists_its_sessions(self):
         con = sqlite3.connect(self.db)
@@ -676,6 +703,8 @@ class Tree(TmpCase):
         self.assertTrue(opencode.detect(real))
         self.assertFalse(opencode.detect(self.put('message/a/msg_1.json', {'id': 'msg_1'})))
         self.assertFalse(opencode.detect(os.path.join(self.root, 'missing.json')))
+        os.symlink(os.path.join(self.root, 'storage', 'session', 'proj'), os.path.join(self.root, 'alias'))
+        self.assertTrue(opencode.detect(os.path.join(self.root, 'alias', 'ses_a.json')))               # judged by the real path
 
 
 class Guards(Store):

@@ -160,6 +160,7 @@ class ShellExit(unittest.TestCase):
                 (wrapped('Output: x\nProcess Group PGID: 5'), 'success', 0),
                 ('Output: x\nExit Code: 3 is the code\nmore', 'success', 0),
                 ('Output: x\nSignal: SIGTERM\nProcess Group PGID: 5', 'success', None),
+                ('Output: x\nExit Code: ' + '9' * 5000, 'success', None), ('Output: x\nExit Code: ' + '9' * 18, 'success', 10 ** 18 - 1),
                 ('Output: x', 'error', None), ('Output: x', 'cancelled', None), ('Output: x', None, None),
                 ('Command is running in background. PID: 5', 'success', None), ('', 'success', None), (None, 'success', None)):
             self.assertEqual(gemini.shell_exit_code(text, status), want, (text, status))
