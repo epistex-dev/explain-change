@@ -1,5 +1,5 @@
 """Colour themes shared by the change page and the session page: the ids, the localStorage key, the head script that applies the stored pick before first
-paint, and the picker. The palettes live in assets/ui/page2.css (navy is :root, the others are [data-theme] blocks)."""
+paint, and the picker. The palettes live in assets/ui/page2.css (:root holds the shared tokens and the navy values, every other theme is a [data-theme] block)."""
 import html
 import json
 
@@ -7,7 +7,7 @@ def esc(s):
     return html.escape(str(s), quote=True)
 
 
-THEMES = ('navy', 'ocean', 'plum', 'graphite', 'pearl')  # the first is the default
+THEMES = ('midnight', 'navy', 'ocean', 'plum', 'graphite', 'pearl')  # the first is the default
 THEME_KEY = 'explain-change-theme'  # localStorage key of the reader's pick, the same on both pages
 
 

@@ -42,7 +42,7 @@ class Markup(unittest.TestCase):
         self.assertLess(style, body)
         self.assertIn('localStorage.getItem', h[:style])
         self.assertIn('catch(e){}', h[:style])  # a blocked storage must not stop the script
-        self.assertIn('<html lang="en" data-panel="open" data-theme="navy">', h)
+        self.assertIn('<html lang="en" data-panel="open" data-theme="midnight">', h)
 
     def test_the_picker_is_a_labelled_native_select_in_the_header_with_every_theme(self):
         for lang, label in (('en', 'Appearance'), ('vi', 'Giao diện')):
@@ -55,13 +55,13 @@ class Markup(unittest.TestCase):
                 self.assertIn('<option value="%s"' % tid, head)
             self.assertEqual(head.count(' selected>'), 1)
 
-    def test_the_default_is_navy_and_the_renderer_bakes_the_requested_theme(self):
-        self.assertEqual(themes.THEMES, ('navy', 'ocean', 'plum', 'graphite', 'pearl'))
+    def test_the_default_is_midnight_and_the_renderer_bakes_the_requested_theme(self):
+        self.assertEqual(themes.THEMES, ('midnight', 'navy', 'ocean', 'plum', 'graphite', 'pearl'))
         for tid in themes.THEMES:
             h = change(tid)
             self.assertIn('data-theme="%s">' % tid, h)
             self.assertIn('<option value="%s" selected>' % tid, h)
-        self.assertIn('data-theme="navy">', page2.render(doc(), None, validated=False))
+        self.assertIn('data-theme="midnight">', page2.render(doc(), None, validated=False))
 
     def test_the_renderer_refuses_an_unknown_theme(self):
         for bad in ('forest', 'NAVY', '', 'a" onload="x'):
@@ -106,10 +106,10 @@ class Cli(unittest.TestCase):
             self.assertIn('data-theme="%s">' % tid, h)
             self.assertIn('<option value="%s" selected>' % tid, h)
 
-    def test_no_flag_keeps_navy_on_a_change_doc(self):
+    def test_no_flag_opens_a_change_doc_in_midnight(self):
         self.assertEqual(self.run_render('password-autofill.v2.json', '--out', self.out).returncode, 0)
         with open(self.out, encoding='utf-8') as fh:
-            self.assertIn('data-theme="navy">', fh.read())
+            self.assertIn('data-theme="midnight">', fh.read())
 
     def test_an_unknown_id_exits_1_with_one_line_and_writes_no_change_page(self):
         p = self.run_render('password-autofill.v2.json', '--theme', 'forest', '--out', self.out)
@@ -162,16 +162,16 @@ class Dom(unittest.TestCase):
 
     def test_the_picker_applies_the_pick_and_stores_it(self):
         r = self.run_dom(self.PICK)
-        self.assertEqual((r['attr'], r['stored'], r['value'], r['errs'], r['first']), ('plum', 'plum', 'plum', [], 'navy'))
+        self.assertEqual((r['attr'], r['stored'], r['value'], r['errs'], r['first']), ('plum', 'plum', 'plum', [], 'midnight'))
 
     def test_a_stored_pick_is_applied_before_the_body_and_selected(self):
         r = self.run_dom("out.first=window.__first;out.attr=document.documentElement.getAttribute('data-theme');out.value=$('#skin').value", pre="localStorage.setItem('%s','pearl');" % KEY)
-        self.assertEqual((r['first'], r['attr'], r['value']), ('pearl', 'pearl', 'pearl'))  # first is read at the top of <body>: no flash of navy
+        self.assertEqual((r['first'], r['attr'], r['value']), ('pearl', 'pearl', 'pearl'))  # first is read at the top of <body>: no flash of the default
 
     def test_the_pick_made_on_the_session_page_opens_the_change_page_in_that_theme_and_back(self):
         """One storage key: the same stored pick sets both pages (a pick made on one page is read by the head script of the other)."""
         with open(SAMPLE, encoding='utf-8') as fh:
-            sess = page_session.render(json.load(fh), {}, 'navy')
+            sess = page_session.render(json.load(fh), {}, 'midnight')
         pre = "localStorage.setItem('%s','graphite');" % KEY
         for page_html in (sess, change()):
             r = self.run_dom("out.first=window.__first;out.value=$('#skin').value", pre=pre, page_html=page_html)
@@ -202,7 +202,7 @@ class Dom(unittest.TestCase):
 
     def test_the_logic_diagrams_follow_the_theme(self):
         """The before/after blocks are HTML, not Mermaid: fills, text, rings and arrows come from the tokens, so switching to pearl changes each of them."""
-        r = self.run_dom(self.LOOK + "out.navy=look();set('pearl');out.pearl=look();set('navy');out.back=look()")
+        r = self.run_dom(self.LOOK + "out.navy=look();set('pearl');out.pearl=look();set('midnight');out.back=look()")
         n, p = r['navy'], r['pearl']
         self.assertEqual(r['back'], n)
         self.assertEqual((n['body'], p['body'], p['scheme']), ('rgb(245, 246, 255)', 'rgb(28, 26, 59)', 'light'))
@@ -212,9 +212,9 @@ class Dom(unittest.TestCase):
         self.assertEqual(p['step'], 'rgb(28, 26, 59)')
 
     def test_every_theme_changes_the_page_and_none_leaves_a_dark_fill_on_pearl(self):
-        r = self.run_dom(self.LOOK + "out.t={};for(const t of ['navy','ocean','plum','graphite','pearl']){set(t);out.t[t]=look()}")
+        r = self.run_dom(self.LOOK + "out.t={};for(const t of ['midnight','navy','ocean','plum','graphite','pearl']){set(t);out.t[t]=look()}")
         fills = {t: v['node'] + v['after'] for t, v in r['t'].items()}
-        self.assertEqual(len(set(fills.values())), 5)
+        self.assertEqual(len(set(fills.values())), 6)
         self.assertEqual(r['t']['pearl']['node'], 'rgba(255, 255, 255, 0.55)')  # the outside node: surface over the light ground
 
 

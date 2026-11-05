@@ -24,7 +24,7 @@
 .f-err h3{margin:0 0 2px;font-size:var(--fs-base);font-weight:600;line-height:1.35;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .f-err p{margin:0;font-size:var(--fs-sm);line-height:1.5;color:var(--text)}
 .f-code{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:var(--r-pill);background:var(--bad);color:var(--on-fill);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
-html[data-theme="navy"] .f-code,html[data-theme="ocean"] .f-code,html[data-theme="plum"] .f-code,html[data-theme="graphite"] .f-code{color:var(--bg-0)}
+html[data-theme="midnight"] .f-code,html[data-theme="navy"] .f-code,html[data-theme="ocean"] .f-code,html[data-theme="plum"] .f-code,html[data-theme="graphite"] .f-code{color:var(--bg-0)}
 .f-br{display:grid;gap:6px;margin:0;padding:0;list-style:none}
 .f-br li{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:12px;background:rgba(var(--well-rgb),calc(.5*var(--well-k)));font-size:var(--fs-sm);line-height:1.45;color:var(--text-2)}
 .f-br b{font-weight:600;color:var(--text)}

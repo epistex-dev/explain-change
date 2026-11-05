@@ -40,7 +40,7 @@ Design tokens live in `reference/ui/theme.css`; the renderer carries the same va
 | Audience and device | The repo owner, desktop first, must still work at 800 and 390 px |
 | Color tone | Dark indigo gradient with a dot pattern, translucent rounded panels, thin light-blue rings, magenta accent, green for the positive action |
 | Page language | `vi` or `en`, set by the doc's `lang` |
-| Dark or light | Four dark themes (navy is the default) and one light theme (pearl); the reader picks |
+| Dark or light | Five dark themes (midnight is the default) and one light theme (pearl); the reader picks |
 
 ## Direction
 A calm, night-time reading room for a short report: an indigo ground and translucent panels so the blocks read as one family. Magenta marks only what changed or what to look at (changed map nodes, the chosen option's bar); green means done or passed. Signature element: the system map, where changed parts glow magenta and untouched parts recede.
@@ -174,6 +174,26 @@ Case: Improve, scope Refresh. The change page shipped dark only; the session pag
 Contrast (measured from the tokens, `tests/test_themes.py`; now also each status chip on its own fill, the chip on a highlighted card, and the map icons): min text / min ring / white on fills: navy 4.87 / 3.32 / 4.79, ocean 4.58 / 3.29 / 5.05, plum 4.55 / 3.26 / 5.04, graphite 4.77 / 3.41 / 5.02, pearl 5.10 / 4.73 / 5.26.
 
 Checker (`check.mjs`, 390 / 768 / 1440 px) on the sample change page rendered in each theme: 0 failures, 0 warnings in all five.
+
+## Midnight theme, the default (round 4)
+
+Case: Extend (a sixth theme on existing pages; layout unchanged). The user asked for the intro video's colours so the page and the demo match, and for the page to look less generic ("A · Video" from three mockups). Tokens come from `docs/intro/DESIGN.md`; the approved mockup measured them on rendered pixels.
+
+| Decision | Why |
+| --- | --- |
+| `midnight` is one `[data-theme="midnight"]` block in `page2.css` like the others, and first in `THEMES` | `THEMES[0]` is already the default of `render.py`, the three renderers and the head script, so one change makes it the default everywhere. `:root` keeps the shared tokens and the navy values; navy stays in the picker untouched |
+| Surface is a gradient (`rgba(44,54,130,.62)` to `rgba(22,29,80,.7)`), with a light ring (`.26`, `.7` when selected) and an inner highlight in `--shadow` | the video's glassy cards. Every use of `--surface` is a `background:` shorthand, so a gradient works; the picker uses `--raised-a` as a colour and stays solid |
+| Glows are the two existing fixed radial layers of the page background (`--glow-a` blue top left, `--glow-b` violet bottom right), dot grid dimmed to .06 | they paint with the page background: no element is blurred, nothing is composited again while scrolling. Only the cards and panels keep their existing 14 px backdrop blur |
+| Pink is `#f08ad0` for bars and numbers, `#f9b6e2` for small text, `#bb3e95` for fills with white text (4.96) | the video's accent; the small text token is lighter because `#f08ad0` measured 4.4 in the video |
+| `--bad` is `#ff98a6`, a step lighter than the video's `#ff8a9a` | a red chip on a card measured 4.23 against its own soft fill in the token test; `#ff98a6` gives 4.65. The only value moved off the video |
+| Radii 20 / 16 / 16 / 12 (panel / card / node / control) | the video's. Same shape as before at the layout level; no box moved |
+| Names: `Midnight` in English, `Nửa đêm` in Vietnamese | the i18n tables translate each theme name (navy is `Xanh đêm`), so midnight follows |
+| Token test composites the translucent surface (each gradient stop) and the corner glows over the page ground before it measures text | a solid `--surface-solid` stand-in would hide the lighter pixels the real card has. The other five themes still pass with the stricter ground |
+| `html[data-theme="midnight"] .f-code` takes the dark text colour like the other dark themes | the red status number needs dark text on a light red fill |
+
+Contrast measured on rendered pixels (1440 x 900, text hidden, worst pixel under each text box, the three sample pages): text 4.89, text-2 5.31, text-3 5.70, accent text 6.31, Done 5.38, In progress 6.20, Cannot be undone 5.47, white on the pink fill 4.96. One role below 4.5 in the scan: "Reversible" chips (2.8), which sit inside a closed `details` and are not rendered (same in navy).
+
+`check.mjs` (390, 768, 1440 px, light and dark) on the three sample pages in midnight: 0 failures. The session page has 20 WARNs, all "tap target under 44 px on phones" (chips and map markers), the same as in navy. The change and flow pages have none. Screenshots: `docs/images/themes/midnight-*` and `change-midnight-*`; the README images are captured from its own render commands, after 6 s of settling, twice, and kept when both captures are byte-identical.
 
 ## Pages with no transcript (`explain-change/2` and `explain-session/1`)
 
