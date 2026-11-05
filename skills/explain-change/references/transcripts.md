@@ -25,7 +25,7 @@ Take this path when the harness has no reader (Windsurf, Cline, Roo, Kiro, Goose
 1. In the doc write `"transcript_unavailable": "<reason>"`: one line of at most 200 characters, with no secret in it (for example `"Windsurf keeps no readable session log"`). Give the reason or the transcript, never both: `validate.py` and `render.py` exit 1 for a doc with neither, and for a doc with both.
 2. Take each user request in the user's own words from what you hold in context, and each command and its result from the calls you made. Quote the user's text, not a paraphrase. A quote, a `tool_call` or a `user_reported` source keeps its shape and is not compared with anything.
 3. Run validate and render without `--transcript` and without `--no-validate`. The git range, the diff, the +/- counts, the file coverage, every cited code line and every secret are still checked; the quotes and commands are counted as not compared. A credential the user quoted is learned from the doc itself and refused wherever else the doc repeats it.
-4. The change page then reads "Not checked against the session: <reason>", and each run and each try of the user's carries "From the agent's own account". The session page carries the same note and shows each outward count as the agent's own count, once.
+4. The change page then reads "No session log: <reason>", and each run and each try of the user's carries "From the agent's own account". The session page carries the same note and shows each outward count as the agent's own count, once.
 
 A session doc follows the same four rules: count the turns and the outward actions from your own context. A theme's `change_doc` needs its own `transcript_unavailable`.
 

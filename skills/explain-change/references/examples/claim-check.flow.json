@@ -4,7 +4,7 @@
  "title": "How a claim on the page gets checked before the page renders",
  "question": "How does a claim on the page get checked before the page renders?",
  "summary": "A claim reaches the page only when the real session backs it, and one failed claim means no page and a list of what to fix. The agent writes a doc in which every claim names its source. Before anything is drawn, the checker opens the session log from its harness's own folder, finds each quote among your own messages, finds each command together with its output inside one call, treats a call with no recorded result as weaker proof, and looks for secrets in every text. All problems come back together, one line each. With none, the page is drawn.",
- "commit": "267fbf45679cbdf23512a18a3cc8ea351a1a448f",
+ "commit": "960c37d9752d1aa068df0eb5d6025a448efa37b8",
  "parts": [
   {
    "id": "agent",

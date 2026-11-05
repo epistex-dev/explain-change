@@ -55,7 +55,7 @@ def format_modules(repo, a, rep):
         out += ['  %s  %s' % (n, a.nodes[n].get('label', '')) for n in rest[:MAX_UNCHANGED]]
         if len(rest) > MAX_UNCHANGED:
             out.append('  ... %d more in %s' % (len(rest) - MAX_UNCHANGED, a.path))
-        out.append('map.hidden_count for a map that draws N modules (changed + unchanged, not outside actors): %d minus N' % len(a.order))
+        out.append('The page counts the architecture nodes you leave out as unrelated parts (%d nodes in all); a group that holds a module you list is drawn as its frame and is not counted' % len(a.order))
     return '\n'.join(out)
 
 

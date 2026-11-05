@@ -119,6 +119,10 @@ def describe(doc, arch, t):
     return out
 
 
+def norm(text):
+    return ' '.join(str(text).casefold().split())
+
+
 def layout(mods, edges):
     """Zones -> columns. Returns [[zone, ...], ...] (columns left to right); a zone is
     {key, label, icon, ext, mods}. Flow order decides the column; tests sit under the outside actors."""
@@ -330,6 +334,9 @@ class Builder:
                 for m in z['mods']:
                     nodes.append(self.node(m, n))
                     n += 1
+                if k == 1 and not z['ext'] and norm(z['mods'][0]['name']) == norm(z['label']):  # a frame never repeats the title of its only card: draw the card bare
+                    zs.append('<section class="zone solo"><div class="zone-grid" style="--zc:1">%s</div></section>' % ''.join(nodes))
+                    continue
                 zs.append('<section class="zone%s%s" aria-label="%s"><p class="zone-label">%s%s</p><div class="zone-grid" style="--zc:%d">%s</div></section>' % (
                     ' ext' if z['ext'] else '', ' wz' if zc > 1 else '', txt(z['label']), ic(z['icon']), txt(z['label']), zc, ''.join(nodes)))
             col_html.append('<div class="col">%s</div>' % ''.join(zs))
@@ -358,8 +365,8 @@ class Builder:
     def hidden_count(self):
         if not self.arch:
             return 0
-        listed = sum(1 for m in self.mods if m['id'] in self.arch.nodes)
-        return len(self.arch.nodes) - listed
+        ids = [m['id'] for m in self.mods if m['id'] in self.arch.nodes]
+        return len(self.arch.nodes) - len(set(ids) | self.arch.holders(ids))  # a group that holds a drawn module is its frame, not an unrelated part
 
     # -- tabs
     def concl(self, key):

@@ -17,6 +17,7 @@ sys.path.insert(0, HERE)
 from helpers import SKILL  # noqa: E402,F401  (puts scripts/ on sys.path)
 from lib import outward, page2, page_session  # noqa: E402
 from lib.i18n2 import STR2, count  # noqa: E402
+from sample_env import without_transcript  # noqa: E402
 
 SKILL = os.path.join(os.path.dirname(HERE), 'skills', 'explain-change')
 SAMPLE = os.path.join(SKILL, 'references', 'examples', 'portal-day.session.json')
@@ -504,6 +505,7 @@ class NoSessionLayout(unittest.TestCase):
     def change(self, reason, width, lang='en'):
         d = json.load(open(CHANGE, encoding='utf-8'))
         d['lang'] = lang
+        d.pop('transcript', None)
         if reason is None:
             d.pop('transcript_unavailable', None)
         else:
@@ -511,7 +513,7 @@ class NoSessionLayout(unittest.TestCase):
         return measure(self.tmp, page2.render(d, validated=False, session_checked=False), width)
 
     def test_session_page_with_the_note_keeps_every_lane_on_a_1440_x_900_screen(self):
-        d = sample()
+        d = without_transcript(sample())
         self.assertTrue(d['transcript_unavailable'])
         r = measure(self.tmp, page_session.render(d, {}, session_checked=False), 1440)
         self.assertEqual(r['lanes'], len(d['themes']))

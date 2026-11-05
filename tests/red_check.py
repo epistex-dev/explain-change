@@ -42,6 +42,20 @@ MUTATIONS = [
      'test_guard.LowLevelGitCalls.test_changed_ranges_refuses_option'),
     ('read_version takes only object ids', 'scripts/lib/gitio.py', "    if not re.fullmatch(r'[0-9a-f]{40,64}', rev):", '    if False:',
      'test_guard.LowLevelGitCalls.test_read_version_needs_an_object_id'),
+    ('sample_env: scratch repo outside OUT', '../../tests/sample_env.py', "work = tempfile.mkdtemp(prefix='sample-env-')", "work = os.path.join(out, 'env'); shutil.rmtree(work, ignore_errors=True)",
+     'test_samples_checked.SampleEnvCli.test_an_env_folder_in_the_output_folder_is_left_alone'),
+    ('sample_env: unmarked page folder refused', '../../tests/sample_env.py', "os.path.isfile(os.path.join(path, MARKER))", 'True',
+     'test_samples_checked.SampleEnvCli.test_a_change_folder_the_tool_did_not_write_is_refused'),
+    ('sample_env: bad output path is one line', '../../tests/sample_env.py', 'except OSError as e:', 'except ZeroDivisionError as e:',
+     'test_samples_checked.SampleEnvCli.test_a_bad_output_path_is_one_line_not_a_traceback'),
+    ('sample_env: architecture has no undrawn node', '../../tests/sample_env.py', "    nodes = []\n", "    nodes = [{'id': 'acme', 'label': 'System', 'kind': 'service', 'summary': 'x', 'paths': ['src/**']}]\n",
+     'test_samples_checked.Pages.test_the_rendered_change_page_draws_every_module_of_the_architecture'),
+    ('map: a group holding a drawn module is not an unrelated part', 'scripts/lib/page2.py', "len(set(ids) | self.arch.holders(ids))", "len(set(ids))",
+     'test_map_groups.Groups.test_a_root_that_holds_drawn_modules_is_their_frame_and_not_an_unrelated_part'),
+    ('map: a frame never repeats its only card', 'scripts/lib/page2.py', "norm(z['mods'][0]['name']) == norm(z['label']):", "False:",
+     'test_map_groups.Groups.test_no_frame_repeats_the_title_of_its_only_card'),
+    ('labels: the left-open list is not called not checked', 'scripts/lib/i18n2.py', "'nc_h': 'Left open'", "'nc_h': 'Not checked'",
+     'test_samples_checked.Pages.test_the_rendered_change_page_does_not_say_it_is_not_checked'),
 ]
 
 
@@ -785,6 +799,25 @@ MUTATIONS += [
      'test_flow_page.Map.test_the_lines_are_routed_by_the_script_not_drawn_straight'),
 ]
 TEST_SECONDS = 60
+
+
+# the bundled samples and their synthetic transcripts (data, not code): breaking one fact must turn the test red
+EX, SC = 'references/examples/', 'test_samples_checked.'
+CHANGE_T, SESSION_T = EX + 'password-autofill.v2.transcript.jsonl', EX + 'portal-day.session.transcript.jsonl'
+MUTATIONS += [
+    ('samples: the change sample validates against its transcript', CHANGE_T, 'check this bug where the browser overwrites my saved password',
+     'check this bug where the browser overwrites my saved login', SC + 'Validates.test_the_change_sample_validates_ok_with_its_transcript'),
+    ('samples: the session sample validates against its transcript', SESSION_T, 'i ran chmod +x on it', 'i ran chmod 755 on it',
+     SC + 'Validates.test_the_session_sample_validates_ok_with_its_transcript'),
+    ('samples: the session outward counts match the calls', SESSION_T, 'gh repo create portal-lib --private --source . --remote origin', 'echo portal-lib',
+     SC + 'Validates.test_the_session_sample_validates_ok_with_its_transcript'),
+    ('samples: the change page says nothing is unchecked', EX + 'password-autofill.v2.json',
+     '"transcript": "~/.claude/projects/-work-acme-portal/password-autofill.v2.transcript.jsonl"', '"transcript_unavailable": "synthetic sample"',
+     SC + 'Pages.test_the_rendered_change_page_does_not_say_it_is_not_checked'),
+    ('samples: the session page says nothing is unchecked', EX + 'portal-day.session.json',
+     '"transcript": "~/.claude/projects/-work-acme-portal/portal-day.session.transcript.jsonl"', '"transcript_unavailable": "synthetic sample"',
+     SC + 'Pages.test_the_rendered_session_page_and_its_change_page_do_not_say_it_is_not_checked'),
+]
 
 
 def run_test(root, test_id):

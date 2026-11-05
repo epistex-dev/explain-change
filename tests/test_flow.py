@@ -3,6 +3,7 @@ The fixture is a tiny git repo built in a temp dir: nothing here reads this repo
 import copy
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -13,6 +14,8 @@ sys.path.insert(0, os.path.join(SKILL, 'scripts'))
 VALIDATE = os.path.join(SKILL, 'scripts', 'validate.py')
 COLLECT = os.path.join(SKILL, 'scripts', 'collect.py')
 EXAMPLES = os.path.join(SKILL, 'references', 'examples')
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from sample_env import without_transcript  # noqa: E402
 
 PARSE = ['def load(path):', '    text = open(path).read()', '    return text', '', 'def check(doc):', '    if not doc:', '        raise ValueError("empty")',
          '    return True', '', 'def show(doc):', '    print(doc)']
@@ -470,19 +473,28 @@ class Collect(FlowCase):
 class OtherKinds(FlowCase):
     """The other doc kinds keep their output byte for byte (captured from origin/main before explain-flow)."""
 
-    def test_session_example(self):
-        p = subprocess.run([sys.executable, VALIDATE, os.path.join(EXAMPLES, 'portal-day.session.json')], capture_output=True, text=True)
+    def test_session_example_without_a_transcript(self):
+        """The no-transcript path of a session doc keeps its output byte for byte (the sample, with its transcript swapped for a reason)."""
+        with open(os.path.join(EXAMPLES, 'portal-day.session.json'), encoding='utf-8') as fh:
+            doc = without_transcript(json.load(fh))
+        with tempfile.TemporaryDirectory(prefix='flow-session-') as tmp:
+            path = os.path.join(tmp, 'day.session.json')
+            shutil.copy(os.path.join(EXAMPLES, 'password-autofill.v2.json'), tmp)  # the change doc its `login` theme links
+            with open(path, 'w', encoding='utf-8') as fh:
+                json.dump(doc, fh)
+            p = subprocess.run([sys.executable, VALIDATE, path], capture_output=True, text=True)
         self.assertEqual(p.returncode, 0)
         self.assertEqual(p.stdout, 'warning: transcript checks off (synthetic sample): quotes, commands and outward counts are not compared with a session\nok\n'
                          'session | themes 8 (done 5, done_by_user 1, done_needs_you 1, in_progress 1) | events 28 | needs you 3 | decided 6 (1 irreversible) | '
                          'outward repo_created 2, push 2, force_push 2, history_rewrite 1, delete 3 | grounded in transcript 0 (11 of them worker reports), not compared 39, '
                          'inferred 5 | transcript checks off\n')
 
-    def test_change_example_errors_are_unchanged(self):
+    def test_change_example_in_a_repo_without_its_range_names_the_range(self):
+        with open(os.path.join(EXAMPLES, 'password-autofill.v2.json'), encoding='utf-8') as fh:
+            rng = json.load(fh)['range']
         p = subprocess.run([sys.executable, VALIDATE, os.path.join(EXAMPLES, 'password-autofill.v2.json'), '--repo', self.repo], capture_output=True, text=True)
         self.assertEqual(p.returncode, 1)
-        self.assertEqual(p.stdout.splitlines()[:2], ['range.base: unknown revision: 1111111111111111111111111111111111111111',
-                                                     'range.head: unknown revision: 2222222222222222222222222222222222222222'])
+        self.assertEqual(p.stdout.splitlines()[:2], ['range.base: unknown revision: ' + rng['base'], 'range.head: unknown revision: ' + rng['head']])
 
     def test_a_doc_without_the_flow_kind_is_not_checked_as_a_flow(self):
         p = self.run_validate({'schema': 'explain-change/1', 'kind': 'explain-change/2'})

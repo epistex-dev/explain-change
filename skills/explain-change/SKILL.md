@@ -21,7 +21,7 @@ Done when you hold `RUN_DIR` and can say which module each changed file belongs 
 
 `collect.py` lists the session transcripts recorded for the repo, labelled by harness. Pick the one whose first user message and time span match this task, then rerun step 1 with `--transcript <file>`: the digest lists the user's messages, test-like tool calls and worker ids. Open the code behind each module that changed.
 
-Read [references/transcripts.md](references/transcripts.md) when no listed session fits, when a script refuses the transcript file, or when the harness has no transcript reader (Windsurf, Cline, Roo, Kiro, Goose, Amp, Aider): it holds the harness table (folder and `--format`) and the no-transcript path, where the doc carries `"transcript_unavailable": "<reason>"`.
+Read [references/transcripts.md](references/transcripts.md) when no listed session fits, when a script refuses the transcript file, when you need to pass `--format`, or when the harness has no transcript reader (Windsurf, Cline, Roo, Kiro, Goose, Amp, Aider): it holds the harness table (folder and `--format`) and the no-transcript path, where the doc carries `"transcript_unavailable": "<reason>"`.
 
 Done when each user request has its words in front of you and each claim of "ran X" has the tool call that ran it. Text holding a password or token never goes into the doc, but its other words still can: the digest masks the value as `[ẩn]`, so quote the part before the label or after the value.
 

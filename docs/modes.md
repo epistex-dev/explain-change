@@ -8,7 +8,7 @@ The skill has three modes. Each renders one offline HTML page in the same six co
 | Session | "summarize this session" | a session transcript | `explain-session/1` |
 | Flow | "how does X work", "luồng này chạy thế nào" | the code at one commit | `explain-flow/1` |
 
-The agent follows [SKILL.md](../skills/explain-change/SKILL.md). Each command below renders the bundled sample, with no repo or session.
+The agent follows [SKILL.md](../skills/explain-change/SKILL.md). Each command below renders a bundled sample. The change and session samples are checked against synthetic transcripts (`references/examples/*.transcript.jsonl`); the readers take a transcript only inside the harness's own folder, so the helper `tests/sample_env.py` builds a throwaway git repo and a throwaway `HOME` (in a temporary folder, removed afterwards) that hold the transcripts under `~/.claude/projects/`. The flow sample needs neither.
 
 ## Change
 
@@ -20,28 +20,24 @@ After any agent edit, ask for "explain this change", or review a diff, commit or
 | **Where it changed** | Which parts of the system changed and which stayed as they were? (the system map) |
 | **How the new logic runs** | How did the logic run before, and how does it run now? (before and after pictures) |
 | **Why** | Why this way, and which options were rejected? |
-| **Evidence checked** | What was proven, how, and what was not checked? |
+| **Evidence checked** | What was proven, how, and what was left open? |
 
 The map is the centre of the page. Click a box to filter the other four blocks to that part of the system.
 
 ![The change page with the Logic tab open and one map node selected](images/logic.png)
 
 ```bash
-python3 skills/explain-change/scripts/render.py \
-  skills/explain-change/references/examples/password-autofill.v2.json \
-  --no-validate --out /tmp/sample.html
+python3 tests/sample_env.py /tmp/samples   # change page: /tmp/samples/change/index.html
 ```
 
-`--no-validate` skips the git and transcript checks, and the page says so. Fields and rules: [`explain-schema.md`](../skills/explain-change/references/explain-schema.md).
+The helper validates and renders the sample against its synthetic repo and transcript. On your own change, run `validate.py` and `render.py` as in [SKILL.md](../skills/explain-change/SKILL.md); `--no-validate` skips the git and transcript checks, and the page says so. Fields and rules: [`explain-schema.md`](../skills/explain-change/references/explain-schema.md).
 
 ## Session
 
 After a long session, one task or many, ask for "explain this session". The page opens with a band: what is done, and what waits on you. Below it, one lane per theme shows the events in order, next to a side panel that lists what the agent decided for you (each marked reversible or not) and what left the working copy (pushes, force pushes, real deletes, pull requests). Select a marker to read that theme's journey in the same panel, and open the theme's change page when it has one. It shows no code, diff or file:line.
 
 ```bash
-python3 skills/explain-change/scripts/render.py \
-  skills/explain-change/references/examples/portal-day.session.json \
-  --no-validate --out /tmp/session/index.html
+python3 tests/sample_env.py /tmp/samples   # session page: /tmp/samples/session/index.html
 ```
 
 Schema and workflow: [`session-schema.md`](../skills/explain-change/references/session-schema.md).

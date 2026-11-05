@@ -3,6 +3,7 @@ Each mutation of a valid doc must be rejected for its own reason; the digest is 
 import copy
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -13,6 +14,7 @@ sys.path.insert(0, HERE)
 from helpers2 import rec, tool_result, write_jsonl  # noqa: E402
 from helpers2 import tool_use as _tool_use  # noqa: E402
 from lib import check_session, page_session, session, transcript  # noqa: E402
+from sample_env import without_transcript  # noqa: E402
 
 SKILL = os.path.join(os.path.dirname(HERE), 'skills', 'explain-change')
 SAMPLE = os.path.join(SKILL, 'references', 'examples', 'portal-day.session.json')
@@ -128,8 +130,15 @@ class Accepts(Case):
         self.assertEqual(stats['not_compared'], 0)
         self.assertGreaterEqual(stats['verified_in_transcript'], 12)
 
-    def test_the_shipped_sample_passes_with_transcript_checks_off(self):
-        p = subprocess.run([sys.executable, os.path.join(SKILL, 'scripts', 'validate.py'), SAMPLE], capture_output=True, text=True)
+    def test_the_shipped_sample_without_its_transcript_passes_with_checks_off(self):
+        with open(SAMPLE, encoding='utf-8') as fh:
+            doc = without_transcript(json.load(fh))
+        with tempfile.TemporaryDirectory(prefix='sample-session-') as tmp:
+            path = os.path.join(tmp, 'sample.session.json')
+            shutil.copy(os.path.join(os.path.dirname(SAMPLE), 'password-autofill.v2.json'), tmp)  # the change doc its `login` theme links
+            with open(path, 'w', encoding='utf-8') as fh:
+                json.dump(doc, fh)
+            p = subprocess.run([sys.executable, os.path.join(SKILL, 'scripts', 'validate.py'), path], capture_output=True, text=True)
         self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
         self.assertIn('ok\nsession | themes 8', p.stdout)
         self.assertIn('transcript checks off', p.stdout)
