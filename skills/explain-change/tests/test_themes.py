@@ -330,10 +330,17 @@ class Dom(unittest.TestCase):
 
     def test_a_relayout_keeps_the_open_bubble_pressed_and_focused(self):
         """A relayout rebuilds the count bubbles; the one that opened the panel must be found again, pressed and (if it had focus) focused."""
-        r = self.run_dom(busy_doc(), self.OPEN + "cl.focus();const from=cl.dataset.from,to=cl.dataset.to;out.async=1;$('.lanes').style.paddingRight='3px';"
-                         "setTimeout(()=>{const p=qa('.mk[aria-pressed=true]');out.n=p.length;out.same=!!p[0]&&p[0].classList.contains('cl')&&p[0].dataset.from===from&&p[0].dataset.to===to;"
+        # The page relays out from a ResizeObserver callback. A headless run on virtual time renders no frame when the machine is slow, so a real observer may never fire
+        # (a fixed wait failed on CI; a poll for the bubble failed at 25% CPU). The stub records the callback and the target; the test fires the callback as the browser would
+        # after the width change, then polls for the condition (the old bubble detached), up to 5 s.
+        stub = ("window.__ro=[];window.ResizeObserver=class{constructor(cb){this.cb=cb;this.targets=[];__ro.push(this)}observe(t){this.targets.push(t)}unobserve(){}disconnect(){}};")
+        r = self.run_dom(busy_doc(), self.OPEN + "cl.focus();const from=cl.dataset.from,to=cl.dataset.to;out.async=1;out.observers=__ro.length;out.target=__ro.length?__ro[0].targets.map(t=>t.className):null;"
+                         "const t0=performance.now(),done=()=>{const p=qa('.mk[aria-pressed=true]');out.n=p.length;out.same=!!p[0]&&p[0].classList.contains('cl')&&p[0].dataset.from===from&&p[0].dataset.to===to;"
                          "out.rebuilt=!cl.isConnected;out.focus=!!p[0]&&document.activeElement===p[0];document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));"
-                         "out.back=document.activeElement.classList.contains('cl')&&document.activeElement.dataset.from===from;out.pressedAfter=qa('.mk[aria-pressed=true]').length;fin()},400);")
+                         "out.back=document.activeElement.classList.contains('cl')&&document.activeElement.dataset.from===from;out.pressedAfter=qa('.mk[aria-pressed=true]').length;fin()};"
+                         "const wait=()=>{if(!cl.isConnected||performance.now()-t0>5000)done();else setTimeout(wait,20)};"
+                         "$('.lanes').style.paddingRight='3px';__ro.forEach(o=>o.cb([],o));wait();", pre=stub)
+        self.assertEqual((r['observers'], r['target']), (1, ['lanes']), 'the page observes .lanes with one ResizeObserver')
         self.assertTrue(r['rebuilt'], 'the old bubble should have been replaced')
         self.assertEqual(r['n'], 1)
         self.assertTrue(r['same'], r)
