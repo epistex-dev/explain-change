@@ -1,4 +1,4 @@
-"""Colour themes on the change page (explain-change/2): the same five themes, ids, picker and localStorage key as the session page, applied before first paint,
+"""Colour themes on the change page (explain-change/2): the same six themes, ids, picker and localStorage key as the session page, applied before first paint,
 `render.py --theme` on a change doc, and the before/after logic (no Mermaid on this page) following the theme."""
 import html as htmlmod
 import json
