@@ -16,12 +16,12 @@
 
 ```bash
 # needs node >= 22, ffmpeg, avifenc (libavif); installs hyperframes@0.9.15 and gsap under <workdir>/tools, nothing global
-bash docs/intro/render.sh /tmp/explain-change-intro        # -> /tmp/explain-change-intro/out/intro.mp4, intro.webp, intro.avif (GIF=1 adds intro.gif)
+bash docs/intro/render.sh /tmp/explain-change-intro        # -> /tmp/explain-change-intro/out/intro.mp4, intro.avif (GIF=1 adds intro.gif)
 cp /tmp/explain-change-intro/out/intro.mp4 docs/media/intro.mp4
-cp /tmp/explain-change-intro/out/intro.webp /tmp/explain-change-intro/out/intro.avif docs/images/
+cp /tmp/explain-change-intro/out/intro.avif docs/images/
 ```
 
-`render.sh` stops (retry later) if less than 4 GB is free or another headless Chromium runs, builds `data.js` from the sample (`build.mjs`), stages a project (`stage.mjs`: inlines the icon sprite, copies assets and GSAP), runs `hyperframes lint`, renders with one worker under `systemd-run -p MemoryMax=3G` (about 30 s) and encodes the mp4 (H.264, CRF 18, `+faststart`) and the animated WebP. GSAP is not committed (its licence is not open source). Open a staged `index.html?at=<seconds>` in a browser to freeze one frame.
+`render.sh` stops (retry later) if less than 4 GB is free or another headless Chromium runs, builds `data.js` from the sample (`build.mjs`), stages a project (`stage.mjs`: inlines the icon sprite, copies assets and GSAP), runs `hyperframes lint`, renders with one worker under `systemd-run -p MemoryMax=3G` (about 30 s) and encodes the mp4 (H.264, CRF 18, `+faststart`) and the animated AVIF. GSAP is not committed (its licence is not open source). Open a staged `index.html?at=<seconds>` in a browser to freeze one frame.
 
 The three crops in `assets/page/` come from the real page: render the sample with `render.py --theme navy --no-validate`, then `crops.mjs` (needs puppeteer-core and Chromium; see its header). They are committed, so a normal re-render does not need it.
 
@@ -48,7 +48,7 @@ Source file: `skills/explain-change/reference/examples/portal-day.session.json` 
 
 The dots in the "One page" card are the 8 themes in their status colours. No frame shows code, a diff or a file path, and none of the sample's caveat lines: the crops cut the page's hint lines, and the summary card (with the sample note) never enters a frame.
 
-## Format of the README image: animated AVIF with an animated WebP fallback
+## Format of the README image: animated AVIF
 
 All at 800 px wide, 15 fps, from the same mp4. The blocks were judged in the T3 browser (Chromium with its normal renderer) on a local page showing the same `<img>` at 100% zoom, the dark-glow region cropped and brightened to expose blocks; the first row of the table is what a reviewer saw on the README.
 
@@ -61,11 +61,11 @@ All at 800 px wide, 15 fps, from the same mp4. The blocks were judged in the T3 
 | WebP | quality 94, 12 fps | 7.71 MB | smooth, faint horizontal banding |
 | WebP | quality 95 | 10.2 MB | smooth, too big |
 | WebP | quality 85 / 90, grain 3 to 4 | 9.1 / 11.8 MB | smooth, too big (grain costs bytes) |
-| **WebP (fallback, used)** | quality 91, compression 6 | 7.60 MB | smooth |
+| WebP | quality 91, compression 6 | 7.60 MB | smooth |
 | AVIF | libavif `--min 18 --max 30` | 0.42 MB | smooth with faint contour rings |
 | AVIF | `--min 12 --max 22` | 0.65 MB | faint contour rings |
 | AVIF | `--min 6 --max 16` | 1.12 MB | glow smooth, but 32 px blocks in the near-black first frames on the GitHub README: rejected |
 | **AVIF (used)** | libavif `--min 0 --max 8`, speed 6 | 3.87 MB | smooth in the glows and in the first frames, no blocks |
 | GIF | 12 fps 256 colours / 10 fps 128 / 5 fps 48 | 24.9 / 13.1 / 4.93 MB | too big, or bands into contour rings at 5 fps |
 
-The README uses `<picture>`: the AVIF where the browser supports it, else the WebP, else the mp4 link. Fewer glow gradients were not needed. The mp4 (6.5 MB) is the link target.
+The README shows the AVIF as an `<img>` inside a link to the mp4. WebP was dropped: at the quality that hides the glow blocks it was 7.6 MB, twice the AVIF. Fewer glow gradients were not needed. The mp4 (6.5 MB) is the link target.

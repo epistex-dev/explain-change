@@ -78,7 +78,7 @@ A lit path across a tilted plane. The camera drifts along the flow, dives into t
 ## Decisions
 | Decision | Rationale | Date |
 | --- | --- | --- |
-| Animated AVIF in the README with a WebP fallback, GIF not used | GIF under 5 MB bands; WebP at quality 76 showed 8 px blocks in the dark glows in a real browser, quality 91 is clean at 7.6 MB; AVIF is clean at 1.1 MB (see NOTES.md) | 2026-11-05 |
+| Animated AVIF in the README, no WebP fallback, GIF not used | GIF under 5 MB bands; WebP at quality 76 showed 8 px blocks in the dark glows in a real browser, quality 91 is clean but 7.6 MB, twice the AVIF (see NOTES.md) | 2026-11-05 |
 | Camera stops: the far cards (Checks, One page) appear only as the camera moves to them | a card sitting cut at the right frame edge for seconds read as a layout bug; at each held stop every card is whole or fully out of frame | 2026-11-05 |
 | Real-page crops carry the side panel's own 12 px padding | text no longer touches the crop edge; shown at 1.64x, the page's 12 px text is 19.7 px | 2026-11-05 |
 | Stat-card labels are one line ("redirected", "decided for you") | a two-line label ate the bottom padding of the card | 2026-11-05 |

@@ -15,6 +15,7 @@ All notable changes to this project are documented here. The format follows
 
 ### Removed
 - The v1 report page and Mermaid (`mermaid.min.js`, 5.5 MB). A change doc with `version` 1 or no `version` now makes `validate.py` and `render.py` exit 1 with `error: explain-change v1 docs are no longer supported; write version 2 (references/explain-schema.md)`. Docs with `version: 2` are unaffected.
+- `docs/images/intro.webp` (7.6 MB). The README intro is the AVIF, linked to the mp4.
 
 ## [0.1.0] - 2026-11-05
 

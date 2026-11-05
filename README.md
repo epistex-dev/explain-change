@@ -4,7 +4,7 @@
 
 ### Your agent did the work. Now you understand it.
 
-<a href="docs/media/intro.mp4"><picture><source srcset="docs/images/intro.avif" type="image/avif"><img src="docs/images/intro.webp" alt="30 second intro: a session and its diff pass three checks and become one page, then a chart of eight themes and the real session page show what the agent decided and did outward" width="800"></picture></a>
+<a href="docs/media/intro.mp4"><img src="docs/images/intro.avif" alt="30 second intro: a session and its diff pass three checks and become one page, then a chart of eight themes and the real session page show what the agent decided and did outward" width="800"></a>
 
 **An [Agent Skill](https://agentskills.io) that turns an agent's code change into one offline page you can actually understand. Installs in Claude Code, Codex, Gemini CLI, Copilot, Cursor, OpenCode, Kiro and more.**
 
