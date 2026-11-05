@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Validate explain.json and render index.html next to it (self-contained, works offline).
 
-usage: render.py <explain.json> [--repo PATH] [--out FILE] [--transcript FILE] [--arch FILE] [--no-validate] [--text]
+usage: render.py <explain.json> [--repo PATH] [--out FILE] [--transcript FILE] [--arch FILE] [--no-validate] [--text] [--theme ID]
 Schema v1 renders the report page, schema v2 the layout-2 page, explain-session/1 the swimlane page of a whole session (one file, fonts inlined, under 512 KB).
 A session theme with a change_doc also gets its v2 page, written next to the session page (<change_doc without .json>.html) and linked from the theme's panel.
 A validation problem prints the same lines as validate.py, writes nothing, exits 1.
 On success prints the absolute path of the page. --text also writes <page>.txt, the words of a v2 page, for the cold-read gate.
+--theme ID sets the colour theme a session page opens in (navy, ocean, plum, graphite or pearl; default navy); the reader can still pick another on the page.
+An unknown id exits 1 with one line naming the valid ids. Other pages ignore it.
 --arch and --no-validate (v2 only) render an archived doc whose git range is gone: nothing is checked, the page says validated=no.
 """
 import argparse
@@ -44,7 +46,11 @@ def main(argv=None):
     ap.add_argument('--arch')
     ap.add_argument('--no-validate', action='store_true')
     ap.add_argument('--text', action='store_true')
+    ap.add_argument('--theme', default=page_session.THEMES[0], metavar='ID')
     a = ap.parse_args(argv)
+    if a.theme not in page_session.THEMES:
+        print('error: unknown theme %r; valid ids: %s' % (a.theme, ', '.join(page_session.THEMES)), file=sys.stderr)
+        return 1
     try:
         here = os.path.dirname(os.path.abspath(a.explain_json))
         out = os.path.abspath(a.out or os.path.join(here, 'index.html'))
@@ -105,7 +111,7 @@ def render_session(a, out):
         if code:
             return code
         links[i] = name
-    body = page_session.render(doc, links)
+    body = page_session.render(doc, links, a.theme)
     if len(body.encode('utf-8')) > page2.MAX_BYTES:
         print('error: page is %d KB, over the %d KB limit of html_preview' % (len(body.encode('utf-8')) // 1024, page2.MAX_BYTES // 1024), file=sys.stderr)
         return 2

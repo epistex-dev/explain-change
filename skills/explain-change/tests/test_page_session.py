@@ -62,15 +62,18 @@ class Tiers(unittest.TestCase):
         self.html = page(self.doc, {3: 'password-autofill.v2.html'})
 
     def test_tier_zero_has_the_four_blocks(self):
-        for needle in ('class="card o1"', 'class="card o2"', 'class="card o3"', 'class="card o4"', 'id="sum"'):
+        for needle in ('class="band"', 'class="card b-sum"', 'class="card b-need"', 'class="ov ov-dec"', 'class="ov ov-out"', 'id="sum"'):
             self.assertIn(needle, self.html)
         self.assertEqual(self.html.count('class="need"'), len(self.doc['needs_you']))
         self.assertEqual(self.html.count('class="dec"'), len(self.doc['decided']))
 
-    def test_summary_has_one_status_segment_per_theme(self):
-        self.assertEqual(len(re.findall(r'<li><a class="st-', self.html)), len(self.doc['themes']))
+    def test_summary_counts_the_themes_of_each_status(self):
+        key = self.html.split('class="skey"', 1)[1].split('</ul>', 1)[0]
         for st in {t['status'] for t in self.doc['themes']}:
-            self.assertIn('class="st-%s"' % st, self.html)
+            n = sum(1 for t in self.doc['themes'] if t['status'] == st)
+            self.assertIn('<li class="st-%s">' % st, key)
+            self.assertRegex(key, r'<li class="st-%s">.*?<b class="cnt">%d</b>' % (st, n))
+        self.assertEqual(sum(int(n) for n in re.findall(r'<b class="cnt">(\d+)</b>', key)), len(self.doc['themes']))
 
     def test_every_decision_is_marked_reversible_or_not(self):
         n = len(self.doc['decided'])
@@ -146,7 +149,7 @@ class SectionCounts(unittest.TestCase):
     def test_theme_panels_link_to_needs_you_and_decided_instead_of_repeating_them(self):
         d = sample()
         html = page(d)
-        panels = html.split('<aside class="card panel"', 1)[1]
+        panels = html.split('<section class="tp"', 1)[1]  # the theme panels; the panel's default view holds the decided items in full
         for x in d['needs_you'] + d['decided']:
             self.assertNotIn(x['text'], panels)
         self.assertEqual(panels.count('data-goto="need-'), len(d['needs_you']))
@@ -203,7 +206,7 @@ class Copy(unittest.TestCase):
         d['lang'] = 'vi'
         vi_html = page(d)
         vi = words(vi_html)
-        self.assertIn('<html lang="vi">', vi_html)
+        self.assertIn('<html lang="vi" data-theme="navy">', vi_html)
         for key in ('ses_sec_needs', 'ses_sec_decided', 'ses_sec_out', 'ses_sec_journey', 'ses_k_blocked', 'ses_rev', 'ses_irrev', 'ses_t2_btn'):
             self.assertIn(STR2['vi'][key], vi if key != 'ses_t2_btn' else page(dict(d), {3: 'x.html'}))
             self.assertIn(STR2['en'][key], en if key != 'ses_t2_btn' else page(sample(), {3: 'x.html'}))
@@ -220,7 +223,7 @@ class Copy(unittest.TestCase):
             src = fh.read()
         with open(os.path.join(SKILL, 'assets', 'ui', 'session.js'), encoding='utf-8') as fh:
             src += fh.read()
-        families = ('ses_st_', 'ses_k_', 'ses_o_')  # looked up as 'ses_st_' + status, and so on
+        families = ('ses_st_', 'ses_k_', 'ses_o_', 'ses_theme_')  # looked up as 'ses_st_' + status, and so on
         for k in (k for k in STR2['en'] if k.startswith('ses_') and not k.endswith('_1')):
             self.assertTrue("'%s'" % k in src or k.startswith(families) and any("'%s'" % f in src for f in families if k.startswith(f)), k)
 

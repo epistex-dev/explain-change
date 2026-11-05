@@ -96,4 +96,6 @@ python3 $S/scripts/render.py session.json --transcript <file> --text
 
 `render.py` writes `index.html` next to the doc, plus one page per `change_doc`, and prints the page path last. The page shows no code, diff or file:line, and it has no risks and no quiz. Done when `validate.py` prints `ok` and you hold the page path.
 
+`render.py --theme <id>` sets the colour theme the session page opens in: `navy` (the default), `ocean`, `plum`, `graphite` or `pearl` (light). An unknown id exits 1 with one line naming the valid ids. The reader can switch theme with the "Theme" picker in the page header; the pick is kept in the browser's `localStorage`. The flag changes the session page only; the change pages keep their own look.
+
 Docs with `version` absent or 1 still validate and render with the older report page (`references/explain-schema.md`, top part).

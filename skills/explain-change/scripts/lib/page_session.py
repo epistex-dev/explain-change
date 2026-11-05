@@ -1,9 +1,10 @@
 """Render an explain-session/1 doc into the swimlane page: one self-contained HTML file (fonts inlined), no code, diff or file:line.
 
-Tier 0 is a strip: the summary with one status segment per theme, what needs the reader, what the agent decided, what left the working copy.
-Tier 1 is the journey: one lane per theme, events in (order, list position) order, a side panel with the selected theme's journey.
+Tier 0 is a band: the summary with a count per status, and what needs the reader. Tier 1 is the journey: one lane per theme, events in (order, list position)
+order, and a side panel that shows what the agent decided and what left the working copy until a theme or marker is selected, then that theme's journey.
 Tier 2 is a link from a theme's panel to the sibling change page. Sources, commands and quotes never reach the page; every doc string is escaped.
 """
+import json
 import os
 import re
 
@@ -16,6 +17,8 @@ KINDS = ('asked', 'decided', 'redirected', 'blocked', 'done', 'outward', 'in_pro
 KIND_ICON = {'asked': 'message', 'decided': 'sparkles', 'redirected': 'redirect', 'blocked': 'ban', 'done': 'circle-check', 'outward': 'upload', 'in_progress': 'circle-dashed'}
 STATUSES = ('done', 'done_by_user', 'done_needs_you', 'in_progress', 'not_done')
 STATUS_ICON = {'done': 'circle-check', 'done_by_user': 'user', 'done_needs_you': 'triangle-alert', 'in_progress': 'circle-dashed', 'not_done': 'circle-x'}
+THEMES = ('navy', 'ocean', 'plum', 'graphite', 'pearl')  # colour themes: one [data-theme] block each in session.css; the first is the default
+THEME_KEY = 'explain-change-theme'  # localStorage key of the reader's pick
 OUT_ICON = {'repo_created': 'plus', 'push': 'upload', 'force_push': 'triangle-alert', 'history_rewrite': 'history', 'delete': 'trash', 'deploy': 'globe',
             'pr': 'branch', 'message': 'message', 'other': 'circle-help'}
 
@@ -75,14 +78,17 @@ def change_page_name(change_doc):
     return change_doc.replace('\\', '/').strip('/').replace('/', '__').rsplit('.json', 1)[0] + '.html'
 
 
-def render(doc, links=None):
-    """The page for a session doc. `links`: {theme index (0-based): relative href of its change page}."""
-    return Builder(doc, links or {}).build()
+def render(doc, links=None, theme=THEMES[0]):
+    """The page for a session doc. `links`: {theme index (0-based): relative href of its change page}. `theme`: the colour theme baked in as the default."""
+    if theme not in THEMES:
+        raise ValueError('unknown theme %r; valid: %s' % (theme, ', '.join(THEMES)))
+    return Builder(doc, links or {}, theme).build()
 
 
 class Builder:
-    def __init__(self, doc, links):
+    def __init__(self, doc, links, theme=THEMES[0]):
         self.doc = doc
+        self.theme = theme
         self.t = STR2[doc['lang']]
         self.links = links
         self.themes = doc['themes']
@@ -92,7 +98,7 @@ class Builder:
     def chip_theme(self, tid):
         n = self.n_of[tid]
         title = self.themes[n - 1]['title']
-        return '<a class="tchip" href="#theme-%d" data-theme="%d"><span class="num-badge">%d</span><span class="t">%s</span></a>' % (n, n, n, txt(title))
+        return '<a class="tchip" href="#theme-%d" data-lane="%d"><span class="num-badge">%d</span><span class="t">%s</span></a>' % (n, n, n, txt(title))
 
     def status_chip(self, st):
         return '<span class="chip s-%s">%s%s</span>' % (st, ic(STATUS_ICON[st]), esc(self.t['ses_st_' + st]))
@@ -104,35 +110,37 @@ class Builder:
     # ---- tier 0
     def summary(self):
         t = self.t
-        segs, counts = [], {}
-        for i, th in enumerate(self.themes):
-            st = th['status']
-            counts[st] = counts.get(st, 0) + 1
-            segs.append('<li><a class="st-%s" href="#theme-%d" data-theme="%d"><i></i><span class="tl"><span class="num-badge">%d</span><span class="nm">%s'
-                        '<span class="sr"> (%s)</span></span></span></a></li>' % (st, i + 1, i + 1, i + 1, txt(th['title']), esc(t['ses_st_' + st])))
-        key = ''.join('<li class="st-%s"><i></i>%s %d</li>' % (st, esc(t['ses_st_' + st]), counts[st]) for st in STATUSES if st in counts)
-        return ('<section class="card o1" aria-labelledby="sum"><p class="slogan">%s</p><h1 class="sum" id="sum">%s</h1>'
-                '<ul class="tally" aria-label="%s">%s</ul><ul class="skey" aria-label="%s">%s</ul></section>'
-                % (esc(t['ses_slogan']), txt(self.doc['summary']), esc(t['ses_status_label']), ''.join(segs), esc(t['ses_status_legend']), key))
+        counts = {}
+        for th in self.themes:
+            counts[th['status']] = counts.get(th['status'], 0) + 1
+        key = ''.join('<li class="st-%s">%s<b class="cnt">%d</b><span class="lb">%s</span></li>' % (st, ic(STATUS_ICON[st]), counts[st], esc(t['ses_st_' + st]))
+                      for st in STATUSES if st in counts)
+        return ('<section class="card b-sum" aria-labelledby="sum"><p class="slogan">%s</p><h1 class="sum" id="sum">%s</h1><ul class="skey" aria-label="%s">%s</ul></section>'
+                % (esc(t['ses_slogan']), txt(self.doc['summary']), esc(t['ses_status_label']), key))
 
     def needs(self):
         t, items = self.t, self.doc.get('needs_you', [])
         concl = count(t, 'ses_needs_h', len(items)) if items else t['ses_needs_none']
         body = ''.join('<article class="need" id="need-%d"><span class="n">%s%s</span><p>%s</p><div>%s</div></article>' % (
             i + 1, ic('triangle-alert'), esc(t['ses_need_n'] % (i + 1)), txt(x['text']), self.chip_theme(x['theme'])) for i, x in enumerate(items))
-        return ('<section class="card o2" aria-labelledby="h-needs">%s%s</section>'
+        return ('<section class="card b-need" id="sec-needs" aria-labelledby="h-needs">%s%s</section>'
                 % (self.head('triangle-alert', t['ses_sec_needs'], concl, 'h-needs'), ('<div class="stack">%s</div>' % body) if body else ''))
 
     def decided(self):
+        """Irreversible choices are always listed; the reversible ones sit in an accordion."""
         t, items = self.t, self.doc.get('decided', [])
         irrev = sum(1 for x in items if x.get('reversible') is False)
         concl = t['ses_dec_none'] if not items else count(t, 'ses_dec_h', len(items)) + (t['ses_dec_irrev'] % irrev if irrev else t['ses_dec_allrev'])
-        rows = []
+        hard, soft = [], []
         for i, x in enumerate(items):
-            chip = ('<span class="chip irrev">%s%s</span>' % (ic('triangle-alert'), esc(t['ses_irrev']))) if x.get('reversible') is False \
-                else '<span class="chip rev">%s%s</span>' % (ic('undo'), esc(t['ses_rev']))
+            if x.get('reversible') is False:
+                chip, rows = '<span class="chip irrev">%s%s</span>' % (ic('triangle-alert'), esc(t['ses_irrev'])), hard
+            else:
+                chip, rows = '<span class="chip rev">%s%s</span>' % (ic('undo'), esc(t['ses_rev'])), soft
             rows.append('<div class="dec" id="dec-%d"><p>%s</p>%s<div class="sub">%s</div></div>' % (i + 1, txt(x['text']), chip, self.chip_theme(x['theme'])))
-        return ('<section class="card o3" aria-labelledby="h-dec">%s%s</section>' % (self.head('sparkles', t['ses_sec_decided'], concl, 'h-dec'), ''.join(rows)))
+        acc = ('<details class="acc"><summary><span>%s</span></summary>%s</details>' % (esc(count(t, 'ses_dec_rev_n', len(soft))), ''.join(soft))) if soft else ''
+        return ('<section class="ov ov-dec" id="sec-dec" aria-labelledby="h-dec"><span class="sec-name">%s</span><h2 id="h-dec">%s</h2>%s%s</section>'
+                % (esc(t['ses_sec_decided']), esc(concl), ''.join(hard), acc))
 
     def outward(self):
         t = self.t
@@ -152,9 +160,11 @@ class Builder:
                          % (ic(OUT_ICON[k]), esc(count(t, 'ses_o_' + k, real)), chips))
         concl = count(t, 'ses_out_h', len(cards)) if cards else t['ses_out_none']
         line = ('<p class="scratch">%s</p>' % esc(count(t, 'ses_scratch', scratch))) if scratch else ''
-        body = ('<div class="outs">%s</div>' % ''.join(cards)) if cards else ''
-        return ('<section class="card o4" aria-labelledby="h-out">%s%s%s</section>'
-                % (self.head('upload', t['ses_sec_out'], concl, 'h-out', t['ses_out_hint'] if cards else ''), body, line))
+        head = '<span class="sec-name">%s</span><h2 id="h-out">%s</h2>' % (esc(t['ses_sec_out']), esc(concl))
+        if not cards:
+            return '<section class="ov ov-out" id="sec-out" aria-labelledby="h-out">%s%s</section>' % (head, line)
+        return ('<section class="ov ov-out" id="sec-out" aria-labelledby="h-out"><details class="acc" open><summary>%s</summary><p class="hint">%s</p>'
+                '<div class="outs">%s</div>%s</details></section>' % (head, esc(t['ses_out_hint']), ''.join(cards), line))
 
     # ---- tier 1
     def resolved(self):
@@ -201,9 +211,9 @@ class Builder:
         main = ('<div class="main"><section class="card" id="journey" aria-labelledby="h-jr">%s<ul class="keyline" aria-label="%s">%s</ul>'
                 '<div class="axis" aria-hidden="true"><span class="ah"></span><div class="ar"><span>%s</span><span>%s</span></div></div>'
                 '<div class="lanes" aria-label="%s">%s</div></section>'
-                '<aside class="card panel" id="panel" tabindex="-1" aria-label="%s"><div class="empty-panel"><p class="empty">%s</p></div>%s</aside></div>' % (
+                '<aside class="card panel" id="panel" tabindex="-1" aria-label="%s"><div class="empty-panel"><p class="empty">%s</p>%s%s</div>%s</aside></div>' % (
                     self.head('list', t['ses_sec_journey'], concl, 'h-jr', t['ses_jr_hint']), esc(t['ses_legend_label']), legend, esc(t['ses_axis_from']), esc(t['ses_axis_to']),
-                    esc(t['ses_lanes_label']), ''.join(lanes), esc(t['ses_panel']), esc(t['ses_empty']), ''.join(panels)))
+                    esc(t['ses_lanes_label']), ''.join(lanes), esc(t['ses_panel']), esc(t['ses_empty']), self.decided(), self.outward(), ''.join(panels)))
         return main
 
     def theme_panel(self, n, th, evs):
@@ -225,17 +235,32 @@ class Builder:
                     n, n, n, self.status_chip(th['status']), esc(t['ses_close']), ic('x'), n, txt(th['title']), txt(th['outcome']), esc(t['ses_journey_h']), items,
                     ('<div class="links">%s</div>' % ''.join(links)) if links else '', t2))
 
+    def theme_head(self):
+        """Runs in <head>, before the style and the body: applies the reader's stored pick (or the baked default) so the first paint is in the right theme."""
+        return ("<script>(function(){var d=document.documentElement,a=%s,t=d.getAttribute('data-theme');try{var s=localStorage.getItem('%s');if(a.indexOf(s)>-1)t=s}catch(e){}"
+                "d.setAttribute('data-theme',t);d.classList.add('js')})()</script>" % (json.dumps(list(THEMES)), THEME_KEY))
+
+    def picker(self):
+        t = self.t
+        opts = ''.join('<option value="%s"%s>%s</option>' % (k, ' selected' if k == self.theme else '', esc(t['ses_theme_' + k])) for k in THEMES)
+        return '<label class="picker"><span>%s</span><select id="skin" name="skin">%s</select></label>' % (esc(t['ses_theme_label']), opts)
+
+    def nav(self):
+        t = self.t
+        links = (('sec-needs', 'ses_sec_needs'), ('journey', 'ses_sec_journey'), ('sec-dec', 'ses_sec_decided'), ('sec-out', 'ses_sec_out'))
+        return '<nav class="jump" aria-label="%s">%s</nav>' % (esc(t['ses_nav_label']), ''.join('<a href="#%s" data-goto="%s">%s</a>' % (i, i, esc(t[k])) for i, k in links))
+
     def build(self):
         t = self.t
-        top = '<div class="top3"><div class="left">%s%s</div>%s%s</div>' % (self.summary(), self.outward(), self.needs(), self.decided())
+        band = '<div class="band">%s%s</div>' % (self.summary(), self.needs())
         journey = self.journey()
         return '''<!doctype html>
-<html lang="%(lang)s">
+<html lang="%(lang)s" data-theme="%(theme)s">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>%(title)s</title>
-<script>document.documentElement.classList.add('js')</script>
+%(head_js)s
 <style>
 %(css)s
 </style>
@@ -244,9 +269,9 @@ class Builder:
 %(sprite)s
 <a class="skip" href="#journey">%(skip)s</a>
 <div class="page">
-<div class="bar"><span class="logo">%(i_spark)s</span><span class="brand-name">explain-change</span><span class="ptitle">%(title)s</span><span class="chip tag">%(i_layout)s%(page)s</span></div>
-<main class="page-main" style="display:grid;gap:var(--s4)">
-%(top)s
+<header class="bar"><span class="logo">%(i_spark)s</span><span class="brand-name">explain-change</span><span class="ptitle">%(title)s</span>%(nav)s%(picker)s<span class="chip tag">%(i_layout)s%(page)s</span></header>
+<main class="page-main">
+%(band)s
 %(journey)s
 </main>
 </div>
@@ -257,5 +282,6 @@ class Builder:
 </script>
 </body>
 </html>
-''' % {'lang': t['html_lang'], 'title': txt(self.doc['title']), 'css': _css(), 'sprite': _sprite(), 'skip': esc(t['ses_skip']), 'i_spark': ic('sparkles'),
-       'i_layout': ic('layout'), 'page': esc(t['ses_page']), 'top': top, 'journey': journey, 'data': jdump(self.data), 'fit': _read(os.path.join(UI, 'fit.js')), 'js': _read(os.path.join(UI, 'session.js'))}
+''' % {'lang': t['html_lang'], 'theme': self.theme, 'title': txt(self.doc['title']), 'head_js': self.theme_head(), 'css': _css(), 'sprite': _sprite(), 'skip': esc(t['ses_skip']),
+       'i_spark': ic('sparkles'), 'i_layout': ic('layout'), 'page': esc(t['ses_page']), 'nav': self.nav(), 'picker': self.picker(), 'band': band, 'journey': journey,
+       'data': jdump(self.data), 'fit': _read(os.path.join(UI, 'fit.js')), 'js': _read(os.path.join(UI, 'session.js'))}
