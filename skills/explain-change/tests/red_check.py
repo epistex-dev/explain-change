@@ -833,18 +833,18 @@ MUTATIONS += [
      IT + 'Bounded.test_reads_touch_only_the_keys_asked_for'),
     ('cursor-ide: only composerData rows are scanned to find a project', CIX, "lo, hi = _range('composerData:')\n    sql", "lo, hi = '', '\\U0010ffff'\n    sql",
      IT + 'Bounded.test_reads_touch_only_the_keys_asked_for'),
-    ('cursor-ide: a key range ends at the next prefix', CIX, "return prefix, prefix[:-1] + chr(ord(prefix[-1]) + 1)", "return prefix, prefix[:-2] + chr(ord(prefix[-2]) + 1)",
-     IT + 'Records.test_a_bubble_of_another_composer_whose_id_starts_the_same_is_not_read'),
+    ('cursor-ide: a key range ends at the next prefix', CIX, "return prefix, prefix[:-1] + chr(ord(prefix[-1]) + 1)", "return prefix, prefix[:-1] + chr(ord(prefix[-1]) + 2)",
+     IT + 'Bounded.test_reads_touch_only_the_keys_asked_for'),
     ('cursor-ide: the rows of a composer are streamed', CIX, "        for key, raw in self.rows(prefix, MAX_BUBBLES):", "        for key, raw in self.rows(prefix, MAX_BUBBLES).fetchall():",
      IT + 'Bounded.test_rows_of_the_composer_itself_are_streamed'),
-    ('cursor-ide: a bubble is kept as a few fields', CIX, "out[bid] = _slim(b, bid)", "out[bid] = dict(_slim(b, bid), whole=b)", IT + 'Bounded.test_rows_of_the_composer_itself_are_streamed'),
+    ('cursor-ide: a bubble is kept as a few fields', CIX, "out[bid] = _slim(b, bid)", "out[bid] = dict(_slim(b, bid), whole=repr(b))", IT + 'Bounded.test_rows_of_the_composer_itself_are_streamed'),
     ('cursor-ide: the number of bubbles is capped', CIX, "ORDER BY key LIMIT %d' % (_text_value(), TABLE, limit)", "ORDER BY key LIMIT -1 /* %d */' % (_text_value(), TABLE, limit)",
      IT + 'Hostile.test_bubbles_are_capped'),
     ('cursor-ide: a conversation follows its manifest', CIX, "conversation = [found[b] for b in order if b in found]", "conversation = list(found.values())",
      IT + 'Fixture.test_bubbles_come_in_manifest_order_and_a_bubble_no_header_lists_is_left_out'),
-    ('cursor-ide: the paged headers are read when there is no inline manifest', CIX, "        if not heads:\n            for _, raw", "        if False:\n            for _, raw",
+    ('cursor-ide: the paged headers are read when there is no inline manifest', CIX, "        if not heads:\n            pages = []", "        if False:\n            pages = []",
      IT + 'Fixture.test_paged_headers_are_joined_in_page_order'),
-    ('cursor-ide: the inline manifest wins over paged headers', CIX, "        if not heads:\n            for _, raw", "        if True:\n            for _, raw",
+    ('cursor-ide: the inline manifest wins over paged headers', CIX, "        if not heads:\n            pages = []", "        if True:\n            pages = []",
      IT + 'Records.test_the_inline_manifest_wins_over_paged_headers'),
     ('cursor-ide: the inline conversation is completed by the bubble rows', CIX, "base.update({k: v for k, v in full.items() if v})", "pass",
      IT + 'Fixture.test_the_older_inline_format_reads_tools_from_capabilities'),
@@ -867,7 +867,7 @@ MUTATIONS += [
      IT + 'Records.test_a_tool_bubble_with_no_resolvable_data_falls_back_to_its_text'),
     ('cursor-ide: the command comes from params before rawArgs', CIX, "(_io.s(_io.d(params).get('command')), _io.s(_io.d(raw).get('command')))", "(_io.s(_io.d(raw).get('command')), _io.s(_io.d(params).get('command')))",
      IT + 'Records.test_command_comes_from_params_then_rawargs'),
-    ('cursor-ide: the arguments are params before rawArgs', CIX, "    args = params or raw\n", "    args = raw or params\n", IT + 'Records.test_command_comes_from_params_then_rawargs_and_args_follow'),
+    ('cursor-ide: the arguments are params before rawArgs', CIX, "    args = params or raw\n", "    args = raw or params\n", IT + 'Records.test_command_comes_from_params_then_rawargs'),
     ('cursor-ide: a shell tool name is recognised (v2)', CIX, "'run_terminal_command', 'run_terminal_command_v2'", "'run_terminal_command'", IT + 'Records.test_each_shell_tool_name'),
     ('cursor-ide: a shell tool name is recognised (cmd)', CIX, "SHELL_TOOLS = frozenset(('run_terminal_cmd', ", "SHELL_TOOLS = frozenset((", IT + 'Records.test_each_shell_tool_name'),
     ('cursor-ide: a shell output is the output field of its result', CIX, "output = _io.s(_io.d(_obj(result)).get('output')) if is_shell else _io.s(result)", "output = _io.s(result)",
@@ -891,8 +891,9 @@ MUTATIONS += [
 def main():
     bad = 0
     only = sys.argv[1] if len(sys.argv) > 1 else ''  # optional: run only the guards whose name contains this text
-    for guard, rel, old, new, test in MUTATIONS:
-        if only not in guard:
+    shard, shards = (int(x) for x in sys.argv[2].split('/')) if len(sys.argv) > 2 else (0, 1)  # optional: `K/N` runs every Nth guard from K
+    for i, (guard, rel, old, new, test) in enumerate(MUTATIONS):
+        if only not in guard or i % shards != shard:
             continue
         with tempfile.TemporaryDirectory(prefix='red-check-') as d:
             root = os.path.join(d, 'repo', 'skills', 'explain-change')  # the repo layout, so install.sh finds its skill
@@ -915,7 +916,7 @@ def main():
             bad += not ok
             print('%-5s %-48s green->%s guard removed->%s  %s' % ('OK' if ok else 'FAIL', guard, 'pass' if green else 'FAIL',
                                                                      'pass' if red else 'RED', test))
-    print('%d guards, %d not proven' % (len(MUTATIONS), bad))
+    print('%d guards, %d not proven' % (sum(1 for i, m in enumerate(MUTATIONS) if only in m[0] and i % shards == shard), bad))
     return 1 if bad else 0
 
 

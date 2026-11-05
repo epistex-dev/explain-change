@@ -1,6 +1,7 @@
 """Cursor IDE adapter: cursorDiskKV composers and bubbles (Cursor 3 and the older inline format), shell tools, project matching, bounded reads, guards and hostile databases."""
 import json
 import os
+import re
 import resource
 import sqlite3
 import subprocess
@@ -210,9 +211,8 @@ class Fixture(Store):
         con.close()
         self.assertFalse(cursor_ide.detect(other))
         self.assertIsNone(adapters.detect_format(other))
-        with self.assertRaises(_io.StoreError):
+        with self.assertRaisesRegex(_io.StoreError, 'no cursorDiskKV table'):
             cursor_ide.read(other + '#x', self.root)
-        self.assertEqual(cursor_ide.find_sessions(CWD, self.root), cursor_ide.find_sessions(CWD, self.root))
 
 
 class Records(Store):
@@ -256,6 +256,7 @@ class Records(Store):
         s = self.one(['a', 'b'], [('a', 2, '', {'capabilityType': 15, 'toolFormerData': d}),
                                   ('b', 2, '', {'capabilityType': 15, 'toolFormerData': dict(tool_data(), params=json.dumps({'command': 'from params'}), rawArgs=json.dumps({'command': 'ignored'}))})])
         self.assertEqual([t.command for t in calls(s)], ['from rawArgs', 'from params'])
+        self.assertEqual([t.args for t in calls(s)], [{'command': 'from rawArgs'}, {'command': 'from params'}])           # the arguments follow the same order
 
     def test_each_shell_tool_name(self):
         names = ['run_terminal_cmd', 'run_terminal_command', 'run_terminal_command_v2', 'shell', 'bash']
@@ -328,8 +329,10 @@ class Records(Store):
         con = self.con()
         composer(con, 'c', fullConversationHeadersOnly=[header('a', 1), header('2:b', 1)])
         composer(con, 'c2')
+        composer(con, 'c;1')                                # ';' follows ':' in byte order, so its bubbles sort right after the range of 'c'
         bubble(con, 'c', 'a', 1, 'mine')
         bubble(con, 'c2', 'b', 1, 'the neighbour')
+        bubble(con, 'c;1', 'b', 1, 'the other neighbour')
         self.finish(con)
         self.assertEqual([e.text for e in self.read('c').events], ['mine'])
 
@@ -364,7 +367,7 @@ class Records(Store):
 
     def test_odd_folders_never_match_or_crash(self):
         con = self.con()
-        for i, p in enumerate([None, 7, '', 'relative/path', 'bad\0nul', ['/work/repo'], {'a': 1}]):
+        for i, p in enumerate([None, 7, '', 'relative/path', 'bad\0nul', CWD + '\0x', ['/work/repo'], {'a': 1}]):
             put(con, 'composerData:odd%d' % i, {'workspaceIdentifier': {'uri': {'fsPath': p}}})
         put(con, 'composerData:no-uri', {'workspaceIdentifier': {'id': 'x'}})
         put(con, 'composerData:wsid-str', {'workspaceIdentifier': 'str'})
@@ -469,6 +472,8 @@ class Bounded(Store):
         for q in scans:
             self.assertTrue("key >= 'composerData:'" in q or "key >= 'composerData:mine'" in q or "key >= 'bubbleId:mine:'" in q or "key >= 'composerConvHeaders:mine:'" in q or "key = 'composerData:mine'" in q, q[:200])
             self.assertNotIn('LIKE', q)
+            for lo, hi in re.findall(r"key >= '([^']*)' AND key < '([^']*)'", q):
+                self.assertEqual(hi, lo[:-1] + ';', q[:200])             # a range ends just after the prefix, so no neighbouring id is read
 
     def test_a_large_database_is_not_loaded_into_memory(self):
         self.build()
