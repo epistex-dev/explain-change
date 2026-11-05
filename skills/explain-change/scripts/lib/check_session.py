@@ -62,6 +62,7 @@ def _validate(doc, transcript_path, base_dir, fmt='auto'):
     # ---- transcript
     tpath, tfiles = doc.get('transcript') if transcript_path is None else transcript_path, {}
     if isinstance(tpath, str) and tpath:
+        ground.check_reason(doc, True, err, '')
         try:
             tpath = transcript.safe_path(tpath, fmt)
             tfiles = transcript.session_files(tpath)
@@ -71,11 +72,11 @@ def _validate(doc, transcript_path, base_dir, fmt='auto'):
             tpath = None
     else:
         tpath = None
-        if nonempty(doc.get('transcript_unavailable')):
-            warns.append('transcript checks off (%s): quotes, commands and outward counts are not compared with a session' % doc['transcript_unavailable'].strip())
-        else:
-            err('transcript', 'required: pass --transcript <file under ~/.claude/projects> or set "transcript"; '
-                'without a session set "transcript_unavailable" to the reason')
+        reason = ground.check_reason(doc, False, err, 'required: pass --transcript <file under ~/.claude/projects> or set "transcript"; '
+                                     'without a session set "transcript_unavailable" to the reason')
+        if reason:
+            warns.append('transcript checks off (%s): quotes, commands and outward counts are not compared with a session' % reason)
+        transcript.learn_quotes(doc)
     stats['transcript'] = tpath is not None
 
     not_compared, inferred = [], []

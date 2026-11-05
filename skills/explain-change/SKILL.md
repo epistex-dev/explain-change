@@ -33,9 +33,18 @@ A transcript of any harness below grounds the doc. `collect.py` lists the sessio
 
 A transcript is read only under its harness's folder, after resolving symlinks: a file outside it, or reached through a symlink that leaves it, is refused. The folder is fixed per harness under your home directory (`$HOME`); for Claude Code `EXPLAIN_PROJECTS_DIR` also moves it. No command-line flag, `--format` included, moves it. A shell call whose output or exit code the harness did not record has an unknown result (every Cursor CLI and Cursor IDE call, an OpenCode call still running): it can back a `mixed` run or a quote, never a `passed` run or a `done`, and the validator says so in one line.
 
-No transcript (none matches, or the harness is not listed): write `"transcript_unavailable": "<reason>"` and take the user's words and the commands you ran from your own context. Steps 4 and 5 then run without `--transcript`, and the page says it was not checked against the session.
+### No transcript
 
-Done when each user request has its words in front of you and each claim of "ran X" has the tool call that ran it. Text holding a password or token never goes into the doc, but its other words still can: the digest masks the value as `[ẩn]`, so quote the part before the label or after the value.
+Take this path when the harness has no reader (Windsurf, Cline, Roo, Kiro, Goose, Amp, Aider and any other Agent Skills harness), when the transcript is missing, deleted or unreadable, or when you run the skill outside any agent session. It works for both page kinds, and the scripts check everything they still can.
+
+1. In the doc write `"transcript_unavailable": "<reason>"`: one line of at most 200 characters, with no secret in it (for example `"Windsurf keeps no readable session log"`). Give the reason or the transcript, never both: `validate.py` and `render.py` exit 1 for a doc with neither, and for a doc with both.
+2. Take each user request in the user's own words from what you hold in context, and each command and its result from the calls you made. Quote the user's text, not a paraphrase. A quote, a `tool_call` or a `user_reported` source keeps its shape and is not compared with anything.
+3. Run steps 4 and 5 without `--transcript` and without `--no-validate`. The git range, the diff, the +/- counts, the file coverage, every cited code line and every secret are still checked; the quotes and commands are counted as not compared. A credential the user quoted is learned from the doc itself and refused wherever else the doc repeats it.
+4. The change page then reads "Not checked against the session: <reason>", and each run and each try of the user's carries "From the agent's own account". The session page carries the same note and shows each outward count as the agent's own count, once.
+
+A session doc follows the same four rules (step 8): count the turns and the outward actions from your own context. A theme's `change_doc` needs its own `transcript_unavailable`.
+
+Done when each user request has its words in front of you and each claim of "ran X" has the tool call that ran it (with no transcript: the call in your own context). Text holding a password or token never goes into the doc, but its other words still can: the digest masks the value as `[ẩn]`, so quote the part before the label or after the value.
 
 ## 3. Write explain.json
 
@@ -61,10 +70,10 @@ Each problem prints as `path: reason`. Fix the claim itself, not the quote. Done
 ## 5. Render
 
 ```
-python3 $S/scripts/render.py $RUN_DIR/explain.json --text (--transcript <file> | --no-validate)
+python3 $S/scripts/render.py $RUN_DIR/explain.json --text [--transcript <file>]
 ```
 
-Pass `--transcript <file>` when step 2 found one, else `--no-validate`. Writes `$RUN_DIR/index.html` (one file, fonts inlined, under 512 KB) and `index.html.txt`, the page's words. Done when it prints the page path.
+Pass `--transcript <file>` when step 2 found one; with none, run it as `render.py $RUN_DIR/explain.json --text` (the doc carries `transcript_unavailable`). `--no-validate` is for an archived doc whose git range is gone. Writes `$RUN_DIR/index.html` (one file, fonts inlined, under 512 KB) and `index.html.txt`, the page's words. Done when it prints the page path.
 
 ## 6. Cold-read gate
 
@@ -95,16 +104,18 @@ Done when the user holds the path and the page is open, or no preview tool exist
 When the user wants the context of a whole session or of several tasks, not one change, read [references/session-schema.md](references/session-schema.md) and run:
 
 ```
-python3 $S/scripts/collect.py --session                         # lists candidate sessions
+python3 $S/scripts/collect.py --session                         # lists candidate sessions; with none it names the no-transcript path (step 2)
 python3 $S/scripts/collect.py --session --transcript <file>     # the digest: numbered turns, work between turns, repos, outward actions
 ```
 
-Write `session.json` (`explain-session/1`) in a folder of your own (`$RUN_DIR` of any run, or a new one): group the turns and the work into themes a reader would name, give each theme its events with the turn number as `order`, and fill `needs_you`, `decided` and `outward` from the digest (copy its counts, including the `scratch` count of deletes). A theme whose code you explained in a v2 doc gets `change_doc`, a relative path to that doc in the same folder. Ground only what the transcript shows: a delegated worker's own commands are not in it.
+Write `session.json` (`explain-session/1`) in a folder of your own (`$RUN_DIR` of any run, or a new one): group the turns and the work into themes a reader would name, give each theme its events with the turn number as `order`, and fill `needs_you`, `decided` and `outward` from the digest (copy its counts, including the `scratch` count of deletes). A theme whose code you explained in a v2 doc gets `change_doc`, a relative path to that doc in the same folder. Ground only what the transcript shows: a delegated worker's own commands are not in it. With no transcript (step 2, "No transcript"), write `"transcript_unavailable": "<reason>"` instead of the transcript, take the turns and the outward actions from your own context (`order` counts your turns from 1) and run the two commands below without `--transcript`.
 
 ```
 python3 $S/scripts/validate.py session.json --transcript <file>
 python3 $S/scripts/render.py session.json --transcript <file> --text
 ```
+
+With no transcript, drop `--transcript` from both commands.
 
 `render.py` writes `index.html` next to the doc, plus one page per `change_doc`, and prints the page path last. The page shows no code, diff or file:line, and it has no risks and no quiz. Done when `validate.py` prints `ok` and you hold the page path.
 

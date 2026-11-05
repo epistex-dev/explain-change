@@ -9,9 +9,14 @@ import os
 import re
 
 from . import outward
+from .ground import MAX_REASON
 from .i18n2 import STR2, count
 from .page2 import UI, _read, esc, font_faces, ic, jdump
 from .transcript import redact
+
+NT_CSS = ('.srow{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2) var(--s4)}\n'
+          '.nt{display:flex;align-items:flex-start;gap:6px;flex:1 1 200px;max-width:52ch;min-width:0;margin:0;color:var(--text-2);font-size:var(--fs-sm)}\n'
+          '.nt .ic{flex:none;width:16px;height:16px;margin-top:1px;color:var(--warn)}\n')  # only a page with no session behind it carries these rules, so a checked page stays as it was
 
 KINDS = ('asked', 'decided', 'redirected', 'blocked', 'done', 'outward', 'in_progress')
 KIND_ICON = {'asked': 'message', 'decided': 'sparkles', 'redirected': 'redirect', 'blocked': 'ban', 'done': 'circle-check', 'outward': 'upload', 'in_progress': 'circle-dashed'}
@@ -78,16 +83,20 @@ def change_page_name(change_doc):
     return change_doc.replace('\\', '/').strip('/').replace('/', '__').rsplit('.json', 1)[0] + '.html'
 
 
-def render(doc, links=None, theme=THEMES[0]):
-    """The page for a session doc. `links`: {theme index (0-based): relative href of its change page}. `theme`: the colour theme baked in as the default."""
+def render(doc, links=None, theme=THEMES[0], session_checked=None):
+    """The page for a session doc. `links`: {theme index (0-based): relative href of its change page}. `theme`: the colour theme baked in as the default.
+    `session_checked`: False adds the note that no session was read and shows the outward counts as the agent's own; None reads it from the doc."""
     if theme not in THEMES:
         raise ValueError('unknown theme %r; valid: %s' % (theme, ', '.join(THEMES)))
-    return Builder(doc, links or {}, theme).build()
+    return Builder(doc, links or {}, theme, session_checked).build()
 
 
 class Builder:
-    def __init__(self, doc, links, theme=THEMES[0]):
+    def __init__(self, doc, links, theme=THEMES[0], session_checked=None):
         self.doc = doc
+        if session_checked is None:  # the caller did not say: a doc that gives a reason for having no session was not checked against one
+            session_checked = not (isinstance(doc.get('transcript_unavailable'), str) and doc['transcript_unavailable'].strip()) or bool(doc.get('transcript'))
+        self.session_checked = session_checked
         self.theme = theme
         self.t = STR2[doc['lang']]
         self.links = links
@@ -115,8 +124,21 @@ class Builder:
             counts[th['status']] = counts.get(th['status'], 0) + 1
         key = ''.join('<li class="st-%s">%s<b class="cnt">%d</b><span class="lb">%s</span></li>' % (st, ic(STATUS_ICON[st]), counts[st], esc(t['ses_st_' + st]))
                       for st in STATUSES if st in counts)
-        return ('<section class="card b-sum" aria-labelledby="sum"><p class="slogan">%s</p><h1 class="sum" id="sum">%s</h1><ul class="skey" aria-label="%s">%s</ul></section>'
-                % (esc(t['ses_slogan']), txt(self.doc['summary']), esc(t['ses_status_label']), key))
+        ul = '<ul class="skey" aria-label="%s">%s</ul>' % (esc(t['ses_status_label']), key)
+        note = self.not_checked()
+        if note:  # beside the status key, in the room right of it: the note adds almost nothing to the first screen
+            ul = '<div class="srow">%s%s</div>' % (ul, note)
+        return ('<section class="card b-sum" aria-labelledby="sum"><p class="slogan">%s</p><h1 class="sum" id="sum">%s</h1>%s</section>'
+                % (esc(t['ses_slogan']), txt(self.doc['summary']), ul))
+
+    def not_checked(self):
+        """One plain line when no session was read: the page says so and gives the doc's reason."""
+        if self.session_checked:
+            return ''
+        r = self.doc.get('transcript_unavailable')
+        r = redact(' '.join(r.split())) if isinstance(r, str) else ''  # hide a credential first: a cut through it would leave a piece the mask no longer matches
+        r = r[:MAX_REASON - 1] + '…' if len(r) > MAX_REASON else r
+        return '<p class="nt">%s<span>%s</span></p>' % (ic('triangle-alert'), esc(self.t['unchecked'] + (': ' + r if r else '')))
 
     def needs(self):
         t, items = self.t, self.doc.get('needs_you', [])
@@ -164,7 +186,7 @@ class Builder:
         if not cards:
             return '<section class="ov ov-out" id="sec-out" aria-labelledby="h-out">%s%s</section>' % (head, line)
         return ('<section class="ov ov-out" id="sec-out" aria-labelledby="h-out"><details class="acc" open><summary>%s</summary><p class="hint">%s</p>'
-                '<div class="outs">%s</div>%s</details></section>' % (head, esc(t['ses_out_hint']), ''.join(cards), line))
+                '<div class="outs">%s</div>%s</details></section>' % (head, esc(t['ses_out_hint'] if self.session_checked else t['nt_out_hint']), ''.join(cards), line))
 
     # ---- tier 1
     def resolved(self):
@@ -282,6 +304,6 @@ class Builder:
 </script>
 </body>
 </html>
-''' % {'lang': t['html_lang'], 'theme': self.theme, 'title': txt(self.doc['title']), 'head_js': self.theme_head(), 'css': _css(), 'sprite': _sprite(), 'skip': esc(t['ses_skip']),
+''' % {'lang': t['html_lang'], 'theme': self.theme, 'title': txt(self.doc['title']), 'head_js': self.theme_head(), 'css': _css() + ('' if self.session_checked else NT_CSS), 'sprite': _sprite(), 'skip': esc(t['ses_skip']),
        'i_spark': ic('sparkles'), 'i_layout': ic('layout'), 'page': esc(t['ses_page']), 'nav': self.nav(), 'picker': self.picker(), 'band': band, 'journey': journey,
        'data': jdump(self.data), 'fit': _read(os.path.join(UI, 'fit.js')), 'js': _read(os.path.join(UI, 'session.js'))}

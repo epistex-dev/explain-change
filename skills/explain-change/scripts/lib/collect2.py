@@ -63,6 +63,8 @@ def format_candidates(repo, cands, others=()):
     out = ['## Transcript candidates (most recently modified first; pass the right one as --transcript <path>)']
     if not cands:
         out.append('  none found under ~/.claude/projects for %s or its parents' % repo)
+        if not others:
+            out.append('  No transcript to read: write "transcript_unavailable": "<why>" in the doc and take the words and commands from your own context (SKILL.md, step 2)')
     for c in cands:
         transcript.learn(c['path'])  # the bare value, not only a labelled one, is hidden in every line below
     for i, c in enumerate(cands, 1):

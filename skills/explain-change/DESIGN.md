@@ -79,7 +79,7 @@ A calm, night-time reading room for a short report: an indigo ground and translu
 | `hidden_count` is derived: architecture nodes minus listed modules that are architecture nodes; shown as "+N unrelated parts" | the map may omit unrelated parts without hiding that they exist |
 | A run whose sources are all `report` is labelled as a worker's report and counted in the Evidence summary | a worker's word is not tool output |
 | `--no-validate --arch FILE` renders an archived doc and writes `validated=no` into the page | with no git or transcript to check against, the page says so |
-| A badge says the doc was not checked against the session when it has `transcript_unavailable` | quotes and commands were never verified |
+| A badge says the doc was not checked against the session when it has `transcript_unavailable`, and gives the reason after a colon (see "Pages with no transcript") | quotes and commands were never verified |
 
 ## Edge router (`assets/ui/route.js`)
 Edges are orthogonal routes through the gutters. The router is pure (boxes in, polylines out): a Dijkstra over a sparse grid of box centres and gap midpoints, ports on the middle of a box side, a penalty per bend and per reused step. It is tested under node on modelled layouts and on box rectangles recorded from real pages (`tests/fixtures/geometry-*.json`), without a browser.
@@ -108,14 +108,14 @@ Edges are orthogonal routes through the gutters. The router is pure (boxes in, p
 
 ## Session page (`explain-session/1`: `scripts/lib/page_session.py`, `assets/ui/session.{css,js}`, `assets/ui/fit.js`)
 
-Case: Extend. The project has a page, `page2.css` carries its tokens, and the request adds a second page that shares them. Reference: the approved mockup `design/mockups/session-mode/2-swimlanes.html` (commit `d0928e5`, branch `mockups/session-mode`) with its `NOTES.md` and `session.css`. The mockup's markers were too small, so the build enlarges them. No web survey was made: the mockup and the existing page answered every gap.
+Case: Extend. The project has a page, `page2.css` carries its tokens, and the request adds a second page that shares them. Reference: the approved swimlanes mockup (not published) with its notes and stylesheet. The mockup's markers were too small, so the build enlarges them. No web survey was made: the mockup and the existing page answered every gap.
 
 | Item | Value |
 | --- | --- |
 | Subject | The owner reads one page after a whole session, one task or many, and gets the context without reading the code |
 | Primary action | Know in about a minute what is done, what waits on you, what the agent chose alone and what left the working copy |
 | Tiers | 0: a strip (summary with per-theme status segments, Needs you, Agent decided for you, Outward actions). 1: one lane per theme and a side panel. 2: an "Open change page" button when the theme has a `change_doc` |
-| Left out | Code, diffs, file:line, sources, commands, quotes; risks; quiz; any doubt label (no "unchecked" badge when `transcript_unavailable` is set) |
+| Left out | Code, diffs, file:line, sources, commands, quotes; risks; quiz; any doubt label on a checked page (a page with `transcript_unavailable` carries one plain note, see "Pages with no transcript") |
 | Device | Desktop first (1440 x 900); 800 x 900 must work; 390 stays usable |
 | Tokens added | `--mk: 32px` (40px under `pointer: coarse`), `--mk-gap: 8px`, `--lane-h: 56px`; every other value is the page's own |
 
@@ -136,7 +136,7 @@ Checker rounds (`check.mjs` on the sample page): round 1 at 390, 768 and 1440: 0
 
 ### Colour themes and layout (round 2)
 
-Case: Improve, scope Refresh. The page exists and the user likes its look ("màu ảnh này vẫn đẹp"), so navy stays the default and keeps every value; the request adds themes the reader chooses, in the smooth style of the default and not the first set's (user: "ko thích mấy theme vừa r"). The user picked 4 of 6 prototypes: ocean, plum, graphite, pearl; forest is dropped. Reference: `design/mockups/themes/` on `mockups/themes` (`5cb31bd`) for the colours, `/tmp/explain-change-style-options` opt1 to opt3 (same layout changes) and mockup 2 for the layout. No web survey: the prototypes and the existing page answered every gap.
+Case: Improve, scope Refresh. The page exists and the user likes its look ("màu ảnh này vẫn đẹp"), so navy stays the default and keeps every value; the request adds themes the reader chooses, in the smooth style of the default and not the first set's (user: "ko thích mấy theme vừa r"). The user picked 4 of 6 prototypes: ocean, plum, graphite, pearl; forest is dropped. Reference: the unpublished theme prototypes for the colours, `/tmp/explain-change-style-options` opt1 to opt3 (same layout changes) and mockup 2 for the layout. No web survey: the prototypes and the existing page answered every gap.
 
 | Item | Value |
 | --- | --- |
@@ -155,3 +155,20 @@ Case: Improve, scope Refresh. The page exists and the user likes its look ("màu
 Content structure (rubric item 8), sample page: sources needs_you 3, decided 6, outward 5 kinds (plus a count of scratch deletes), themes 8 with 28 events. Page: 3 Needs you cards (band), 6 decided rows (panel, default view), 5 outward cards (panel, default view), 8 lanes with 28 markers, 8 theme sections with 28 events (panel, on selection). Each section answers one question: what waits on me (Needs you), what happened per work theme (Journey), what did the agent choose alone (Decided), what left my machine (Outward). A needs-you or decided item is told in full once; a theme section links to it with a chip instead of repeating it. Each section opens with its conclusion as the h2. The concept names are fixed: theme (a work theme), event, marker (its lane glyph), count bubble (a group of markers), colour theme only in the picker.
 
 Checker (`check.mjs`, 390 / 800 / 1440 px) on the sample page rendered in each theme: 0 failures in all five; the WARNs left are tap targets under 44 px at 390 px (markers 32 px, theme chips 26 px, lane headers 28 px) and "text over a gradient, check visually" notes, which the token measurement above covers. Tiles opened for every theme at 1440 and for navy and pearl at 390 and 800. Screenshots: `docs/images/themes/`.
+
+## Pages with no transcript (`explain-change/2` and `explain-session/1`)
+
+Case: Extend. Both pages and their tokens exist (`page2.css`, `session.css`); the request adds copy and two small marks to them, with no new component. Reference: the existing badge `chip warn unchecked` and the `reported` chip of the change page. No web survey: the existing page answered every gap.
+
+| Decision | Rationale |
+| --- | --- |
+| The change-page badge keeps its short form "Not checked against the session" (vi "Chưa đối chiếu với phiên làm việc"). The doc's reason is one plain line at the top of the Evidence tab, "No session to compare with: <reason>" (vi "Không có phiên làm việc để đối chiếu: <reason>") | a plain fact the reader can weigh; the reason says which of the three cases applies. A reason of up to 200 characters in the badge wrapped the header from 64 to 124 px at 1440 (PR #5 review); the header now has the same height with any reason, at 1440 and 800. The line is in the page, not a `title`, so it stays readable on touch |
+| The two bundled samples give the reason "synthetic sample" | the note stays a calm, short fact on the screens people see first |
+| The reason is one line of at most 200 characters (validated), flattened, cut with an ellipsis for an unvalidated doc, credentials redacted and escaped like any doc text | the value is the doc's, so it is data, not markup |
+| A run or a user's try that needs the session to be proven (`tool_call`, `user_reported`) carries a grey "From the agent's own account" chip (vi "Lời kể của agent") and one line in the Evidence tab counts them | the worker label ("Lời báo cáo của worker") is true only for a `report`; reusing it would mislabel the agent's own word. Same chip shape and colour (`mut`, `circle-help`) as the worker label, so there is one visual idea for "a word, not an output" |
+| A `report` source keeps its worker label on a page with no session | the worker's word is still the worker's word |
+| The session page puts the same note, with its reason, beside the status key of the summary card in the room right of it (`.srow` flex row; warn icon, `text-2` text, at most 52ch, two lines at 1440), so it adds no height: all 8 lanes and their markers stay on a 1440 x 900 screen (a note under the key cost 26 px and pushed lanes 7 and 8 below the fold; on the slogan's row it did not fit either, 290 + 394 px in a 589 px card). The the Outward hint reads "Agent's own counts, not compared with a session; ..." (vi "Số đếm của agent, ...") in place of "Counts only; ...". Each phrase appears once | the page says it once where the numbers are, and a colour is never the only signal; the line uses existing tokens only |
+| The two `.nt` CSS rules are added to the page only when it has no session behind it | a page grounded in a session stays byte-identical to what it was |
+| Quotes, commands and file:line stay off both pages | "Không cần code" |
+
+Screenshots (bundled fixtures with the reason set, 1440 x 900 and 800 x 900): `docs/images/no-transcript/`. Every README and DESIGN image is captured from the README's own render commands (`--no-validate`), after animations end, twice, and kept only when both captures are byte-identical. Tests: `NoSessionLayout` in `tests/test_page_session.py` (last lane's markers end at or above y = 900 and the note adds no height; header height is the same with no reason and with a 200-character one, at 1440 and 800, en and vi).
