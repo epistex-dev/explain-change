@@ -1,0 +1,33 @@
+name: Bug report
+description: Something in explain-change does not work as documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: For a security problem, do not open an issue. Use the private link in SECURITY.md.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps or command to reproduce
+      description: The `collect.py`, `validate.py` or `render.py` command and its output. Remove secrets.
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Release tag or commit
+    validations:
+      required: true
+  - type: input
+    id: harness
+    attributes:
+      label: Harness and OS
+      description: For example Claude Code on Linux, Codex on macOS

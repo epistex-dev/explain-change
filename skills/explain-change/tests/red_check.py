@@ -494,7 +494,7 @@ MUTATIONS += [
      TI + 'Install.test_harness_list_and_repeats_install_each_target_once'),
     ('skill: cold-read gate has a harness-neutral fallback', 'SKILL.md', 'The command in env `EXPLAIN_COLDREAD_CMD`', 'The command in env `COLD`', 'test_manifests.SkillFormat.test_the_steps_do_not_assume_one_harness'),
     ('skill: name matches the folder', 'SKILL.md', 'name: explain-change', 'name: explain', 'test_manifests.SkillFormat.test_frontmatter_follows_the_agent_skills_spec'),
-    ('manifests: one version everywhere', '../../gemini-extension.json', '"version": "0.1.0"', '"version": "0.2.0"', 'test_manifests.Manifests.test_every_manifest_names_the_skill_folder_and_carries_one_version'),
+    ('manifests: one version everywhere', '../../gemini-extension.json', '"version": "0.1.0"', '"version": "0.0.0"', 'test_manifests.Manifests.test_every_manifest_names_the_skill_folder_and_carries_one_version'),
     ('install: re-link is idempotent', IN, 'say ok "$dest (already linked)"; return', 'say ok "$dest (already linked)"', TI + 'Install.test_rerun_is_idempotent_in_both_modes'),
     # ---- session mode, slice B: scratch deletes, worktree repos, the swimlane page
     ('session B: a delete is scratch only when every target is', 'scripts/lib/outward.py', "return bool(paths) and all(_is_scratch(p, cwd) for p in paths)", "return bool(paths) and any(_is_scratch(p, cwd) for p in paths)",
