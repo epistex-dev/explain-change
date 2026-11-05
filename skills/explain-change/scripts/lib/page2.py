@@ -11,6 +11,7 @@ import re
 from html.parser import HTMLParser
 
 from . import arch as archmod
+from .ground import MAX_REASON
 from .i18n2 import STR2, count
 from .transcript import redact
 
@@ -228,6 +229,17 @@ class Builder:
     def sources(obj):
         s = obj.get('source')
         return [x for x in (s if isinstance(s, list) else [s]) if isinstance(x, dict)]
+
+    def own_account(self, obj):
+        """On a page not checked against a session, a run or a user's word that would need the session to be proven rests on the agent's say-so."""
+        s = self.sources(obj)
+        return not self.session_checked and bool(s) and any(x.get('kind') in ('tool_call', 'user_reported') for x in s) and not self.reported_only(obj)
+
+    def reason(self):
+        """The doc's reason for having no transcript, as one short line of text (the validator already holds it to this; an unvalidated doc is cut here)."""
+        r = self.d.get('transcript_unavailable')
+        r = redact(' '.join(r.split())) if isinstance(r, str) else ''
+        return r[:MAX_REASON - 1] + '…' if len(r) > MAX_REASON else r
 
     def reported_only(self, obj):
         s = self.sources(obj)
@@ -454,15 +466,20 @@ class Builder:
         cited = {e.get('evidence_id') for e in self.d['logic'].get('examples') or [] if e.get('evidence_id')}
         ran = ev.get('ran') or []
         nrep = sum(1 for r in ran if self.reported_only(r))
+        nown = sum(1 for r in ran if self.own_account(r))
         out = [self.concl('evidence')]
+        if not self.session_checked and self.reason():  # the full reason lives here, so a long one never changes the header
+            out.append('<p class="hint nt-why">%s</p>' % esc(t['unchecked_why'] + self.reason()))
         if nrep:
             out.append('<p class="hint">%s</p>' % esc(count(t, 'reported_summary', nrep)))
+        if nown:
+            out.append('<p class="hint">%s</p>' % esc(count(t, 'own_summary', nown)))
         out.append('<div class="grp"><h3 class="sec" data-g="ran">%s<span>%s &middot; <span class="cnt">%d</span> %s</span></h3><ul class="list">' % (
             ic('circle-check'), esc(t['ran_h']), len(ran), esc(t['ran_unit'])))
         for i, r in enumerate(ran):
             cls, icon, key = RESULT_CHIP.get(r.get('result'), RESULT_CHIP['mixed'])
-            rep = self.chip('mut', 'circle-help', t['reported']) if self.reported_only(r) else ''
-            note = '<p class="src">%s</p>' % esc(t['reported_note']) if rep else ''
+            rep = self.chip('mut', 'circle-help', t['reported']) if self.reported_only(r) else self.chip('mut', 'circle-help', t['own']) if self.own_account(r) else ''
+            note = '<p class="src">%s</p>' % esc(t['reported_note'] if self.reported_only(r) else t['own_note']) if rep else ''
             out.append('<li class="g-ran card ev %s%s"%s id="ev%d">%s<div><div class="row">%s%s</div><h4>%s</h4><p class="num">%s</p>%s</div></li>' % (
                 {'ok': 'ok', 'bad': 'bad', 'warn': 'warn'}[cls], ' hl' if r.get('id') in cited else '', self.nodes_attr(r), i, ic(icon),
                 self.chip(cls, icon, t[key]), rep, txt(r.get('what')), txt(r.get('detail')), note))
