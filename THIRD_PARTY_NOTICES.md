@@ -8,6 +8,7 @@ The skill bundles these third-party files. Each keeps its own licence.
 | Inter (Latin, Vietnamese subsets) | `skills/explain-change/assets/ui/fonts/` | SIL OFL 1.1 | `skills/explain-change/assets/ui/LICENSES.txt` |
 | JetBrains Mono (Latin subset) | `skills/explain-change/assets/ui/fonts/` | SIL OFL 1.1 | `skills/explain-change/assets/ui/LICENSES.txt` |
 | Lucide icons (inline SVG sprite) | `skills/explain-change/assets/ui/icons.svg` | ISC | `skills/explain-change/assets/ui/LICENSES.txt` |
+| Lucide `file-search` icon (lucide-static 1.68.0, same release as the sprite above; only the flow page inlines it) | `skills/explain-change/assets/ui/flow-icons.svg` | ISC | `skills/explain-change/assets/ui/LICENSES.txt` |
 
 ## Code and test data derived from other projects
 

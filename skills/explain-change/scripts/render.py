@@ -2,7 +2,8 @@
 """Validate explain.json and render index.html next to it (self-contained, works offline).
 
 usage: render.py <explain.json> [--repo PATH] [--out FILE] [--transcript FILE] [--format auto|claude|copilot|codex|opencode|gemini|cursor-cli|cursor-ide] [--arch FILE] [--no-validate] [--text] [--theme ID]
-Schema v1 renders the report page, schema v2 the layout-2 page, explain-session/1 the swimlane page of a whole session (one file, fonts inlined, under 512 KB).
+Schema v1 renders the report page, schema v2 the layout-2 page, explain-session/1 the swimlane page of a whole session, explain-flow/1 the map-first page of a flow of existing code (one file, fonts inlined, under 512 KB).
+A doc with a `kind` that is not explain-flow/1 exits 1 with one line.
 A session theme with a change_doc also gets its v2 page, written next to the session page (<change_doc without .json>.html) and linked from the theme's panel.
 A validation problem prints the same lines as validate.py, writes nothing, exits 1.
 On success prints the absolute path of the page. --text also writes <page>.txt, the words of a v2 page, for the cold-read gate.
@@ -17,7 +18,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lib import arch as archmod  # noqa: E402
-from lib import check2, check_session, collect2, gitio, neutral, page, page2, page_session, transcript  # noqa: E402
+from lib import check2, check_flow, check_session, collect2, gitio, neutral, page, page2, page_flow, page_session, transcript  # noqa: E402
 from validate import load_and_validate  # noqa: E402
 
 
@@ -27,6 +28,16 @@ def v2(path):
             return check2.is_v2(json.load(fh))
     except (OSError, ValueError):
         return False
+
+
+def doc_kind(path):
+    """The `kind` of a doc (flow docs carry one; the change and session docs do not), or None."""
+    try:
+        with open(path, encoding='utf-8') as fh:
+            d = json.load(fh)
+        return d.get('kind') if isinstance(d, dict) else None
+    except (OSError, ValueError):
+        return None
 
 
 def session_doc(path):
@@ -55,6 +66,12 @@ def main(argv=None):
     try:
         here = os.path.dirname(os.path.abspath(a.explain_json))
         out = os.path.abspath(a.out or os.path.join(here, 'index.html'))
+        kind = doc_kind(a.explain_json)
+        if kind is not None and kind != check_flow.KIND:
+            print('error: unknown kind %r; this renderer reads %s' % (kind, check_flow.KIND), file=sys.stderr)
+            return 1
+        if kind == check_flow.KIND:
+            return render_flow(a, out)
         if session_doc(a.explain_json):
             return render_session(a, out)
         if v2(a.explain_json):
@@ -72,6 +89,38 @@ def main(argv=None):
     except (gitio.ExplainError, archmod.ArchError) as e:
         print('error: %s' % e, file=sys.stderr)
         return 2
+
+
+def render_flow(a, out):
+    here = os.path.dirname(os.path.abspath(a.explain_json))
+    commit = date = None
+    if a.no_validate:
+        with open(a.explain_json, encoding='utf-8') as fh:
+            doc = json.load(fh)
+        problems = page_flow.shape_problems(doc)
+        if problems:
+            print('\n'.join(problems))
+            print('not rendered: the doc lacks fields the page needs', file=sys.stderr)
+            return 1
+    else:
+        doc, errs, stats = load_and_validate(a.explain_json, a.repo)
+        if errs:
+            print('\n'.join(errs))
+            print('not rendered: fix the problems above and rerun', file=sys.stderr)
+            return 1
+        commit = doc['commit']
+        date = gitio.git(a.repo or gitio.toplevel(here), 'show', '-s', '--format=%cs', commit).decode('utf-8', 'replace').strip() or None
+    body = page_flow.render(doc, a.theme, commit, date)
+    if len(body.encode('utf-8')) > page2.MAX_BYTES:
+        print('error: page is %d KB, over the %d KB limit of html_preview' % (len(body.encode('utf-8')) // 1024, page2.MAX_BYTES // 1024), file=sys.stderr)
+        return 2
+    with open(out, 'w', encoding='utf-8') as fh:
+        fh.write(body)
+    if a.text:
+        with open(out + '.txt', 'w', encoding='utf-8') as fh:
+            fh.write(page2.page_text(body))
+    print(out)
+    return 0
 
 
 def render_session(a, out):
