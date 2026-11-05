@@ -245,7 +245,8 @@ class Builder:
         cards = ''
         for e in s['errors']:
             self.err_n += 1
-            cards += '<div class="f-err"><h3 class="f-eh"><span class="f-code">E%d</span>%s</h3><p>%s</p></div>' % (self.err_n, txt(e['name']), txt(e['result']))
+            cards += '<div class="f-err" role="group" aria-label="%s"><h3 class="f-eh"><span class="f-code">E%d</span>%s</h3><p>%s</p></div>' % (
+                esc(t['fl_err_id'] % self.err_n), self.err_n, txt(e['name']), txt(e['result']))
         return '<p class="sec">%s</p><div class="list">%s</div>' % (esc(t['fl_wrong']), cards)
 
     def article(self, i):
