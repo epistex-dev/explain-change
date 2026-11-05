@@ -2,18 +2,19 @@
 
     detect(path) -> bool
     default_root() -> path of the harness's official transcript directory
-    find_sessions(cwd, root=None) -> list of transcript paths recorded in cwd
+    find_sessions(cwd, root=None) -> list of transcript references recorded in cwd (a file path; OpenCode's database
+        holds many sessions, so its reference is `<database path>#<session id>`)
     read(path, root=None) -> model.Session
 
 and reads only under the harness's root (after resolving symlinks): a transcript elsewhere raises
-_io.RootError, so an agent cannot ground a claim in a file it wrote itself. The root is a function
+_io.RootError (a store that is corrupt, locked or in another format raises _io.StoreError), so an agent cannot ground a claim in a file it wrote itself. The root is a function
 argument for tests; there is no environment variable or flag that moves it.
 """
-from . import codex, copilot
-from ._io import RootError  # noqa: F401
+from . import codex, copilot, gemini, opencode
+from ._io import RootError, StoreError  # noqa: F401
 from .model import Event, Session, Tool  # noqa: F401
 
-ADAPTERS = {copilot.HARNESS: copilot, codex.HARNESS: codex}
+ADAPTERS = {copilot.HARNESS: copilot, codex.HARNESS: codex, opencode.HARNESS: opencode, gemini.HARNESS: gemini}
 
 
 def get(name):

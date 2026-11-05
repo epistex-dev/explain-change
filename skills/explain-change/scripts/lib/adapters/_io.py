@@ -10,6 +10,10 @@ class RootError(ValueError):
     """A transcript path outside the harness's official root, or not a plain file."""
 
 
+class StoreError(ValueError):
+    """A transcript store (a database or a legacy JSON file) that cannot be read: corrupt, locked, or not the expected format."""
+
+
 def confine(path, root):
     """The real path of `path`, if it lies under the real path of `root`.
 
