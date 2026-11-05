@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-05
+
 ### Added
 - Flow docs: a part may give an `icon` from a fixed list (the sprite icons plus `file-search`) and a step may list `reads`, the parts it takes input from. The map draws its lines from the doc, routed around the cards with clear arrowheads (a line from the Session log to the reader, one two-headed line for parts that hand over to each other); under 1100 px each card says where it hands over instead. A field of the wrong type, or text with a lone surrogate, is one line from `validate.py` and `render.py`, never a traceback.
 - The flow page: `render.py` on an `explain-flow/1` doc writes one offline page (question and summary, counts, numbered route, map of the parts, one panel per step with branches and error exits, all steps in the HTML without JS, `#step-N`, the five themes, `vi` and `en`, a footer naming the checked commit); a doc with an unknown `kind` exits 1 with one line.
@@ -45,5 +47,6 @@ All notable changes to this project are documented here. The format follows
 - Plugin and marketplace manifests for `/plugin marketplace add epistex-dev/explain-change`.
 - Bundled sample doc (`reference/examples/password-autofill.v2.json`) and a red-check script that proves each guard is tested.
 
-[Unreleased]: https://github.com/epistex-dev/explain-change/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/epistex-dev/explain-change/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/epistex-dev/explain-change/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/epistex-dev/explain-change/releases/tag/v0.1.0
