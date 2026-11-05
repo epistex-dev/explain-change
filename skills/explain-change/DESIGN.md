@@ -108,7 +108,7 @@ Edges are orthogonal routes through the gutters. The router is pure (boxes in, p
 
 ## Session page (`explain-session/1`: `scripts/lib/page_session.py`, `assets/ui/session.{css,js}`, `assets/ui/fit.js`)
 
-Case: Extend. The project has a page, `page2.css` carries its tokens, and the request adds a second page that shares them. Reference: the approved mockup `design/mockups/session-mode/2-swimlanes.html` (commit `d0928e5`, branch `mockups/session-mode`) with its `NOTES.md` and `session.css`. The mockup's markers were too small, so the build enlarges them. No web survey was made: the mockup and the existing page answered every gap.
+Case: Extend. The project has a page, `page2.css` carries its tokens, and the request adds a second page that shares them. Reference: the approved swimlanes mockup (not published) with its notes and stylesheet. The mockup's markers were too small, so the build enlarges them. No web survey was made: the mockup and the existing page answered every gap.
 
 | Item | Value |
 | --- | --- |
@@ -136,7 +136,7 @@ Checker rounds (`check.mjs` on the sample page): round 1 at 390, 768 and 1440: 0
 
 ### Colour themes and layout (round 2)
 
-Case: Improve, scope Refresh. The page exists and the user likes its look ("màu ảnh này vẫn đẹp"), so navy stays the default and keeps every value; the request adds themes the reader chooses, in the smooth style of the default and not the first set's (user: "ko thích mấy theme vừa r"). The user picked 4 of 6 prototypes: ocean, plum, graphite, pearl; forest is dropped. Reference: `design/mockups/themes/` on `mockups/themes` (`5cb31bd`) for the colours, `/tmp/explain-change-style-options` opt1 to opt3 (same layout changes) and mockup 2 for the layout. No web survey: the prototypes and the existing page answered every gap.
+Case: Improve, scope Refresh. The page exists and the user likes its look ("màu ảnh này vẫn đẹp"), so navy stays the default and keeps every value; the request adds themes the reader chooses, in the smooth style of the default and not the first set's (user: "ko thích mấy theme vừa r"). The user picked 4 of 6 prototypes: ocean, plum, graphite, pearl; forest is dropped. Reference: the unpublished theme prototypes for the colours, `/tmp/explain-change-style-options` opt1 to opt3 (same layout changes) and mockup 2 for the layout. No web survey: the prototypes and the existing page answered every gap.
 
 | Item | Value |
 | --- | --- |
