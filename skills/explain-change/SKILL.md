@@ -78,4 +78,24 @@ Give the user the absolute path of `index.html` and the validate counts line. Op
 
 Done when the user holds the path and the page is open, or no preview tool exists and you said so.
 
+## 8. Whole session
+
+When the user wants the context of a whole session or of several tasks, not one change, read [references/session-schema.md](references/session-schema.md) and run:
+
+```
+python3 $S/scripts/collect.py --session                         # lists candidate sessions
+python3 $S/scripts/collect.py --session --transcript <file>     # the digest: numbered turns, work between turns, repos, outward actions
+```
+
+Write `session.json` (`explain-session/1`) in a folder of your own (`$RUN_DIR` of any run, or a new one): group the turns and the work into themes a reader would name, give each theme its events with the turn number as `order`, and fill `needs_you`, `decided` and `outward` from the digest (copy its counts, including the `scratch` count of deletes). A theme whose code you explained in a v2 doc gets `change_doc`, a relative path to that doc in the same folder. Ground only what the transcript shows: a delegated worker's own commands are not in it.
+
+```
+python3 $S/scripts/validate.py session.json --transcript <file>
+python3 $S/scripts/render.py session.json --transcript <file> --text
+```
+
+`render.py` writes `index.html` next to the doc, plus one page per `change_doc`, and prints the page path last. The page shows no code, diff or file:line, and it has no risks and no quiz. Done when `validate.py` prints `ok` and you hold the page path.
+
+`render.py --theme <id>` sets the colour theme the session page opens in: `navy` (the default), `ocean`, `plum`, `graphite` or `pearl` (light). An unknown id exits 1 with one line naming the valid ids. The reader can switch the colour scheme with the "Appearance" picker in the page header; the pick is kept in the browser's `localStorage`. The flag changes the session page only; the change pages keep their own look.
+
 Docs with `version` absent or 1 still validate and render with the older report page (`references/explain-schema.md`, top part).

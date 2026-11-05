@@ -105,3 +105,53 @@ Edges are orthogonal routes through the gutters. The router is pure (boxes in, p
 | Known limit: a regex fragment or a synthetic test password in a command is still learned | no shape tells it from a credential; masking it hides test text only |
 | `url` sources count the `url`, `urls` and `query` of fetch, search and preview tools | the agent reads pages through those tools |
 | A user message holding a credential shows in the digest with the value as `[ẩn]` | the agent can still quote the words around it |
+
+## Session page (`explain-session/1`: `scripts/lib/page_session.py`, `assets/ui/session.{css,js}`, `assets/ui/fit.js`)
+
+Case: Extend. The project has a page, `page2.css` carries its tokens, and the request adds a second page that shares them. Reference: the approved mockup `design/mockups/session-mode/2-swimlanes.html` (commit `d0928e5`, branch `mockups/session-mode`) with its `NOTES.md` and `session.css`. The mockup's markers were too small, so the build enlarges them. No web survey was made: the mockup and the existing page answered every gap.
+
+| Item | Value |
+| --- | --- |
+| Subject | The owner reads one page after a whole session, one task or many, and gets the context without reading the code |
+| Primary action | Know in about a minute what is done, what waits on you, what the agent chose alone and what left the working copy |
+| Tiers | 0: a strip (summary with per-theme status segments, Needs you, Agent decided for you, Outward actions). 1: one lane per theme and a side panel. 2: an "Open change page" button when the theme has a `change_doc` |
+| Left out | Code, diffs, file:line, sources, commands, quotes; risks; quiz; any doubt label (no "unchecked" badge when `transcript_unavailable` is set) |
+| Device | Desktop first (1440 x 900); 800 x 900 must work; 390 stays usable |
+| Tokens added | `--mk: 32px` (40px under `pointer: coarse`), `--mk-gap: 8px`, `--lane-h: 56px`; every other value is the page's own |
+
+| Decision | Rationale |
+| --- | --- |
+| Markers are real `button`s of at least 32 px with at least 8 px between them; a marker never touches its neighbour | the user asked for large markers; the same size is a safe tap target on the desktop |
+| `fit.js` places markers on one shared time axis (the turn numbers), with integer positions: push right by one pitch, then pull back from the right edge. A lane with more events than `floor((W + gap) / (mk + gap))` merges its closest neighbours into count bubbles, never into a non-adjacent group | a lane must stay legible at any width and keep the order; integers keep the gap from shrinking to 7 px |
+| A count bubble is a marker too: it selects its range in the panel, highlights those events and says "events a to b of n" | the cluster is not a dead end |
+| Escape closes the panel and returns focus to the marker (or the bubble that now holds it, else the lane header); opening focuses the panel; a relayout that rebuilds the count bubbles finds the opener again (same range, else the bubble that holds it), keeps it pressed and, if it had focus, focused | the keyboard path is the mouse path, and a resize must not drop the selection |
+| At 1000 px and under the panel moves to sit under the selected lane; with no JS the markers wrap and every panel shows | the page stays readable offline and without scripts |
+| The panel opens on its default view (what the agent decided, what went outward); a theme or marker replaces it and Escape, the close button, a nav link or a link to a decided item bring it back | the panel is never an empty box, and the sections that hold the decided and outward facts stay one click away |
+| Each fact is told once: an event only in the panel, a Needs you and a Decided item only in its card; the panel links to them with a chip | the sections are MECE and the page does not repeat itself |
+| Real deletes are outward cards; deletes whose every target is under `/tmp/` or `$TMPDIR` are one collapsed line ("Also N cleanups of temp folders (scratch), not listed") | scratch cleanup is noise, a real delete is not |
+| The "Irreversible on the remote" note from the mockup was dropped | it was not in the doc; the Decided cards already mark each item reversible or not |
+| Page text goes through `plain()`: credentials hidden, backticks dropped, the line number of `file.ext:NN` dropped | the page shows no code or file:line even when a doc line has one |
+
+Checker rounds (`check.mjs` on the sample page): round 1 at 390, 768 and 1440: 0 failures, tap-target WARNs at 390 only (markers 32 px, status chips 26 px, tally 38 px), accepted for a desktop-first page and the 32 px the user asked for; round 2 at 800 and 1440: 0 failures, 0 warnings. Tiles opened at 1440 and 800. Inconsistencies seen and left alone: the v2 page still has "Not checked" and "Inferred" labels (the session page has none).
+
+### Colour themes and layout (round 2)
+
+Case: Improve, scope Refresh. The page exists and the user likes its look ("màu ảnh này vẫn đẹp"), so navy stays the default and keeps every value; the request adds themes the reader chooses, in the smooth style of the default and not the first set's (user: "ko thích mấy theme vừa r"). The user picked 4 of 6 prototypes: ocean, plum, graphite, pearl; forest is dropped. Reference: `design/mockups/themes/` on `mockups/themes` (`5cb31bd`) for the colours, `/tmp/explain-change-style-options` opt1 to opt3 (same layout changes) and mockup 2 for the layout. No web survey: the prototypes and the existing page answered every gap.
+
+| Item | Value |
+| --- | --- |
+| Themes | `navy` (default, `:root` of `page2.css`), `ocean`, `plum`, `graphite`, `pearl` (light). Each is one `[data-theme="id"]` block at the end of `session.css` that overrides the same custom properties |
+| Hard-coded colours | every literal in the rules became a property: `--glow-a/-b` (body glows), `--ok-rgb`, `--accent-rgb`, `--bad-rgb`, `--ui-rgb`, `--ring-rgb` (used as `rgba(var(--x-rgb),a)`), `--on-fill` (white on fills), `--kdot-ring` and `--mk-ring` (ring strength; pearl 85%). A test fails on any `#hex` or `rgba(` outside `:root` and the theme blocks |
+| Navy fidelity | computed colour, background, shadow and border of 56 selectors compared old and new on the sample page: no difference except elements that moved (first `.dec`, the lane that is no longer pre-selected) and new ones |
+| Contrast (measured from the tokens, `tests/test_themes.py`) | min text / min status text / min ring: navy 4.98 / 4.87 / 3.32, ocean 6.07 / 4.85 / 3.29, plum 5.75 / 4.87 / 3.26, graphite 4.85 / 4.77 / 3.41, pearl 5.59 / 5.20 / 4.73. White on the accent and green fills is 4.79 or more in every theme. Text is measured on the surface, raised, highlight and the page gradient; a status ring is its colour at the ring alpha over the surface |
+| Picker | a native `<select>` labelled "Giao diện" / "Appearance" in the header (visible text, keyboard and screen reader for free); hidden without JS because it would do nothing |
+| Storage and first paint | key `explain-change-theme`. A script in `<head>`, before the style and the body, sets `data-theme` from the stored value (only if it is a known id) or the baked default; the read and the write sit in `try/catch`, so a blocked storage keeps the default and raises nothing |
+| `--theme ID` | sets the baked default (`<html data-theme>` and the selected option); an unknown id exits 1 with one line naming the valid ids |
+| The attribute name | the page already used `data-theme` for the links to a lane (a work theme); those are now `data-lane`, so `html[data-theme]` means the colour theme only. In English the page copy keeps "theme" for the lane and calls the colour scheme "Appearance"; Vietnamese says "Giao diện" |
+| Layout | band: summary with a count per status (the per-theme segments repeated each lane's status chip) next to Needs you in three columns. Below: lanes (210 px name column, 56 px rows) and a 380 px panel. 8 lanes fit a 1440 x 900 screen. The panel's default view holds Decided (irreversible choices always listed, reversible ones in an accordion) and Outward (accordion, open). Under 1000 px the band stacks and the panel goes under the selected lane, or at the end when none is selected |
+| Landmarks | `header` (brand, title, nav, picker), `nav` (links to Needs you, Journey, Decided, Outward: the last two live in the panel, so a link to them closes the open theme first), `main` |
+| Tap targets at 390 px | nav links, the picker and the accordion summary are 44 px there; the 32 px markers stay (the user asked for large markers on a desktop-first page) |
+
+Content structure (rubric item 8), sample page: sources needs_you 3, decided 6, outward 5 kinds (plus a count of scratch deletes), themes 8 with 28 events. Page: 3 Needs you cards (band), 6 decided rows (panel, default view), 5 outward cards (panel, default view), 8 lanes with 28 markers, 8 theme sections with 28 events (panel, on selection). Each section answers one question: what waits on me (Needs you), what happened per work theme (Journey), what did the agent choose alone (Decided), what left my machine (Outward). A needs-you or decided item is told in full once; a theme section links to it with a chip instead of repeating it. Each section opens with its conclusion as the h2. The concept names are fixed: theme (a work theme), event, marker (its lane glyph), count bubble (a group of markers), colour theme only in the picker.
+
+Checker (`check.mjs`, 390 / 800 / 1440 px) on the sample page rendered in each theme: 0 failures in all five; the WARNs left are tap targets under 44 px at 390 px (markers 32 px, theme chips 26 px, lane headers 28 px) and "text over a gradient, check visually" notes, which the token measurement above covers. Tiles opened for every theme at 1440 and for navy and pearl at 390 and 800. Screenshots: `docs/images/themes/`.
