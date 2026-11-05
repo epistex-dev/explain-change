@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Validate explain.json and render index.html next to it (self-contained, works offline).
 
-usage: render.py <explain.json> [--repo PATH] [--out FILE] [--transcript FILE] [--arch FILE] [--no-validate] [--text] [--theme ID]
+usage: render.py <explain.json> [--repo PATH] [--out FILE] [--transcript FILE] [--format auto|claude|copilot|codex|opencode|gemini|cursor-cli|cursor-ide] [--arch FILE] [--no-validate] [--text] [--theme ID]
 Schema v1 renders the report page, schema v2 the layout-2 page, explain-session/1 the swimlane page of a whole session (one file, fonts inlined, under 512 KB).
 A session theme with a change_doc also gets its v2 page, written next to the session page (<change_doc without .json>.html) and linked from the theme's panel.
 A validation problem prints the same lines as validate.py, writes nothing, exits 1.
@@ -17,7 +17,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lib import arch as archmod  # noqa: E402
-from lib import check2, check_session, collect2, gitio, page, page2, page_session, transcript  # noqa: E402
+from lib import check2, check_session, collect2, gitio, neutral, page, page2, page_session, transcript  # noqa: E402
 from validate import load_and_validate  # noqa: E402
 
 
@@ -43,6 +43,7 @@ def main(argv=None):
     ap.add_argument('--repo')
     ap.add_argument('--out')
     ap.add_argument('--transcript')
+    ap.add_argument('--format', default='auto', choices=neutral.CHOICES, help='transcript format (default: detected from the file)')
     ap.add_argument('--arch')
     ap.add_argument('--no-validate', action='store_true')
     ap.add_argument('--text', action='store_true')
@@ -85,10 +86,10 @@ def render_session(a, out):
             return 1
         learn_from = a.transcript or doc.get('transcript')
         if isinstance(learn_from, str) and learn_from:
-            transcript.learn(learn_from)  # an archived doc is still kept clear of the session's credentials
+            transcript.learn(learn_from, a.format)  # an archived doc is still kept clear of the session's credentials
         print('warning: not validated (--no-validate); nothing was checked against the transcript', file=sys.stderr)
     else:
-        errs, stats = check_session.validate(doc, a.transcript, base_dir=here)
+        errs, stats = check_session.validate(doc, a.transcript, base_dir=here, fmt=a.format)
         if errs:
             print('\n'.join(errs))
             print('not rendered: fix the problems above and rerun', file=sys.stderr)
@@ -101,7 +102,7 @@ def render_session(a, out):
         if not cd:
             continue
         name = page_session.change_page_name(cd)
-        sub = argparse.Namespace(explain_json=os.path.join(here, cd), repo=a.repo, out=os.path.join(os.path.dirname(out), name), transcript=None,
+        sub = argparse.Namespace(explain_json=os.path.join(here, cd), repo=a.repo, out=os.path.join(os.path.dirname(out), name), transcript=None, format=a.format,
                                  arch=a.arch, no_validate=a.no_validate, text=a.text)
         try:
             code = render_v2(sub, sub.out)
@@ -136,13 +137,13 @@ def render_v2(a, out):
             return 1
         learn_from = a.transcript or doc.get('transcript')
         if isinstance(learn_from, str) and learn_from:
-            transcript.learn(learn_from)  # an archived doc is still kept clear of the session's credentials
+            transcript.learn(learn_from, a.format)  # an archived doc is still kept clear of the session's credentials
         print('warning: not validated (--no-validate); nothing was checked against git or the transcript', file=sys.stderr)
         arch = archmod.Architecture(a.arch) if a.arch else None
         repo = a.repo
     else:
         from validate import load_and_validate as lv
-        doc, errs, stats = lv(a.explain_json, a.repo, a.transcript)
+        doc, errs, stats = lv(a.explain_json, a.repo, a.transcript, a.format)
         if errs:
             print('\n'.join(errs))
             print('not rendered: fix the problems above and rerun', file=sys.stderr)

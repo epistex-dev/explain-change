@@ -21,9 +21,9 @@ def is_session(doc):
     return isinstance(doc, dict) and doc.get('schema') == SCHEMA
 
 
-def validate(doc, transcript_path=None, base_dir=None):
+def validate(doc, transcript_path=None, base_dir=None, fmt='auto'):
     """base_dir: the folder a theme's change_doc is relative to (the doc's own folder)."""
-    errs, stats = _validate(doc, transcript_path, base_dir)
+    errs, stats = _validate(doc, transcript_path, base_dir, fmt)
     return [transcript.redact(e) for e in errs], stats
 
 
@@ -31,7 +31,7 @@ def _is_int(v):
     return isinstance(v, int) and not isinstance(v, bool)
 
 
-def _validate(doc, transcript_path, base_dir):
+def _validate(doc, transcript_path, base_dir, fmt='auto'):
     errs, warns = [], []
     stats = {'kind': 'session', 'warnings': warns}
 
@@ -63,7 +63,7 @@ def _validate(doc, transcript_path, base_dir):
     tpath, tfiles = doc.get('transcript') if transcript_path is None else transcript_path, {}
     if isinstance(tpath, str) and tpath:
         try:
-            tpath = transcript.safe_path(tpath)
+            tpath = transcript.safe_path(tpath, fmt)
             tfiles = transcript.session_files(tpath)
             transcript.learn(tpath)  # a bare occurrence of a credential the session shows is then hidden and refused everywhere
         except gitio.ExplainError as e:  # : outside ~/.claude/projects or not a file
@@ -268,7 +268,7 @@ def _validate(doc, transcript_path, base_dir):
     if tpath:
         for path, qs, by_hand in done_runs:
             if not by_hand and ground.only_errors(qs):
-                err(path + '.kind', '"done" rests on tool calls whose result is an error (is_error); an errored run cannot back a done (use blocked, or redirected)')
+                err(path + '.kind', ground.backing_error(qs, 'done') or '"done" rests on tool calls whose result is an error (is_error); an errored run cannot back a done (use blocked, or redirected)')
     stats['verified_in_transcript'] = sum(1 for q, _ in queries if q.found)
     stats['reported'] = grd.reported
     stats['inferred'] = len(inferred)

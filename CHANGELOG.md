@@ -7,6 +7,9 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- `collect.py`, `validate.py` and `render.py` take a transcript of Copilot CLI, Codex, OpenCode, Gemini CLI, Cursor CLI or Cursor IDE, for change docs and session docs. `--transcript` detects the format; `--format auto|claude|copilot|codex|opencode|gemini|cursor-cli|cursor-ide` names it, and a file in none of them and outside every harness folder exits 1 with one line naming the formats (a directory exits 2). `collect.py` lists the sessions of the repo's folder labelled by harness.
+- A shell call whose output or exit code a harness did not record has an unknown result: it cannot back a `passed` run or a `done`, and the validator says why. Text a harness injected into the user channel never matches a request quote.
+- A README and `SKILL.md` table of the supported harnesses and their transcript folders, kept equal to the readers by a test.
 - Transcript readers for GitHub Copilot CLI, Codex, OpenCode (database and JSON tree), Gemini CLI, Cursor CLI and Cursor IDE, each limited to its harness's own transcript folder, with fixtures, guards in the red check, and sharded, time-limited `red_check.py` runs.
 - Five colour themes for the session page (navy, ocean, plum, graphite, pearl), an "Appearance" picker in its header that remembers the pick in `localStorage`, and `render.py --theme <id>` to set the theme the page opens in. An unknown id exits 1 with one line naming the valid ids.
 - Session mode: `explain-session/1` docs, `collect.py --session`, and a swimlane page (`render.py` on a session doc) with a strip, one lane per theme, a side panel and a link to each theme's change page. Real deletes show as outward actions; deletes under `/tmp/` or `$TMPDIR` show as one count line. A worktree made by `git worktree add` in the transcript counts as its repo.

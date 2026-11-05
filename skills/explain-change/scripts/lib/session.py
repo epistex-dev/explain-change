@@ -26,6 +26,7 @@ class Scan:
         self.outward = []  # (turn, kind, label, tid, scratch), in turn order
         self.warnings = []
         self.calls = 0
+        self.unknown_outward = 0  # outward actions whose result the harness did not record (counted: the command ran)
 
     def counts(self):
         return collections.Counter(o[1] for o in self.outward)
@@ -55,8 +56,7 @@ class Scan:
         return out, folded
 
 
-def _ts(rec):
-    t = rec.get('timestamp')
+def _ts(t):
     return t if isinstance(t, str) else ''
 
 
@@ -70,20 +70,20 @@ def scan(main_path):
         st = transcript.Stats()
         pending = {}  # tool_use id -> (turn, [(kind, label)])
         turn = 0
-        for rec in transcript.records(files[tid], st):
-            ts = _ts(rec)
-            for kind, text, extra in transcript.parts(rec):
-                if tid == 'main' and kind == 'user':
-                    turn += 1
-                    stamps.append(ts)
-                    sc.users.append((turn, ts, _excerpt(text, USER_CLIP)))
-                elif kind == 'tool_use':
-                    at = turn if tid == 'main' else bisect.bisect_right(stamps, ts) if ts else 0
-                    _call(sc, tid, at, ts, extra, pending, rec.get('cwd'))
-                elif kind == 'tool_result' and extra and extra[0] in pending:
-                    at, acts = pending.pop(extra[0])
-                    if not outward.failed(extra[1], text[:64]):
-                        sc.outward += [(at, a[0], a[1], tid, getattr(a, 'scratch', False)) for a in acts]
+        for stamp, cwd, kind, text, extra in transcript.iter_parts(files[tid], st):
+            ts = _ts(stamp)
+            if tid == 'main' and kind == 'user':
+                turn += 1
+                stamps.append(ts)
+                sc.users.append((turn, ts, _excerpt(text, USER_CLIP)))
+            elif kind == 'tool_use':
+                at = turn if tid == 'main' else bisect.bisect_right(stamps, ts) if ts else 0
+                _call(sc, tid, at, ts, extra, pending, cwd)
+            elif kind == 'tool_result' and extra and extra[0] in pending:
+                at, acts = pending.pop(extra[0])
+                if not outward.failed(extra[1], text[:64]):
+                    sc.outward += [(at, a[0], a[1], tid, getattr(a, 'scratch', False)) for a in acts]
+                    sc.unknown_outward += len(acts) if len(extra) > 2 and extra[2] else 0
         w = st.warning('transcript %s' % tid)
         if w:
             sc.warnings.append(w)
@@ -127,14 +127,13 @@ def quote_turns(main_path, needles):
     """{needle: [user turn numbers whose text holds it]} for the user-typed text of the main transcript (one streaming pass)."""
     want = {transcript.norm(n): [] for n in needles if isinstance(n, str)}
     turn = 0
-    for rec in transcript.records(main_path, transcript.Stats()):
-        for kind, text, _ in transcript.parts(rec):
-            if kind == 'user':
-                turn += 1
-                n = transcript.norm(text)
-                for q, hits in want.items():
-                    if q and q in n:
-                        hits.append(turn)
+    for _, _, kind, text, _ in transcript.iter_parts(transcript.session_files(main_path)['main'], transcript.Stats()):
+        if kind == 'user':
+            turn += 1
+            n = transcript.norm(text)
+            for q, hits in want.items():
+                if q and q in n:
+                    hits.append(turn)
     return {n: want[transcript.norm(n)] for n in needles if isinstance(n, str)}
 
 
@@ -173,6 +172,8 @@ def digest(main_path):
     scratch = [o for o in sc.outward if o[4]]
     if scratch:
         out.append('  + %d scratch delete(s), u%d..u%d, counted below, not listed (every target under /tmp/ or $TMPDIR)' % (len(scratch), scratch[0][0], scratch[-1][0]))
+    if sc.unknown_outward:
+        out.append('  %d of these ran with no result recorded by the harness; they are counted because the command ran' % sc.unknown_outward)
     out.append('  totals: ' + (', '.join('%s %d' % (k, counts[k]) for k in outward.KINDS if counts[k]) or 'none'))
     if scratch:
         out.append('  delete %d = %d real + %d scratch: write {"kind": "delete", "count": %d, "scratch": %d, ...}' % (

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Check explain.json: schema, file coverage, and that every cited snippet really occurs in the code.
 
-usage: validate.py <explain.json> [--repo PATH] [--transcript FILE]
+usage: validate.py <explain.json> [--repo PATH] [--transcript FILE] [--format auto|claude|copilot|codex|opencode|gemini|cursor-cli|cursor-ide]
 Schema v1 (version absent or 1), v2 (version 2) and explain-session/1 (a whole session; see references/session-schema.md) are checked; v2 also grounds quotes and tool calls in the session
-transcript (a file under ~/.claude/projects; the doc's "transcript" field is used when the flag is absent).
+transcript (a file under ~/.claude/projects, or a session of Copilot CLI, Codex, OpenCode, Gemini CLI or Cursor under that harness's own folder; the
+format is detected unless --format names it; the doc's "transcript" field is used when the flag is absent).
 Prints one `path: reason` line per problem (exit 1), or `ok` plus per-section counts (exit 0).
 """
 import argparse
@@ -12,10 +13,10 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from lib import check, check_session, gitio  # noqa: E402
+from lib import check, check_session, gitio, neutral  # noqa: E402
 
 
-def load_and_validate(path, repo=None, transcript=None):
+def load_and_validate(path, repo=None, transcript=None, fmt='auto'):
     try:
         with open(path, encoding='utf-8') as fh:
             doc = json.load(fh)
@@ -23,10 +24,10 @@ def load_and_validate(path, repo=None, transcript=None):
         return None, ['$: cannot read %s: %s' % (path, e)], {}
     here = os.path.dirname(os.path.abspath(path))
     if check_session.is_session(doc):  # a whole-session doc has no repo and no git range
-        errs, stats = check_session.validate(doc, transcript, base_dir=here)
+        errs, stats = check_session.validate(doc, transcript, base_dir=here, fmt=fmt)
         return doc, errs, stats
     repo = repo or gitio.toplevel(here)
-    errs, stats = check.validate(doc, repo, transcript, scope=read_scope(here, repo))
+    errs, stats = check.validate(doc, repo, transcript, scope=read_scope(here, repo), fmt=fmt)
     return doc, errs, stats
 
 
@@ -71,9 +72,10 @@ def main(argv=None):
     ap.add_argument('explain_json')
     ap.add_argument('--repo')
     ap.add_argument('--transcript')
+    ap.add_argument('--format', default='auto', choices=neutral.CHOICES, help='transcript format (default: detected from the file)')
     a = ap.parse_args(argv)
     try:
-        _, errs, stats = load_and_validate(a.explain_json, a.repo, a.transcript)
+        _, errs, stats = load_and_validate(a.explain_json, a.repo, a.transcript, a.format)
     except gitio.ExplainError as e:
         print('error: %s' % e, file=sys.stderr)
         return 2
