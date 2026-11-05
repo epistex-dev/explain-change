@@ -1395,6 +1395,8 @@ MUTATIONS += [
      FP + 'Language.test_both_languages_have_every_key_and_the_page_shows_none_raw'),
     ('flow page: the route marks the current step', PF, """' aria-current="step"' if i == 0 else ''""", "''",
      FP + 'Landmarks.test_landmarks_and_the_current_step'),
+    ('flow page: dark themes put dark text on the red error code', 'assets/ui/flow.css', 'html[data-theme="midnight"] .f-code,', '',
+     FP + 'ErrorCodeContrast.test_text_on_the_bad_fill_is_4_5_to_1_in_every_theme'),
     ('flow page: the session page stays byte-identical', PS, '<a class="skip" href="#journey">', '<a class="skip" href="#main">',
      FP + 'Contract.test_existing_pages_render_byte_identical_html'),
     ('flow page: the change page stays byte-identical', P2, """'<article class="%s" data-id="%s" data-real""", """'<article class="%s" data-id="%s" data-x="1" data-real""",

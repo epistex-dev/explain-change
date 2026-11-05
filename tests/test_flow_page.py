@@ -15,6 +15,7 @@ sys.path.insert(0, HERE)
 from test_flow import FlowCase, src  # noqa: E402  (puts scripts/ on sys.path)
 from lib import page_flow, themes  # noqa: E402
 from lib.i18n2 import STR2  # noqa: E402
+from test_themes import blocks, ratio, rgb  # noqa: E402
 
 SKILL = os.path.join(os.path.dirname(HERE), 'skills', 'explain-change')
 RENDER = os.path.join(SKILL, 'scripts', 'render.py')
@@ -288,6 +289,36 @@ class Contract(unittest.TestCase):
                 self.assertEqual(p.returncode, 0, p.stderr)
                 with open(out, 'rb') as fh:
                     self.assertEqual(hashlib.sha256(fh.read()).hexdigest(), pin, name)
+
+
+class ErrorCodeContrast(unittest.TestCase):
+    """The `E1` code on the red `--bad` pill of an error card is read at 4.5:1 or better in every theme (the dark themes need a dark text on their light red)."""
+
+    def css(self):
+        with open(os.path.join(SKILL, 'assets', 'ui', 'flow.css'), encoding='utf-8') as fh:
+            return fh.read()
+
+    def pill(self, css, theme):
+        """(text, fill) token names of `.f-code` in `theme`: the base rule, then a rule that names this theme wins."""
+        text = fill = None
+        for sel, body in re.findall(r'([^{}]*\.f-code[^{}]*)\{([^}]*)\}', css):
+            names = [x.strip() for x in sel.split(',')]
+            m = re.search(r'(?:^|;)color:var\(--([\w-]+)\)', body)
+            if m and ('.f-code' in names and text is None or 'html[data-theme="%s"] .f-code' % theme in names):
+                text = m.group(1)
+            m = re.search(r'(?:^|;)background:var\(--([\w-]+)\)', body)
+            if m and '.f-code' in names:
+                fill = m.group(1)
+        return text, fill
+
+    def test_text_on_the_bad_fill_is_4_5_to_1_in_every_theme(self):
+        css, tokens = self.css(), blocks()
+        for theme in themes.THEMES:
+            text, fill = self.pill(css, theme)
+            self.assertEqual(fill, 'bad', theme)
+            t = {**tokens['navy'], **tokens[theme]}  # a theme block overrides the :root (navy) tokens
+            got = ratio(rgb(t['--' + text])[0], rgb(t['--' + fill])[0])
+            self.assertGreaterEqual(got, 4.5, '%s: --%s on --%s is %.2f:1' % (theme, text, fill, got))
 
 
 if __name__ == '__main__':
