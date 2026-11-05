@@ -1,62 +1,71 @@
 # explain-change intro clip
 
-One 30 s clip, 1280x720, English, pearl palette (the README images use pearl too). It is a fixed timeline: every animation is a paused Web Animation and `window.seek(ms)` sets them all, so a re-record is identical.
+30 s, 1280x720, 30 fps, English, dark navy ("style A"). Built with [HyperFrames](https://github.com/heygen-com/hyperframes) 0.9.15: `index.html` is one composition with one paused, seekable GSAP timeline, so every render is identical. Design record: [DESIGN.md](DESIGN.md).
 
 | Time | Scene |
 |---|---|
-| 0.0-2.4 s | Hook: "Session in. One checked page out." |
-| 2.0-13.65 s | How it works: 7 harness chips flow into Transcript; Transcript + Code diff become Doc; Doc goes through Checks (Quotes, Tool calls, Secrets masked); the result is one page |
-| 13.55-17.8 s | Chart 1: one day, eight pieces of work (timeline bars) |
-| 17.75-21.85 s | Chart 2: 28 events by kind, and the two counts the agent made on its own |
-| 21.8-26.0 s | The real pearl page: two windows onto the bundled screenshot |
-| 25.85-29.85 s | End card: slogan, icon, `github.com/epistex-dev/explain-change` |
+| 0.0-3.4 s | Hook: "Session in. One checked page out." |
+| 3.1-13.3 s | Flow: 7 harness chips, Transcript + Code diff, Doc, Checks (Quotes, Tool calls, Secrets masked), One page; tilted plane, camera pans along it |
+| 12.9-14.4 s | The camera dives into the One page card |
+| 13.7-18.9 s | Chart: 8 themes with their status colour and icon, legend |
+| 18.9-23.9 s | The real session page (navy): journey lanes, 4 counts |
+| 23.7-27.7 s | The real page: "Agent decided for you" and "Outward actions", the count 10 |
+| 27.5-30.0 s | End card |
 
-## Re-record
+## Re-render
 
 ```bash
-# needs node >= 22, chromium and ffmpeg
-systemd-run --user --scope -p MemoryMax=3G -- node docs/intro/record.mjs /tmp/explain-change-intro/out
-# -> intro.mp4, intro.gif, intro-poster.png in that folder; copy them to docs/media/ and docs/images/
+# needs node >= 22, ffmpeg, avifenc (libavif); installs hyperframes@0.9.15 and gsap under <workdir>/tools, nothing global
+bash docs/intro/render.sh /tmp/explain-change-intro        # -> /tmp/explain-change-intro/out/intro.mp4, intro.webp, intro.avif (GIF=1 adds intro.gif)
+cp /tmp/explain-change-intro/out/intro.mp4 docs/media/intro.mp4
+cp /tmp/explain-change-intro/out/intro.webp /tmp/explain-change-intro/out/intro.avif docs/images/
 ```
 
-`build.mjs` inlines the fonts, icons and `docs/images/themes/pearl-1440x900.png` into one HTML file (default `<tmp>/explain-change-intro/intro.html`). Open it in a browser to see the live loop, or add `?at=<ms>` to freeze one frame. `SHOTS=1000,5000` writes single PNGs instead of the video. `record.mjs` stops when another headless browser is running.
+`render.sh` stops (retry later) if less than 4 GB is free or another headless Chromium runs, builds `data.js` from the sample (`build.mjs`), stages a project (`stage.mjs`: inlines the icon sprite, copies assets and GSAP), runs `hyperframes lint`, renders with one worker under `systemd-run -p MemoryMax=3G` (about 30 s) and encodes the mp4 (H.264, CRF 18, `+faststart`) and the animated WebP. GSAP is not committed (its licence is not open source). Open a staged `index.html?at=<seconds>` in a browser to freeze one frame.
 
-## Data (only bundled samples, never a real session)
+The three crops in `assets/page/` come from the real page: render the sample with `render.py --theme navy --no-validate`, then `crops.mjs` (needs puppeteer-core and Chromium; see its header). They are committed, so a normal re-render does not need it.
 
-Source file: `skills/explain-change/reference/examples/portal-day.session.json` (`schema explain-session/1`, synthetic). Each number below was counted from it by script.
+## Data (only the bundled sample, never a real session)
+
+Source file: `skills/explain-change/reference/examples/portal-day.session.json` (`explain-session/1`, synthetic). `build.mjs` reads it and writes `data.js`; the crops are rendered from the same file.
 
 | On screen | Value | Source field |
 |---|---|---|
-| Lanes, 8 | Report design ... UI + tagline | `themes[].title` (shortened: "Library repo" etc.) |
-| Lane extent | e.g. Report design 1-3, Library repo 14-18 | min and max of `themes[].events[].order` |
-| Bars by kind | Done 8, Outward 7, Asked 4, Decided 3, Blocked 3, Redirected 2, In progress 1 | count of `themes[].events[].kind` |
-| 28 events | 28 | number of events over all themes |
-| Agent decided for you | 6 | `len(decided)` |
+| 8 theme names (chart, journey) | Export report design, Test credential leak, CI runner outage, Saved-login fix and 6 small fixes, Cleanup, Config backup, Library repo, UI evaluation and tagline | `themes[].title`, unshortened |
+| Status colour, icon, name | Done, Done, needs you, Done by you, In progress | `themes[].status` (names from `scripts/lib/i18n2.py`) |
+| Bars 4, 3, 2, 2, 3, 5, 6, 3 | events per theme | `len(themes[].events)` |
+| Legend 5, 1, 1, 1 | Done, Done needs you, Done by you, In progress | count of `themes[].status` |
+| 28 events | 28 | sum of `len(themes[].events)` |
+| 8 themes | 8 | `len(themes)` |
+| 3 hit a blocker, 2 redirected | 3, 2 | count of `events[].kind` = `blocked`, `redirected` |
+| 6 choices made for you (card label "decided for you") | 6 | `len(decided)` |
 | 1 cannot be undone | 1 | `decided[]` with `reversible: false` |
-| Outward actions | 10 | sum of `outward[].count` (2 repos, 2 pushes, 2 force pushes, 1 history rewrite, 3 deletes) |
+| 10 outward actions | 10 | sum of `outward[].count` (2 + 2 + 2 + 1 + 3) |
 | 5 kinds | 5 | `len(outward)` |
-| 2 force pushes | 2 | `outward[kind=force_push].count` |
-| 7 harnesses | 7 | the README harness table, one row per transcript reader (a test keeps the table equal to the readers) |
-| Real page: "8 themes, 28 events; 3 hit a blocker, 2 were redirected" | as in the image | `docs/images/themes/pearl-1440x900.png`, rendered from the same file |
+| 8 on the list, 2 temp-folder cleanups | 8, 2 | `outward[].count` minus `outward[].scratch`, and `scratch` (the page prints "Also 2 cleanups of temp folders") |
+| 7 harnesses | 7 | the README harness table, one row per transcript reader |
+| Real-page crops | as on the page | rendered from the file above, navy theme |
 
-The small dots inside the "One page" card of the flow scene are decorative marks in the page's own marker style; they carry no data.
+The dots in the "One page" card are the 8 themes in their status colours. No frame shows code, a diff or a file path, and none of the sample's caveat lines: the crops cut the page's hint lines, and the summary card (with the sample note) never enters a frame.
 
-## Decisions
+## Format of the README image: animated AVIF with an animated WebP fallback
 
-- **One palette.** `src/lib.css` holds the pearl values copied from `[data-theme=pearl]` in `skills/explain-change/assets/ui/page2.css`.
-- **No code, no unchecked wording.** No frame shows code, a diff or file:line. The page screenshot is cropped (below) so the summary card, with its sample note, never enters the frame, and the right window stops above the panel's one-line note about the agent's own counts. Checked on frames at 21.8, 22.5, 24.5 and 25.2 s.
-- **Real page scene.** Two windows cut from the screenshot: the journey lanes (x 44-1000, y 262-900) and the "Agent decided for you" / "Outward actions" panel (x 1016-1396, y 262-586). The zoom is 3-5 % about a point chosen so nothing is cut off; a bigger zoom clipped the first legend icon. At 800 px the page text is small: two 30 px captions say what each window is for.
-- **Charts (web-ui-design dataviz rules).** Bars start at 0 and are sorted by value and direct-labelled; the 7 kinds are bars, not a donut (a donut is for 5 slices or fewer). Kind colours always carry an icon and a word. Day bars show no invented clock times: the axis says Earlier / Later, like the page. The one in-progress theme is a dashed outline, the page's own way to mark unfinished.
-- **Motion (web-ui-design motion rules).** Entrances use a strong ease-out, things that move on screen use ease-in-out. Scenes hand off one after the other: the next fades in as the last finishes fading out (0.05-0.2 s overlap), so no frame shows two scenes at once and there is no ghosting in the video or the GIF. Rare delight only: pop-ins, drawn check marks and counters are on the first viewing of each scene, nothing loops.
-- **Pacing.** Flow captions stay on screen for at least 1.5 s each; the end card holds about 2 s after it finishes building. `prefers-reduced-motion` does not apply: this is a video.
-- **GIF.** 800 px wide, 12 fps, rendered natively (not scaled down) from a flat variant (`?gif`: no dot grid, soft shadows or blur). It is packed with ffmpeg: one 256-colour palette for the whole clip and a lossless frame diff. `gifski` was tried first and left a faint ghost of the old scene in every cross-fade (its lossy diff keeps pixels that changed only a little, and a fade changes them a little at a time), also at quality 100; per-frame palettes in ffmpeg were 7.5 MB. Checked by reading GIF frames around all five hand-offs. Frames of the slow zoom are held 3 at a time to stay small. The recorder tries 10, 8 and 6 fps only when the file is over 3 MB (now 2.4 MB at 12 fps).
+All at 800 px wide, 15 fps, from the same mp4. The blocks were judged in the T3 browser (Chromium with its normal renderer) on a local page showing the same `<img>` at 100% zoom, the dark-glow region cropped and brightened to expose blocks; the first row of the table is what a reviewer saw on the README.
 
-## web-ui-design check (`scripts/check.mjs`)
+| Format | Settings | Size | Dark purple glow, in a real browser |
+|---|---|---|---|
+| WebP (v1) | quality 76, grain 2 | 4.25 MB | 8 px blocks: rejected |
+| WebP | quality 90 | 6.66 MB | smooth, a few speckles (decoded with PIL) |
+| WebP | quality 90, 720 px | 5.83 MB | slight blocks left: rejected |
+| WebP | quality 92 | 8.06 MB | smooth, but over 8 MB |
+| WebP | quality 94, 12 fps | 7.71 MB | smooth, faint horizontal banding |
+| WebP | quality 95 | 10.2 MB | smooth, too big |
+| WebP | quality 85 / 90, grain 3 to 4 | 9.1 / 11.8 MB | smooth, too big (grain costs bytes) |
+| **WebP (fallback, used)** | quality 91, compression 6 | 7.60 MB | smooth |
+| AVIF | libavif `--min 18 --max 30` | 0.42 MB | smooth with faint contour rings |
+| AVIF | `--min 12 --max 22` | 0.65 MB | faint contour rings |
+| AVIF | `--min 6 --max 16` | 1.12 MB | glow smooth, but 32 px blocks in the near-black first frames on the GitHub README: rejected |
+| **AVIF (used)** | libavif `--min 0 --max 8`, speed 6 | 3.87 MB | smooth in the glows and in the first frames, no blocks |
+| GIF | 12 fps 256 colours / 10 fps 128 / 5 fps 48 | 24.9 / 13.1 / 4.93 MB | too big, or bands into contour rings at 5 fps |
 
-Run on frames at 1.1, 12.4, 17.3, 21.2, 24.0 and 29.5 s (`?at=<ms>`), tiles opened at 390, 768 and 1440 px.
-
-- **1440 px: the frame.** Clean: nothing clipped, no overlap, all text readable. The one reported item is a 7 px sideways scroll, the fixed 1280x720 canvas inside a 1440 px window (it is cut off by the recorder).
-- **390 and 768 px: not applicable.** The clip is a fixed 1280x720 canvas that is recorded, not a responsive page, so the reported viewport meta tag, sideways overflow and reflow findings do not apply. Tap targets, keyboard focus and the performance budget do not apply to a video either.
-- **Contrast notes ("text over a gradient, check visually").** Checked on the tiles: body text is `--text` / `--text-2` / `--text-3` of pearl on near-white (4.5:1 or better, per page2.css); bars are the page's own kind colours.
-- **WARN clipped on the two page windows** is intended: they are crops.
-- Readability at 640 px wide: chart labels, captions and counts are 24 px or larger on the 1280 canvas (12 px at 640). The real-page screenshot text is not (it is the product's own UI); it is there as a visual, with its meaning in the large captions.
+The README uses `<picture>`: the AVIF where the browser supports it, else the WebP, else the mp4 link. Fewer glow gradients were not needed. The mp4 (6.5 MB) is the link target.
