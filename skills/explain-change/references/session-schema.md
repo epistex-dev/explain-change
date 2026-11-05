@@ -97,4 +97,4 @@ Rewriting a commit that was never pushed (`git commit --amend`, `git rebase`) st
 
 ## Sample
 
-`reference/examples/portal-day.session.json` is a synthetic sample (a made-up web app, no real names) with eight themes in every status except `not_done`, and `password-autofill.v2.json` beside it as the change page of its `login` theme; `validate.py` accepts it with transcript checks off, and `render.py --no-validate` renders both pages.
+`references/examples/portal-day.session.json` is a synthetic sample (a made-up web app, no real names) with eight themes in every status except `not_done`, and `password-autofill.v2.json` beside it as the change page of its `login` theme; `validate.py` accepts it with transcript checks off, and `render.py --no-validate` renders both pages.

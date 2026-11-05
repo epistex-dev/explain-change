@@ -3,7 +3,7 @@
 // Every number and name on screen comes from DATA (see NOTES.md for the field behind each one).
 import fs from 'node:fs'; import path from 'node:path'; import {fileURLToPath} from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
-const sample = JSON.parse(fs.readFileSync(path.join(here, '../../skills/explain-change/reference/examples/portal-day.session.json'), 'utf8'));
+const sample = JSON.parse(fs.readFileSync(path.join(here, '../../skills/explain-change/references/examples/portal-day.session.json'), 'utf8'));
 if (sample.schema !== 'explain-session/1') throw new Error('unexpected schema ' + sample.schema);
 const STATUS = ['done', 'done_needs_you', 'done_by_user', 'in_progress'];
 const themes = sample.themes.map((t, i) => {

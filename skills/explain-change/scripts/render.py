@@ -2,14 +2,14 @@
 """Validate explain.json and render index.html next to it (self-contained, works offline).
 
 usage: render.py <explain.json> [--repo PATH] [--out FILE] [--transcript FILE] [--format auto|claude|copilot|codex|opencode|gemini|cursor-cli|cursor-ide] [--arch FILE] [--no-validate] [--text] [--theme ID]
-Schema v1 renders the report page, schema v2 the layout-2 page, explain-session/1 the swimlane page of a whole session, explain-flow/1 the map-first page of a flow of existing code (one file, fonts inlined, under 512 KB).
+Schema v2 renders the layout-2 page (a doc with version 1 or none exits 1 with one line), explain-session/1 the swimlane page of a whole session, explain-flow/1 the map-first page of a flow of existing code (one file, fonts inlined, under 512 KB).
 A doc with a `kind` that is not explain-flow/1 exits 1 with one line.
 A session theme with a change_doc also gets its v2 page, written next to the session page (<change_doc without .json>.html) and linked from the theme's panel.
 A validation problem prints the same lines as validate.py, writes nothing, exits 1.
 On success prints the absolute path of the page. --text also writes <page>.txt, the words of a v2 page, for the cold-read gate.
 --theme ID sets the colour theme a session page or a change page (v2) opens in (midnight, navy, ocean, plum, graphite or pearl; default midnight); the reader can still pick another on the page,
-and the pick carries across both pages. An unknown id exits 1 with one line naming the valid ids. The v1 report page ignores it.
---arch and --no-validate (v2 only) render an archived doc whose git range is gone: nothing is checked, the page says validated=no.
+and the pick carries across both pages. An unknown id exits 1 with one line naming the valid ids.
+--arch and --no-validate render an archived doc whose git range is gone: nothing is checked, the page says validated=no.
 """
 import argparse
 import json
@@ -18,7 +18,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lib import arch as archmod  # noqa: E402
-from lib import check2, check_flow, check_session, collect2, gitio, neutral, page, page2, page_flow, page_session, transcript  # noqa: E402
+from lib import check  # noqa: E402
+from lib import check2, check_flow, check_session, collect2, gitio, neutral, page2, page_flow, page_session, transcript  # noqa: E402
 from validate import load_and_validate  # noqa: E402
 
 
@@ -76,16 +77,12 @@ def main(argv=None):
             return render_session(a, out)
         if v2(a.explain_json):
             return render_v2(a, out)
-        doc, errs, stats = load_and_validate(a.explain_json, a.repo)
-        if errs:
-            print('\n'.join(errs))
-            print('not rendered: fix the problems above and rerun', file=sys.stderr)
-            return 1
-        repo = a.repo or gitio.toplevel(here)
-        with open(out, 'w', encoding='utf-8') as fh:
-            fh.write(page.render(doc, repo))
-        print(out)
-        return 0
+        _, errs, _ = load_and_validate(a.explain_json, a.repo)  # raises LegacyDoc for a v1 doc; reports an unreadable file
+        print('\n'.join(errs))
+        return 1
+    except check.LegacyDoc as e:
+        print('error: %s' % e, file=sys.stderr)
+        return 1
     except (gitio.ExplainError, archmod.ArchError) as e:
         print('error: %s' % e, file=sys.stderr)
         return 2

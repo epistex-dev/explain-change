@@ -4,7 +4,7 @@
 
 ### Your agent did the work. Now you understand it.
 
-<a href="docs/media/intro.mp4"><picture><source srcset="docs/images/intro.avif" type="image/avif"><img src="docs/images/intro.webp" alt="30 second intro: a session and its diff pass three checks and become one page, then a chart of eight themes and the real session page show what the agent decided and did outward" width="800"></picture></a>
+<a href="docs/media/intro.mp4"><img src="docs/images/intro.avif" alt="30 second intro: a session and its diff pass three checks and become one page, then a chart of eight themes and the real session page show what the agent decided and did outward" width="800"></a>
 
 **An [Agent Skill](https://agentskills.io) that turns an agent's code change into one offline page you can actually understand. Installs in Claude Code, Codex, Gemini CLI, Copilot, Cursor, OpenCode, Kiro and more.**
 
@@ -12,9 +12,9 @@
 ![license](https://img.shields.io/badge/license-MIT-blue)
 ![python](https://img.shields.io/badge/python-3%20stdlib%20only-3776ab)
 
-<img src="docs/images/hero.png" alt="The explain-change page for a sample change, in the midnight theme: a system map in the centre, a side panel with the Requests tab open" width="900">
+<img src="docs/images/themes/change-midnight-1440x900.png" alt="The explain-change page for a sample change, in the midnight theme: a system map in the centre, a side panel with the Requests tab open" width="900">
 
-<sub>Sample page rendered from the bundled fixture <code>reference/examples/password-autofill.v2.json</code>. The change is synthetic.</sub>
+<sub>Sample page rendered from the bundled fixture <code>references/examples/password-autofill.v2.json</code>. The change is synthetic.</sub>
 
 </div>
 
@@ -152,7 +152,7 @@ To render the bundled sample without a repo or session:
 
 ```bash
 python3 skills/explain-change/scripts/render.py \
-  skills/explain-change/reference/examples/password-autofill.v2.json \
+  skills/explain-change/references/examples/password-autofill.v2.json \
   --no-validate --out /tmp/sample.html
 ```
 
@@ -162,7 +162,7 @@ python3 skills/explain-change/scripts/render.py \
 
 After a long session, one task or many, ask for "explain this session". The agent runs `collect.py --session --transcript <file>`, writes an `explain-session/1` doc, checks it with `validate.py <doc> --transcript <file>` and renders it with `render.py <doc> --transcript <file>`. The page opens with a band: what is done, and what waits on you. Below it, one lane per theme shows the events in order, next to a side panel that lists what the agent decided for you (each marked reversible or not) and what left the working copy (pushes, force pushes, real deletes, pull requests). Select a marker to read that theme's journey in the same panel, and open the theme's change page when it has one. It shows no code, diff or file:line.
 
-![The session page in the midnight theme at 1440 x 900](docs/images/session-1440x900.png)
+![The session page in the midnight theme at 1440 x 900](docs/images/themes/midnight-1440x900.png)
 
 #### Colour themes
 
@@ -180,7 +180,7 @@ To render the bundled sample:
 
 ```bash
 python3 skills/explain-change/scripts/render.py \
-  skills/explain-change/reference/examples/portal-day.session.json \
+  skills/explain-change/references/examples/portal-day.session.json \
   --no-validate --out /tmp/session/index.html
 ```
 
@@ -194,13 +194,13 @@ To understand how existing code runs, with no change and no session to read, ask
 
 ```bash
 python3 skills/explain-change/scripts/render.py \
-  skills/explain-change/reference/examples/claim-check.flow.json \
+  skills/explain-change/references/examples/claim-check.flow.json \
   --no-validate --out /tmp/flow/index.html
 ```
 
 The schema is in [`references/explain-flow-schema.md`](skills/explain-change/references/explain-flow-schema.md).
 
-Reading order for the skill itself: [`SKILL.md`](skills/explain-change/SKILL.md) (steps), [`references/explain-schema.md`](skills/explain-change/references/explain-schema.md) (doc fields and rules), [`DESIGN.md`](skills/explain-change/DESIGN.md) (page design and decisions).
+Reading order for the skill itself: [`SKILL.md`](skills/explain-change/SKILL.md) (steps), [`references/explain-schema.md`](skills/explain-change/references/explain-schema.md) (doc fields and rules), [`docs/design.md`](docs/design.md) (page design and decisions).
 
 ## Development
 
@@ -213,28 +213,27 @@ skills/explain-change/
   SKILL.md             the skill
   scripts/             collect.py, validate.py, render.py, lib/
   assets/              page CSS and JS, fonts, icons
-  references/          the explain.json schema
-  reference/           UI tokens and the bundled sample doc
-  tests/               unit tests and the red check
-docs/images/           screenshots used in this README
+  references/          the doc schemas, examples/ (bundled sample docs) and ui/ (UI tokens)
+tests/                 unit tests and the red check
+docs/                  design notes (design.md), screenshots (images/), the intro video source (intro/)
 ```
 
 Run the tests:
 
 ```bash
-python3 -m unittest discover -s skills/explain-change/tests
+python3 -m unittest discover -s tests
 ```
 
 The red check removes each guard in a throwaway copy of the skill and requires its test to go red:
 
 ```bash
-python3 skills/explain-change/tests/red_check.py
+python3 tests/red_check.py
 ```
 
 Validate the plugin manifests with `claude plugin validate .` and the skill with `skills-ref validate skills/explain-change` ([agentskills](https://github.com/agentskills/agentskills/tree/main/skills-ref)). CI runs the unit tests on every push and pull request (one job, Python 3.12).
 
 ## License
 
-[MIT](LICENSE). Third-party fonts, icons and Mermaid keep their own licences: see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+[MIT](LICENSE). Third-party fonts and icons keep their own licences: see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 Contributing: see [CONTRIBUTING.md](CONTRIBUTING.md). Report a vulnerability privately: see [SECURITY.md](SECURITY.md).

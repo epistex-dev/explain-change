@@ -66,7 +66,7 @@ A lit path across a tilted plane. The camera drifts along the flow, dives into t
 - Not applicable: `prefers-reduced-motion`, focus, tap targets, responsive widths, performance budget (a recorded video, not a page).
 
 ## Content rules kept
-- Data only from `skills/explain-change/reference/examples/portal-day.session.json` (`build.mjs` writes `data.js` from it, and refuses an unknown status).
+- Data only from `skills/explain-change/references/examples/portal-day.session.json` (`build.mjs` writes `data.js` from it, and refuses an unknown status).
 - Status colour, icon and name come from each theme's `status`: Done, Done, needs you (the page's own wording, with a comma), Done by you, In progress.
 - Each theme keeps its title from the sample, in the chart and on the page.
 - Text in the real-page crops is the page's own 12 px and up, shown at 1.64x to 1.66x: 19.7 px or more. The page's hint lines (sample caveats) are cut from the crops, and the summary card never appears.
@@ -78,7 +78,7 @@ A lit path across a tilted plane. The camera drifts along the flow, dives into t
 ## Decisions
 | Decision | Rationale | Date |
 | --- | --- | --- |
-| Animated AVIF in the README with a WebP fallback, GIF not used | GIF under 5 MB bands; WebP at quality 76 showed 8 px blocks in the dark glows in a real browser, quality 91 is clean at 7.6 MB; AVIF is clean at 1.1 MB (see NOTES.md) | 2026-11-05 |
+| Animated AVIF in the README, no WebP fallback, GIF not used | GIF under 5 MB bands; WebP at quality 76 showed 8 px blocks in the dark glows in a real browser, quality 91 is clean but 7.6 MB, twice the AVIF (see NOTES.md) | 2026-11-05 |
 | Camera stops: the far cards (Checks, One page) appear only as the camera moves to them | a card sitting cut at the right frame edge for seconds read as a layout bug; at each held stop every card is whole or fully out of frame | 2026-11-05 |
 | Real-page crops carry the side panel's own 12 px padding | text no longer touches the crop edge; shown at 1.64x, the page's 12 px text is 19.7 px | 2026-11-05 |
 | Stat-card labels are one line ("redirected", "decided for you") | a two-line label ate the bottom padding of the card | 2026-11-05 |
