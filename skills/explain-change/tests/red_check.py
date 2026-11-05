@@ -584,6 +584,10 @@ MUTATIONS += [
      'test_outward.AfterAHeredoc.test_a_shift_in_arithmetic_is_not_a_heredoc'),
     ('session fix: a top-level << inside $(( )) is a shift', 'scripts/lib/outward.py', "            elif text.startswith('<<', i) and not text.startswith('<<<', i) and i >= arith:", "            elif text.startswith('<<', i) and not text.startswith('<<<', i):",
      'test_outward.AfterAHeredoc.test_a_shift_in_arithmetic_is_not_a_heredoc'),
+    ('learn: a label inside a CSS name (--mk:, .mk:) is not a label', TR, "_LABEL = r'(?<![\\w.-])", "_LABEL = r'(?<![A-Za-z0-9])",
+     V3 + 'LearnedValues.test_a_label_inside_a_css_name_is_not_a_label'),
+    ('learn: a label after a space still teaches', TR, "_LABEL = r'(?<![\\w.-])", "_LABEL = r'(?<![\\s\\S])",
+     V3 + 'LearnedValues.test_a_label_after_a_space_or_punctuation_still_teaches'),
 ]
 TEST_SECONDS = 60
 

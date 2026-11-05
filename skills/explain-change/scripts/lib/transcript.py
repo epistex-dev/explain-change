@@ -19,7 +19,7 @@ STRONG = re.compile(r'(?i)(?<![\w-])(vitest|pytest|unittest|phpunit|artisan test
                     r'composer (test|lint)|(go|cargo|make|mix|dotnet|gradle|mvn) (test|check)|docker (compose )?build|glab ci|pipelines?|red_check|prove[_-]fix|check\.mjs)(?![\w-])')
 INLINE = re.compile(r'<<-?\s*[\'"]?\w|(?<![\w-])(python3?|node|ruby|perl|php|bash|sh)\s+(-c|-e|-r)\b|(?<![\w-])python3?\s+-(\s|$)')  # a heredoc or an inline script
 READ_ONLY = re.compile(r'^\s*(cd [^;&|]+(&&|;)\s*)?(git (show|log|ls-tree|diff|grep|fetch|status|branch|worktree)|grep|sed|cat|head|tail|ls|find|wc|echo|date|mkdir)\b')
-_LABEL = r'(?<![A-Za-z0-9])(?:pass(?:word|wd)?|mật khẩu|mk|token|secret|api[_-]?key)(?:\s+chung)?\s*[:=]\s*'
+_LABEL = r'(?<![\w.-])(?:pass(?:word|wd)?|mật khẩu|mk|token|secret|api[_-]?key)(?:\s+chung)?\s*[:=]\s*'
 SECRET = re.compile(  # a labelled value | a token with a known prefix | a bearer token
     r'(?i)(?P<label>' + _LABEL + r')(?=\S*[\d!@#$%^&*_])(?P<val>\S{6,})'
     r'|(?<![A-Za-z0-9])(?P<pre>glpat-|ghp_|sk-)(?P<tok>[\w-]{8,})|(?P<bpre>Bearer\s+)(?P<btok>[\w.~+/=-]{8,})')

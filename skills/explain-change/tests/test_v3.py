@@ -487,6 +487,16 @@ class LearnedValues(V2Case):
             self.assertEqual(transcript.secret_values('token: ' + v + ' ;'), set(), v)
         self.assertTrue(transcript.secret_values('token: Abc12345'))  # a bare word with a digit can be a real password
 
+    def test_a_label_inside_a_css_name_is_not_a_label(self):
+        for css in ('--mk:32px;--mk-gap:8px', '.mk:hover', 'a{--mk:32px;--mk-gap:8px}', 'x.mk:hover{top:1px}', 'my_token:abc123def'):
+            self.assertEqual(transcript.secret_values(css), set(), css)
+            self.assertFalse(transcript.has_secret(css), css)
+
+    def test_a_label_after_a_space_or_punctuation_still_teaches(self):
+        for text, v in (('mk: hunter2xyz', 'hunter2xyz'), ('mật khẩu: hunter2xyz', 'hunter2xyz'), ('password=hunter2xyz', 'hunter2xyz'),
+                        ('đổi rồi (mk: hunter2xyz)', 'hunter2xyz'), ('x\nMK = hunter2xyz', 'hunter2xyz')):
+            self.assertIn(v, transcript.secret_values(text), text)
+
     def test_a_typed_credential_is_learned_among_the_noise_and_a_bare_quote_is_rejected(self):
         self.assertEqual(self.learn(self.recs + self.noise), frozenset({self.value}) | {self.value.strip(transcript.TRIM)})
         self.assertInvalid(lambda d: d['requests'][0].update(quote='thử lại với ' + self.value), 'password, token or key')
