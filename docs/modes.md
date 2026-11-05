@@ -8,7 +8,7 @@ The skill has three modes. Each renders one offline HTML page in the same six co
 | Session | "summarize this session" | a session transcript | `explain-session/1` |
 | Flow | "how does X work", "luồng này chạy thế nào" | the code at one commit | `explain-flow/1` |
 
-The agent follows [SKILL.md](../skills/explain-change/SKILL.md). Each command below renders a bundled sample. The change and session samples are checked against synthetic transcripts (`references/examples/*.transcript.jsonl`); the readers take a transcript only inside the harness's own folder, so the helper `tests/sample_env.py` builds a throwaway git repo and a throwaway `HOME` that holds the transcripts under `~/.claude/projects/`. The flow sample needs neither.
+The agent follows [SKILL.md](../skills/explain-change/SKILL.md). Each command below renders a bundled sample. The change and session samples are checked against synthetic transcripts (`references/examples/*.transcript.jsonl`); the readers take a transcript only inside the harness's own folder, so the helper `tests/sample_env.py` builds a throwaway git repo and a throwaway `HOME` (in a temporary folder, removed afterwards) that hold the transcripts under `~/.claude/projects/`. The flow sample needs neither.
 
 ## Change
 

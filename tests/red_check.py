@@ -42,6 +42,14 @@ MUTATIONS = [
      'test_guard.LowLevelGitCalls.test_changed_ranges_refuses_option'),
     ('read_version takes only object ids', 'scripts/lib/gitio.py', "    if not re.fullmatch(r'[0-9a-f]{40,64}', rev):", '    if False:',
      'test_guard.LowLevelGitCalls.test_read_version_needs_an_object_id'),
+    ('sample_env: scratch repo outside OUT', '../../tests/sample_env.py', "work = tempfile.mkdtemp(prefix='sample-env-')", "work = os.path.join(out, 'env'); shutil.rmtree(work, ignore_errors=True)",
+     'test_samples_checked.SampleEnvCli.test_an_env_folder_in_the_output_folder_is_left_alone'),
+    ('sample_env: unmarked page folder refused', '../../tests/sample_env.py', "os.path.isfile(os.path.join(path, MARKER))", 'True',
+     'test_samples_checked.SampleEnvCli.test_a_change_folder_the_tool_did_not_write_is_refused'),
+    ('sample_env: bad output path is one line', '../../tests/sample_env.py', 'except OSError as e:', 'except ZeroDivisionError as e:',
+     'test_samples_checked.SampleEnvCli.test_a_bad_output_path_is_one_line_not_a_traceback'),
+    ('sample_env: architecture has no undrawn node', '../../tests/sample_env.py', "    nodes = []\n", "    nodes = [{'id': 'acme', 'label': 'System', 'kind': 'service', 'summary': 'x', 'paths': ['src/**']}]\n",
+     'test_samples_checked.Pages.test_the_rendered_change_page_draws_every_module_of_the_architecture'),
 ]
 
 

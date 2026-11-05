@@ -7,7 +7,7 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
-- Synthetic Claude Code transcripts for the change and session samples (`references/examples/password-autofill.v2.transcript.jsonl`, `portal-day.session.transcript.jsonl`; made-up Acme Portal content only). The samples now validate `ok` against them, and their pages are the checked pages: no "Not checked" badge or note. `tests/sample_env.py` builds the throwaway git repo and `HOME` (the transcript folder limit is unchanged) and renders both pages; `tests/test_samples_checked.py` pins it.
+- Synthetic Claude Code transcripts for the change and session samples (`references/examples/password-autofill.v2.transcript.jsonl`, `portal-day.session.transcript.jsonl`; made-up Acme Portal content only). The samples now validate `ok` against them, and their pages are the checked pages: no "Not checked" badge or note. `tests/sample_env.py` builds the throwaway git repo and `HOME` in a temporary folder, writes only `change/` and `session/` under the output folder and refuses to replace a folder it did not write (the transcript folder limit is unchanged) and renders both pages; `tests/test_samples_checked.py` pins it.
 - A sixth colour theme, `midnight`, in the colours of the intro video: glassy gradient surfaces, a lit ring and faint violet and blue glows in the corners of the page. It is on the session page, the change page and the flow page, and keeps the contrast of the other themes.
 
 ### Changed

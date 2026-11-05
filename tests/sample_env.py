@@ -3,7 +3,7 @@
 HOME whose ~/.claude/projects holds the two synthetic transcripts. The readers accept a transcript only inside the harness's own folder, so
 the samples are checked through the real path (no flag, no override), only with HOME pointing at a temp dir.
 
-    python3 tests/sample_env.py OUT [--theme ID]   builds OUT/env and renders both checked pages: OUT/change/index.html and OUT/session/index.html
+    python3 tests/sample_env.py OUT [--theme ID]   renders both checked pages: OUT/change/index.html and OUT/session/index.html
 """
 import argparse
 import json
@@ -11,6 +11,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL = os.path.join(os.path.dirname(HERE), 'skills', 'explain-change')
@@ -37,16 +38,15 @@ KINDS = {'browser': 'external', 'web.admin': 'feature', 'web.auth': 'feature', '
 
 
 def architecture():
-    """floorplan/architecture.json of the synthetic repo, taken from the change sample's own map so the module ids cannot drift."""
+    """floorplan/architecture.json of the synthetic repo, taken from the change sample's own map so the module ids cannot drift. Every node is a module the map draws: a node the map does not draw (a root "System" node, say) would show as "+1 unrelated part"."""
     with open(CHANGE, encoding='utf-8') as fh:
         m = json.load(fh)['map']
     nodes = []
     for x in (x for x in m['modules'] if not x.get('outside')):  # a module marked outside is not in the code base
-        n = {'id': x['id'], 'parent': 'acme', 'label': x['name'], 'kind': KINDS[x['id']], 'summary': x['summary']}
+        n = {'id': x['id'], 'label': x['name'], 'kind': KINDS[x['id']], 'summary': x['summary']}
         if x['id'] in PATHS:
             n['paths'] = PATHS[x['id']]
         nodes.append(n)
-    nodes.insert(0, {'id': 'acme', 'label': 'System', 'kind': 'service', 'summary': 'The whole made-up web app.', 'paths': ['src/**', 'server/**', 'tests/**']})
     return {'project': {'name': 'Acme Portal'}, 'nodes': nodes, 'edges': [{'from': e['from'], 'to': e['to'], 'kind': 'data', 'label': e.get('label', 'uses')} for e in m['edges'] if 'browser' not in (e['from'], e['to'])]}
 
 
@@ -111,23 +111,59 @@ def script(name, *args, home, check=False):
     return p
 
 
-def main():
+SUBS = ('change', 'session')
+MARKER = '.sample_env'  # written into each page folder the tool creates; a folder without it is not the tool's and is never overwritten
+
+
+def fail(msg):
+    print('sample_env: ' + msg, file=sys.stderr)
+    return 1
+
+
+def claim(path):
+    """None when the tool may write the page folder `path` (absent, or marked by an earlier run); else the reason it may not."""
+    if not os.path.lexists(path):
+        return None
+    if os.path.isdir(path) and not os.path.islink(path) and os.path.isfile(os.path.join(path, MARKER)):
+        return None
+    return '%s exists and is not a sample folder of this tool; remove it or pick another output folder' % path
+
+
+def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n\n')[0])
     ap.add_argument('out')
     ap.add_argument('--theme', default=None)
-    a = ap.parse_args()
+    a = ap.parse_args(argv)
     out = os.path.abspath(a.out)
-    home, repo = os.path.join(out, 'env', 'home'), os.path.join(out, 'env', 'repo')
-    shutil.rmtree(os.path.join(out, 'env'), ignore_errors=True)
-    build_repo(repo)
-    build_home(home)
+    for sub in SUBS:
+        why = claim(os.path.join(out, sub))
+        if why:
+            return fail(why)
     theme = ['--theme', a.theme] if a.theme else []
-    for doc, sub in ((CHANGE, 'change'), (SESSION, 'session')):
-        os.makedirs(os.path.join(out, sub), exist_ok=True)
-        page = os.path.join(out, sub, 'index.html')
-        p = script('render.py', doc, '--repo', repo, '--out', page, '--text', *theme, home=home, check=True)
-        print(p.stdout.strip())
+    work = tempfile.mkdtemp(prefix='sample-env-')  # the git repo, the HOME and the first render live here, never under OUT
+    try:
+        home, repo = os.path.join(work, 'home'), os.path.join(work, 'repo')
+        build_repo(repo)
+        build_home(home)
+        for doc, sub in ((CHANGE, 'change'), (SESSION, 'session')):
+            os.makedirs(os.path.join(work, 'pages', sub))
+            script('render.py', doc, '--repo', repo, '--out', os.path.join(work, 'pages', sub, 'index.html'), '--text', *theme, home=home, check=True)
+        try:
+            os.makedirs(out, exist_ok=True)
+            for sub in SUBS:
+                dest = os.path.join(out, sub)
+                if os.path.isdir(dest):
+                    shutil.rmtree(dest)  # marked by claim(): the tool's own earlier output
+                shutil.copytree(os.path.join(work, 'pages', sub), dest)
+                with open(os.path.join(dest, MARKER), 'w', encoding='utf-8') as fh:
+                    fh.write('written by tests/sample_env.py\n')
+                print(os.path.join(dest, 'index.html'))
+        except OSError as e:
+            return fail('cannot write to %s: %s' % (out, e.strerror or e))
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

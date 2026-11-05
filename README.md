@@ -35,7 +35,7 @@ One script links the skill for Claude Code, Codex, Gemini CLI, Copilot, Cursor, 
 
 ## Quick start
 
-After any agent edit, ask your agent: "explain this change". For a whole session say "summarize this session", and for existing code "how does X work". It collects the evidence, writes and checks the doc, and gives you the path of the page. To see the bundled change and session samples, each checked against its synthetic transcript, run the helper below. It builds a throwaway git repo and a throwaway `HOME` under the output folder and touches nothing else:
+After any agent edit, ask your agent: "explain this change". For a whole session say "summarize this session", and for existing code "how does X work". It collects the evidence, writes and checks the doc, and gives you the path of the page. To see the bundled change and session samples, each checked against its synthetic transcript, run the helper below. It builds a throwaway git repo and a throwaway `HOME` in a temporary folder that it removes afterwards, and writes only `change/` and `session/` under the output folder. It refuses, with one line, to replace a `change/` or `session/` it did not write on an earlier run:
 
 ```bash
 python3 tests/sample_env.py /tmp/samples

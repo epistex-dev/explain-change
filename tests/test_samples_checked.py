@@ -101,6 +101,13 @@ class Pages(Case):
             with open(f, encoding='utf-8') as fh:
                 self.assertIsNone(UNCHECKED.search(fh.read()), f)
 
+    def test_the_rendered_change_page_draws_every_module_of_the_architecture(self):
+        for f in self.render('change'):
+            with open(f, encoding='utf-8') as fh:
+                text = fh.read()
+            self.assertNotIn('not drawn here', text, f)
+            self.assertNotIn('class="hidden-note"', text, f)
+
     def test_the_rendered_session_page_and_its_change_page_do_not_say_it_is_not_checked(self):
         files = self.render('session')
         self.assertEqual(len(files), 4)  # the session page, the change page it links, and the text of each
@@ -113,6 +120,67 @@ class Pages(Case):
         with open(txt, encoding='utf-8') as fh:
             text = fh.read()
         self.assertNotIn("agent's own", text)
+
+
+class SampleEnvCli(unittest.TestCase):
+    """tests/sample_env.py OUT writes only its two page folders: nothing else under OUT is touched, and a folder it did not create is never replaced."""
+
+    def setUp(self):
+        self.out = tempfile.mkdtemp(prefix='sample-env-cli-', dir='/tmp')
+        self.addCleanup(shutil.rmtree, self.out, True)
+
+    def run_cli(self, out=None, *extra):
+        return subprocess.run([sys.executable, os.path.join(HERE, 'sample_env.py'), out or self.out, *extra], capture_output=True, text=True)
+
+    def plant(self, *rel):
+        path = os.path.join(self.out, *rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8') as fh:
+            fh.write('mine')
+        return path
+
+    def assertOneLine(self, p):
+        self.assertEqual(p.returncode, 1, p.stdout + p.stderr)
+        self.assertEqual(len(p.stderr.strip().splitlines()), 1, p.stderr)
+        self.assertNotIn('Traceback', p.stderr)
+
+    def test_an_env_folder_in_the_output_folder_is_left_alone(self):
+        keep = self.plant('env', 'pyvenv.cfg')
+        p = self.run_cli()
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        with open(keep, encoding='utf-8') as fh:
+            self.assertEqual(fh.read(), 'mine')
+        self.assertEqual(sorted(os.listdir(self.out)), ['change', 'env', 'session'])  # no repo, no HOME left behind
+
+    def test_the_pages_are_written_and_a_second_run_replaces_them(self):
+        for _ in range(2):
+            p = self.run_cli()
+            self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+            self.assertTrue(os.path.isfile(os.path.join(self.out, 'change', 'index.html')))
+            self.assertTrue(os.path.isfile(os.path.join(self.out, 'session', 'index.html')))
+
+    def test_a_change_folder_the_tool_did_not_write_is_refused(self):
+        keep = self.plant('change', 'notes.txt')
+        p = self.run_cli()
+        self.assertOneLine(p)
+        self.assertIn(os.path.join(self.out, 'change'), p.stderr)
+        self.assertTrue(os.path.isfile(keep))
+        self.assertFalse(os.path.exists(os.path.join(self.out, 'session')))
+
+    def test_a_session_folder_the_tool_did_not_write_is_refused_before_anything_is_written(self):
+        keep = self.plant('session', 'notes.txt')
+        p = self.run_cli()
+        self.assertOneLine(p)
+        self.assertIn(os.path.join(self.out, 'session'), p.stderr)
+        self.assertTrue(os.path.isfile(keep))
+        self.assertFalse(os.path.exists(os.path.join(self.out, 'change')))
+
+    def test_a_file_named_change_is_refused(self):
+        self.plant('change')
+        self.assertOneLine(self.run_cli())
+
+    def test_a_bad_output_path_is_one_line_not_a_traceback(self):
+        self.assertOneLine(self.run_cli('/dev/null/x'))
 
 
 class Controls(Case):
