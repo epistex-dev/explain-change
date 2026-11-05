@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+"""Collect the diff an agent will explain.
+
+usage: collect.py [<base>..<head> | <commit>] [--repo PATH] [--v2] [--transcript FILE] [--path DIR_OR_FILE]... [--slug TEXT]
+--path (repeatable) limits the diff, the map and the validator to those repo-relative paths; the scope is stored in summary.json.
+--slug TEXT names the run folder; without it the most common subject among the commits that touch the scope does.
+Default range: uncommitted changes vs HEAD when there are any, else the last commit.
+--v2 (implied by --transcript) adds what schema v2 needs: changed files mapped to modules (floorplan/architecture.json
+or top directories), and the session transcripts that could ground the page (3 newest listed; with --transcript, a digest
+of the user's messages and the test-like tool calls). Only files under ~/.claude/projects are read.
+Creates <repo>/.explain/<YYYYMMDD-HHMM>-<slug>/ with summary.json and diff.patch, prints a summary plus
+`RUN_DIR=<path>`. Exit 3 and no directory when the range has no changes.
+"""
+import argparse
+import json
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from lib import arch as archmod  # noqa: E402
+from lib import collect, collect2, gitio, transcript  # noqa: E402
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument('range', nargs='?')
+    ap.add_argument('--repo', default='.')
+    ap.add_argument('--v2', action='store_true')
+    ap.add_argument('--transcript')
+    ap.add_argument('--path', action='append', default=[], metavar='PATH', help='limit to this repo-relative folder or file (repeatable)')
+    ap.add_argument('--slug', help='run folder name (after the timestamp)')
+    a = ap.parse_args(argv)
+    try:
+        repo = gitio.toplevel(os.path.abspath(a.repo))
+        scope = gitio.normalize_scope(repo, a.path)
+        rng = gitio.resolve_range(repo, a.range)
+        summary, patch = collect.build_summary(repo, rng, scope)
+        if not summary['files']:
+            print('Không có thay đổi để giải thích (%s). Không tạo trang.' % rng['label'], file=sys.stderr)
+            return 3
+        subject = a.slug if a.slug and a.slug.strip() else collect.pick_slug(summary['messages'], 'worktree' if rng['mode'] == gitio.WORKTREE else 'change')
+        v2 = a.v2 or bool(a.transcript)
+        if v2:
+            tpath = transcript.safe_path(a.transcript) if a.transcript else None
+            arch, rep = collect2.module_report(repo, summary['files'])
+            summary['modules'] = {k: v for k, v in rep.items() if k != 'status'}
+        collect.ensure_excluded(repo)
+        run_dir = collect.new_run_dir(repo, collect.slugify(subject))
+        with open(os.path.join(run_dir, 'summary.json'), 'w', encoding='utf-8') as fh:
+            json.dump(summary, fh, ensure_ascii=False, indent=1)
+        with open(os.path.join(run_dir, 'diff.patch'), 'wb') as fh:
+            fh.write(patch)
+        print(collect.format_text(summary, run_dir, v2))
+        if v2:
+            print('\n' + collect2.format_modules(repo, arch, rep))
+            if tpath:
+                text, warns = transcript.digest(tpath)
+                print('\n' + text)
+                for w in warns:
+                    print('warning: ' + w, file=sys.stderr)
+            else:
+                print('\n' + collect2.format_candidates(repo, transcript.candidates(repo)))
+        print('\nRUN_DIR=%s' % run_dir)
+        return 0
+    except (gitio.ExplainError, archmod.ArchError) as e:
+        print('error: %s' % e, file=sys.stderr)
+        return 2
+
+
+if __name__ == '__main__':
+    sys.exit(main())
