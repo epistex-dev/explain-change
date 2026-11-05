@@ -341,6 +341,33 @@ class Structure(FlowCase):
         self.assertRejected(lambda d: d['parts'][0].update(where='nearby'), 'parts[0].where')
 
 
+# Each item is one test case. BENIGN must pass the visible-text rule; CODE must be refused.
+BENIGN = ['Node.js', 'Vue.js', 'README.md', 'CHANGELOG.md', 'example.com', 'github.com/epistex-dev', '$5.50', 'v1.2.3', '3.14', 'e.g.', 'i.e.', 'claim(s)',
+          "the user's id", 'CI/CD', 'TCP/IP', 'A \u2192 B', '2 of 5', '50%', 'Q&A', 'Checks the file: if it is missing, it stops; otherwise it goes on.',
+          'Reads README.md, then Node.js runs the check', 'See docs.example.com for the page', 'Opens check_flow.py first',
+          'A note (e.g. a short one), i.e. one line; claim(s) with 3.5 points - well, etc.', 'Takes in a path (for example, the file the user named).',
+          'Reads GitHub issues and the v2 page, then replies in 2 steps.', 'Return the list of claims', 'If it goes wrong, say so']
+CODE = ['x = y + 1', 'a == b', 'a != b', 'x += 1', 'lambda x: x+1', 'x => x + 1', 'if x > 0:', 'x > 0', 'a < b', 'return foo', 'foo(bar)', 'obj.method()', 'user_id', 'file.py:12',
+        'src/app.py:40', '<div>', '`code`', '{a: 1}', '[1, 2]', 'arr[0]', 'a && b', 'a || b', '->', '::', 'x => x + 1', 'if (a == b) { go }',
+        'the result of load(path) or doc.text', 'the check_session module', 'it returns self.rows[0]', 'a -> b', 'see app.py:12', 'a <div class="x"> tag',
+        'Calls `run_all` first', 'reads $HOME first', 'it uses self.rows', 'else:']
+
+
+class CodeRule(unittest.TestCase):
+    """The visible-text rule itself (check_flow.code_reason), item by item."""
+    def test_benign_prose_passes(self):
+        from lib import check_flow
+        for t in BENIGN:
+            with self.subTest(t):
+                self.assertIsNone(check_flow.code_reason(t))
+
+    def test_code_is_refused(self):
+        from lib import check_flow
+        for t in CODE:
+            with self.subTest(t):
+                self.assertIsNotNone(check_flow.code_reason(t))
+
+
 class VisibleText(FlowCase):
     def test_code_in_takes_in(self):
         self.assertRejected(lambda d: d['steps'][0].update(takes_in='the result of load(path) or doc.text'), 'steps[0].takes_in: reads as code')
@@ -365,6 +392,19 @@ class VisibleText(FlowCase):
             with self.subTest(t):
                 p = self.run_validate(self.doc(lambda d: d['steps'][0].update(takes_in=t)))
                 self.assertEqual(p.returncode, 0, p.stdout)
+
+    def test_visible_text_rule_is_the_same_for_every_field(self):
+        """One rule for every visible field: prose passes and code is refused in each of them."""
+        setters = (('title', lambda d, v: d.update(title=v)), ('summary', lambda d, v: d.update(summary=v)),
+                   ('role', lambda d, v: d['parts'][0].update(role=v)), ('name', lambda d, v: d['steps'][0].update(name=v)),
+                   ('takes_in', lambda d, v: d['steps'][0].update(takes_in=v)), ('gives_back', lambda d, v: d['steps'][0].update(gives_back=v)),
+                   ('when', lambda d, v: d['steps'][1]['branches'][0].update(when=v)), ('result', lambda d, v: d['steps'][1]['errors'][0].update(result=v)))
+        for field, setter in setters:
+            with self.subTest(field, text='Node.js'):
+                p = self.run_validate(self.doc(lambda d: setter(d, 'Reads README.md with Node.js')))
+                self.assertEqual(p.returncode, 0, p.stdout)
+            with self.subTest(field, text='x = y + 1'):
+                self.assertRejected(lambda d: setter(d, 'Sets x = y + 1 first'), 'reads as code')
 
     def test_question_is_shown_as_asked(self):
         p = self.run_validate(self.doc(lambda d: d.update(question='what does `check()` do?')))

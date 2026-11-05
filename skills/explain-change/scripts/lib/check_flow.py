@@ -18,8 +18,12 @@ MAX_SPAN = 80
 MIN_EXCERPT, MAX_EXCERPT = 8, 300
 MAX_BYTES = 2_000_000
 CODE_TEXT = ('title', 'summary')  # plus the per-item fields below; `question` is the user's own words, so only the secret check applies
-BLOCK = re.compile(r'`|=>|->|::|==|!=|&&|\|\||[{}]|;\s*$|</?[A-Za-z][^>]*>|\w\(\)|\.\w+:\d+\b')
+BLOCK = re.compile(r'`|[!+\-*/%<>]?=>?|->|::|&&|\|\||[{}\[\]]|[:;]\s*$|</?[A-Za-z][^>]*>|\w\(\)|\.\w+:\d+\b|\w\s*[<>]\s*\w|\blambda\b[^:]*:')
+STATEMENT = re.compile(r'(return|raise|yield|assert|del|def|elif)\s+\S+\Z')  # "return foo": a statement word, then one name
 PLURAL = re.compile(r'\w+\(s')  # "claim(s)"
+# the tail of a bare file or product name or a domain (README.md, Node.js, example.com): prose, unlike a member such as doc.text
+NAME_TAIL = frozenset(('js jsx ts tsx mjs cjs md py json yml yaml toml txt html css sh rs go java rb php c h cpp cs ini cfg conf lock csv sql xml svg png jpg gif '
+                       'pdf com org net io dev ai vn').split())
 
 
 def is_flow(doc):
@@ -44,17 +48,24 @@ def _utf8(v):
 
 
 def code_reason(text):
-    """Why a text reads as code, else None: markup or an operator, a call, a member (`a.b`), a snake_case name or an index.
-    Built on transcript.code_shaped; prose such as "e.g." or "claim(s)" passes."""
-    m = BLOCK.search(text)
+    """Why a text reads as code, else None: markup, an operator or assignment (`=`, `>`), a statement (`return x`, `lambda`, a trailing `:`), a call, a
+    bracket, a member (`doc.text`), a snake_case name, or a file with a line number (`app.py:12`). Built on transcript.code_shaped.
+    Prose passes: "e.g.", "claim(s)", "$5.50", "v1.2.3", and a bare file, product or domain name such as README.md, Node.js or example.com."""
+    m = BLOCK.search(text) or STATEMENT.match(text.strip())
     if m:
         return 'has %r' % m.group(0).strip()
     for tok in text.split():
         t = tok.strip(transcript.TRIM)
         if not t or PLURAL.fullmatch(t) or not re.search(r'[._(\[$]', t) or not transcript.code_shaped(t):
             continue
-        if '.' in t and not re.search(r'[_(\[$]', t) and any(len(x) < 2 for x in t.split('.')):
-            continue  # "e.g", "i.e"
+        if re.match(r'\$\d', t):
+            continue  # "$5.50"; "$HOME" is an environment reference
+        if '.' in t and not re.search(r'[(\[$]', t):
+            parts = t.split('.')
+            if any(len(x) < 2 for x in parts) and '_' not in t:
+                continue  # "e.g", "i.e"
+            if parts[-1].lower() in NAME_TAIL:
+                continue  # "README.md", "Node.js", "check_flow.py", "example.com"
         return 'has %r' % t
     return None
 

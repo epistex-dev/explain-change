@@ -24,6 +24,7 @@ All notable changes to this project are documented here. The format follows
 - Tests for `install.sh` and the manifests, and 16 more guards in the red check.
 
 ### Fixed
+- Flow docs: the no-code rule no longer refuses a bare file, product or domain name (`README.md`, `Node.js`, `example.com`) or a price such as `$5.50`, and it now refuses an assignment or comparison (`x = y + 1`, `a > b`), a statement (`return foo`, `lambda x: x+1`, a text ending in `:`) and brackets (`[1, 2]`, `arr[0]`). The flow page names each concept one way in `en` and `vi`: error exits (chip, panel heading and the E-cards), branch points, parts, problem list; the chip counts steps that branch, as before.
 - A label such as `mk:` inside a CSS name (`--mk:`, `.mk:hover`) is no longer learned as a secret: the short label `mk` must follow the start of the text, white space or punctuation other than `-`, `_` and `.`. The other labels (`password=`, `db_password=`, `--token=`) match as before.
 
 ### Changed

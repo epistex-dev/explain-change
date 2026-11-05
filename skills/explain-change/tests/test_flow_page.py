@@ -219,6 +219,49 @@ class Language(PageCase):
         self.assertRegex(self.page('en'), r'<span>Appearance</span>')
 
 
+# One name per concept: the label keys that name it, the term each language uses, and the words that must not name it a second way.
+CONCEPTS = {
+    'error exit': (('fl_errors_n', 'fl_errors_n_1', 'fl_wrong', 'fl_no_err', 'fl_err_id'),
+                   {'en': 'error exit', 'vi': 'lỗi'}, {'en': r'goes wrong|\berrors?\b(?! exit)|failure', 'vi': r'nếu có lỗi|có thể xảy ra|sự cố'}),
+    'branch point': (('fl_branches_n', 'fl_branches_n_1', 'fl_branch_h'),
+                     {'en': 'branch point', 'vi': 'điểm rẽ nhánh'}, {'en': r'\bbranch(es)?\b(?! point)|\bfork', 'vi': r'(?<!rẽ )nhánh|ngã rẽ'}),
+    'part': (('fl_parts', 'fl_parts_1', 'fl_lg_sel', 'fl_lg_other'),
+             {'en': 'part', 'vi': 'thành phần'}, {'en': r'component|module|piece|\bblock', 'vi': r'mô-đun|module|khối|bộ phận'}),
+    'problem list': (('fl_problems', 'fl_go_problems'),
+                     {'en': 'problem list', 'vi': 'danh sách vấn đề'}, {'en': r'problems?\b(?! list)|issue list', 'vi': r'(?<!danh sách )vấn đề|danh sách lỗi'}),
+}
+
+
+class Labels(PageCase):
+    def test_each_concept_has_one_name_in_every_label_key(self):
+        for lang in ('en', 'vi'):
+            for concept, (keys, term, banned) in CONCEPTS.items():
+                for k in (k for k in keys if k in STR2[lang]):  # vi has no singular forms
+                    with self.subTest(lang=lang, concept=concept, key=k):
+                        self.assertIn(term[lang], STR2[lang][k].lower())
+                labels = {k: v for k, v in STR2[lang].items() if k.startswith('fl_') or k in ('zone_system', 'zone_out')}
+                for k, v in labels.items():
+                    with self.subTest(lang=lang, concept=concept, banned_in=k):
+                        self.assertNotRegex(v.lower(), banned[lang])
+
+    def test_the_page_uses_those_names(self):
+        for lang in ('en', 'vi'):
+            t = STR2[lang]
+            h = self.page(lang)
+            body = re.sub(r'(?s)<(style|script|svg).*?</\1>', '', h)
+            stats = re.search(r'<ul class="f-stats".*?</ul>', body, re.S).group(0)
+            with self.subTest(lang=lang):
+                self.assertIn(CONCEPTS['error exit'][1][lang], stats.lower())
+                self.assertIn(CONCEPTS['branch point'][1][lang], stats.lower())
+                self.assertIn(CONCEPTS['part'][1][lang], stats.lower())
+                self.assertEqual(body.count('<p class="sec">%s</p>' % t['fl_wrong']), 3)  # one error heading per step, the same words each time
+                self.assertIn('<p class="sec">%s</p><ul class="f-br">' % t['fl_branch_h'], body)
+                self.assertIn('aria-label="%s"' % (t['fl_err_id'] % 1), body)  # the E1 card carries the same name
+                self.assertIn(' ' + t['fl_problems'] + '</span>', body)  # the terminal
+                self.assertIn('</span>' + t['fl_problems'] + '</li>', body)  # and the legend entry say it alike
+                self.assertIn(t['fl_lg_sel'], body)
+
+
 class Landmarks(PageCase):
     def test_landmarks_and_the_current_step(self):
         h = self.page()
