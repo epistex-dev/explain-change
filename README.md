@@ -4,6 +4,8 @@
 
 ### Your agent did the work. Now you understand it.
 
+<a href="docs/media/intro.mp4"><img src="docs/images/intro.gif" alt="30 second intro: a session and its diff pass three checks and become one offline page, then charts and the real page show what the agent decided and did outward" width="800"></a>
+
 **An [Agent Skill](https://agentskills.io) that turns an agent's code change into one offline page you can actually understand. Installs in Claude Code, Codex, Gemini CLI, Copilot, Cursor, OpenCode, Kiro and more.**
 
 [![test](https://github.com/epistex-dev/explain-change/actions/workflows/test.yml/badge.svg)](https://github.com/epistex-dev/explain-change/actions/workflows/test.yml)
