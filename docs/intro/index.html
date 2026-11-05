@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>explain-change intro</title>
+<script src="assets/gsap.min.js"></script>
+<script src="data.js"></script>
+<style>
+@font-face{font-family:"Inter";src:url(assets/fonts/inter-latin-wght-normal.woff2) format("woff2");font-weight:100 900}
+:root{
+  --bg:#0a0d2b;--ring:rgba(150,166,255,.26);--ring-2:rgba(150,166,255,.5);
+  --t1:#f5f6ff;--t2:#d0d6fb;--t3:#adb6ee;
+  --accent:#f08ad0;--blue:#8fb4ff;--green:#5fd9ae;--amber:#f5b66a;--rose:#ff8a98;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1280px;height:720px;background:var(--bg);overflow:hidden}
+#root{position:relative;width:1280px;height:720px;overflow:hidden;font:600 22px/1.25 "Inter",system-ui,sans-serif;color:var(--t1);
+  font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;
+  background:radial-gradient(1100px 700px at 12% -10%,#2a2f8f 0%,transparent 62%),radial-gradient(900px 640px at 100% 110%,#6b2a8f 0%,transparent 60%),linear-gradient(180deg,#0b0f33,#080b25)}
+.abs{position:absolute}
+.ic{width:1em;height:1em;display:block;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.glow{position:absolute;border-radius:50%;filter:blur(80px);opacity:0}
+#g1{left:-200px;top:380px;width:700px;height:460px;background:#3b4bd8}
+#g2{left:760px;top:-180px;width:620px;height:420px;background:#a43ac0}
+#g3{left:380px;top:220px;width:520px;height:300px;background:#4c3ad8}
+.vig{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,transparent 55%,rgba(4,6,22,.55) 100%);pointer-events:none}
+.kick{font-size:21px;font-weight:650;letter-spacing:.12em;text-transform:uppercase;color:#f9b6e2}
+.h2{font-size:50px;font-weight:650;letter-spacing:-.03em;line-height:1.08;white-space:nowrap}
+.sub{font-size:23px;font-weight:500;color:var(--t2);white-space:nowrap}
+.glass{border-radius:20px;background:linear-gradient(180deg,rgba(44,54,130,.62),rgba(22,29,80,.7));
+  box-shadow:0 0 0 1px var(--ring),0 1px 0 rgba(255,255,255,.08) inset,0 30px 56px -24px rgba(2,4,24,.9),0 0 40px -12px rgba(110,130,255,.4)}
+
+/* ---- scene 1: hook ---- */
+#hook{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+#hook .l1{font-size:92px;font-weight:700;letter-spacing:-.04em;line-height:1.05}
+#hook .l2{font-size:92px;font-weight:700;letter-spacing:-.04em;line-height:1.1;background:linear-gradient(90deg,#9fb6ff,#f08ad0 70%);-webkit-background-clip:text;background-clip:text;color:transparent;padding:0 .05em .08em}
+#hook .l1,#hook .l2{text-shadow:none}
+#hookglow{position:absolute;left:230px;top:250px;width:820px;height:240px;border-radius:50%;background:radial-gradient(closest-side,rgba(240,138,208,.38),rgba(90,100,240,.22) 55%,transparent);filter:blur(30px);opacity:0}
+
+/* ---- scene 2: flow (tilted plane, camera pans along it) ---- */
+#fm{position:absolute;inset:0;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 110px,#000 calc(100% - 110px),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 110px,#000 calc(100% - 110px),transparent 100%)}
+#dive{position:absolute;inset:0;perspective:1700px;perspective-origin:50% 48%}
+#cam{position:absolute;inset:0;transform-style:preserve-3d;transform-origin:640px 400px}
+#world{position:absolute;left:0;top:0;width:1900px;height:720px;transform-style:preserve-3d}
+.gh{position:absolute;border-radius:16px;background:rgba(60,72,170,.16);box-shadow:0 0 0 1px rgba(150,166,255,.18)}
+.chip,.node,.panel{position:absolute;border-radius:16px;background:linear-gradient(180deg,rgba(44,54,130,.66),rgba(22,29,80,.74));
+  box-shadow:0 0 0 1px var(--ring),0 1px 0 rgba(255,255,255,.08) inset,0 22px 40px -18px rgba(2,4,24,.9),0 0 30px -10px rgba(110,130,255,.4)}
+.chip{width:230px;height:54px;display:flex;align-items:center;gap:14px;padding:0 18px;font-size:22px;color:#e7eaff}
+.chip i{width:11px;height:11px;border-radius:50%;background:var(--blue);box-shadow:0 0 12px var(--blue)}
+.node{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:10px;padding:0 24px;font-size:30px;font-weight:650;letter-spacing:-.01em}
+.node .ic{font-size:36px;color:var(--blue)}
+.panel{padding:20px 18px 14px}
+.panel h3{display:flex;align-items:center;gap:12px;font-size:30px;font-weight:650;margin-bottom:14px;letter-spacing:-.01em}
+.panel h3 .ic{font-size:32px;color:var(--green)}
+.chk{display:flex;align-items:center;gap:14px;height:62px;padding:0 16px;margin-top:10px;white-space:nowrap;border-radius:14px;background:rgba(95,217,174,.1);box-shadow:0 0 0 1px rgba(95,217,174,.34);font-size:24px;color:#d9fff1}
+.chk .ic{font-size:28px;color:var(--green)}
+.pg{position:absolute;border-radius:24px;background:linear-gradient(180deg,rgba(52,64,150,.74),rgba(24,31,84,.84));
+  box-shadow:0 0 0 1.5px var(--ring-2),0 30px 60px -20px rgba(2,4,24,.9),0 0 70px -6px rgba(143,100,255,.6);padding:22px 20px}
+.pg .bar{height:11px;border-radius:6px;background:rgba(255,255,255,.22);width:55%;margin-bottom:6px}
+.pg .r{display:flex;align-items:center;gap:10px;margin-top:13px}
+.pg .r i{width:20px;height:20px;border-radius:50%;background:var(--k);box-shadow:0 0 0 3px color-mix(in srgb,var(--k) 25%,transparent)}
+.pg .r b{flex:1;height:20px;border-radius:10px;background:color-mix(in srgb,var(--k) 24%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--k) 55%,transparent)}
+.pg .lbl{position:absolute;left:0;right:0;bottom:16px;text-align:center;font-size:30px;font-weight:700}
+svg#wires{position:absolute;left:0;top:0;width:1900px;height:720px;overflow:visible}
+svg#wires path{fill:none;stroke-linecap:round}
+.w0{stroke:rgba(150,166,255,.34);stroke-width:2.5}
+.w1{stroke:#cfd8ff;stroke-width:3.5;filter:drop-shadow(0 0 6px #8fb4ff)}
+.s-done,.s-done_by_user{--k:#5fd9ae}.s-done_needs_you{--k:#f08ad0}.s-in_progress{--k:#8fb4ff}
+
+#hud{z-index:3;position:absolute;left:64px;top:38px;width:900px;height:100px}
+#hud .st{position:absolute;left:0;top:0;opacity:0}
+#hud .st .h2{margin-top:6px}
+#rail{z-index:3;position:absolute;left:0;right:0;bottom:30px;height:34px;display:flex;justify-content:center;gap:0;opacity:0}
+#rail .ri{display:flex;align-items:center;gap:10px;font-size:19px;font-weight:600;color:var(--t3);padding:0 22px;position:relative}
+#rail .ri i{width:12px;height:12px;border-radius:50%;background:rgba(150,166,255,.3);box-shadow:0 0 0 1px rgba(150,166,255,.4)}
+#rail .ri+.ri:before{content:"";position:absolute;left:-14px;top:50%;width:28px;height:2px;background:rgba(150,166,255,.25)}
+#rail .ri.on{color:var(--t1)}#rail .ri.on i{background:var(--accent);box-shadow:0 0 14px var(--accent)}
+
+/* ---- scene 3: chart ---- */
+.scn{position:absolute;inset:0;opacity:0}
+.scn .head{position:absolute;left:64px;top:36px}
+.scn .head .sub{margin-top:8px}
+#cc{position:absolute;left:64px;top:176px;width:760px;height:490px;padding:22px 24px 0;transform-origin:100% 50%}
+#cc .cap{font-size:19px;font-weight:600;color:var(--t3);margin-bottom:6px;display:flex;justify-content:space-between}
+#chart .row{display:grid;grid-template-columns:36px 1fr 220px 36px;gap:14px;align-items:center;height:54px;border-radius:12px;position:relative}
+#chart .nm{font-size:23px;font-weight:600;white-space:nowrap}
+#chart .track{height:16px;border-radius:8px;background:rgba(150,166,255,.1);position:relative}
+#chart .bar{position:absolute;left:0;top:0;bottom:0;border-radius:8px;background:var(--k);transform-origin:0 50%;box-shadow:0 0 16px color-mix(in srgb,var(--k) 55%,transparent)}
+#chart .ct{font-size:25px;text-align:right;font-weight:700}
+.si{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--k);background:color-mix(in srgb,var(--k) 16%,#161c52);box-shadow:0 0 0 1.5px color-mix(in srgb,var(--k) 65%,transparent)}
+.si .ic{font-size:20px}
+.s-in_progress .si{box-shadow:none;border:2px dashed var(--k)}
+#lg{position:absolute;left:856px;top:176px;width:360px;height:490px;padding:22px 24px;transform-origin:0 50%}
+#lg .cap{font-size:19px;font-weight:600;color:var(--t3);margin-bottom:12px}
+.lgi{display:flex;align-items:center;gap:14px;height:62px;padding:0 12px;border-radius:12px;font-size:23px;font-weight:600;color:var(--t1)}
+.lgi .ll{flex:1;white-space:nowrap}
+.lgi b{font-size:30px;font-weight:700}
+#lg .tot{margin-top:14px;padding-top:16px;border-top:1px solid rgba(150,166,255,.22)}
+#lg .tot b{display:block;font-size:76px;line-height:1;font-weight:700;letter-spacing:-.03em;background:linear-gradient(90deg,#9fb6ff,#f08ad0);-webkit-background-clip:text;background-clip:text;color:transparent}
+#lg .tot span{font-size:22px;color:var(--t2);font-weight:500}
+
+/* ---- scene 4: the real page ---- */
+.win{position:absolute;border-radius:22px;overflow:hidden;background:#161d52;
+  box-shadow:0 0 0 1.5px var(--ring-2),0 40px 80px -24px rgba(2,4,24,.95),0 0 80px -10px rgba(110,100,255,.5)}
+.win img{position:absolute;display:block;will-change:transform}
+#wj{left:64px;top:176px;width:684px;height:490px;transform-origin:0 50%}
+#wj img{left:0;top:0;width:684px;height:auto}
+#wd{left:566px;top:176px;width:650px;height:490px;transform-origin:100% 50%}
+#wd img{left:0;top:0;width:650px;height:auto}
+.stat{position:absolute;border-radius:20px;padding:20px 22px}
+.stat b{display:block;font-size:68px;line-height:1;font-weight:700;letter-spacing:-.03em}
+.stat span{display:block;margin-top:8px;font-size:23px;font-weight:600;color:var(--t2)}
+#stj{position:absolute;left:780px;top:176px;width:436px;height:490px}
+#stj .stat{width:206px;height:150px}
+#bigout{position:absolute;left:64px;top:176px;width:480px}
+#bigout b{display:block;font-size:210px;line-height:.92;font-weight:700;letter-spacing:-.05em;background:linear-gradient(90deg,#9fb6ff,#f08ad0 80%);-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:.04em}
+#bigout .lab{font-size:36px;font-weight:650;letter-spacing:-.02em;margin-top:6px}
+#bigout .det{font-size:23px;font-weight:500;color:var(--t2);margin-top:6px}
+#bigout .mini{display:flex;gap:16px;margin-top:30px}
+#bigout .stat{position:relative;width:232px;height:136px;padding:16px 20px}
+#bigout .stat b{font-size:56px}
+#bigout .stat span{font-size:21px;margin-top:6px}
+
+/* ---- scene 5: end card ---- */
+#end{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:0}
+#logo{width:132px;height:132px;border-radius:34px;display:grid;place-items:center;color:#fff;font-size:70px;margin-bottom:34px;
+  background:linear-gradient(145deg,#d65ab0,#8a3ec8);box-shadow:0 0 0 1.5px rgba(255,255,255,.28) inset,0 24px 50px -16px rgba(2,4,24,.9),0 0 90px 6px rgba(200,90,200,.5)}
+#end .e1{font-size:72px;font-weight:700;letter-spacing:-.035em;line-height:1.08}
+#end .e2{font-size:72px;font-weight:700;letter-spacing:-.035em;line-height:1.12;background:linear-gradient(90deg,#9fb6ff,#f08ad0 70%);-webkit-background-clip:text;background-clip:text;color:transparent;padding:0 .05em .08em}
+#url{margin-top:36px;padding:14px 30px;border-radius:999px;font-size:31px;font-weight:600;letter-spacing:-.01em;color:var(--t1);
+  background:linear-gradient(180deg,rgba(44,54,130,.62),rgba(22,29,80,.7));box-shadow:0 0 0 1px var(--ring-2),0 20px 40px -18px rgba(2,4,24,.9),0 0 36px -8px rgba(143,100,255,.5)}
+#url em{font-style:normal;color:var(--t3)}
+</style></head>
+<body>
+<!--SPRITE-->
+<div id="root" data-composition-id="intro" data-start="0" data-duration="30" data-width="1280" data-height="720">
+  <div class="glow" id="g1"></div><div class="glow" id="g2"></div><div class="glow" id="g3"></div>
+
+  <div id="fm"><div id="dive"><div id="cam"><div id="world"><svg id="wires"></svg></div></div></div></div>
+
+  <div id="hook">
+    <div id="hookglow"></div>
+    <div class="l1" id="l1">Session in.</div>
+    <div class="l2" id="l2">One checked page out.</div>
+  </div>
+
+  <div id="hud"></div>
+  <div id="rail"></div>
+
+  <div class="scn" id="s3">
+    <div class="head"><div class="h2" id="h3">Eight themes, one status each.</div><div class="sub" id="sb3">Bar length is the number of events in each theme.</div></div>
+    <div class="glass" id="cc"><div class="cap"><span>Themes, in the order of the day</span><span>Events</span></div><div id="chart"></div></div>
+    <div class="glass" id="lg"><div class="cap">Status, as on the page</div><div id="legend"></div>
+      <div class="tot"><b id="n-events"></b><span>events in one working day</span></div></div>
+  </div>
+
+  <div class="scn" id="s4">
+    <div class="head"><div class="h2">The real session page.</div><div class="sub">One lane per theme, rendered from the same file.</div></div>
+    <div class="win" id="wj"><img id="imgj" src="assets/page/navy-journey.png" alt="Journey card of the session page, navy theme"></div>
+    <div id="stj"></div>
+  </div>
+
+  <div class="scn" id="s5">
+    <div class="head"><div class="h2">What it decided. What left your working copy.</div><div class="sub">The two panels that answer "what did the agent do outside the code?"</div></div>
+    <div id="bigout"><b id="n-out"></b><div class="lab">outward actions</div><div class="det" id="outdet"></div>
+      <div class="mini"><div class="stat glass"><b id="n-dec"></b><span>decided for you</span></div><div class="stat glass"><b id="n-irr" style="color:var(--rose)"></b><span>cannot be undone</span></div></div></div>
+    <div class="win" id="wd"><img id="imgd" src="assets/page/navy-decided.png" alt="Agent decided for you panel"><img id="imgo" src="assets/page/navy-outward.png" alt="Outward actions panel"></div>
+  </div>
+
+  <div id="end">
+    <div id="logo"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-sparkles"/></svg></div>
+    <div class="e1" id="e1">Your agent did the work.</div>
+    <div class="e2" id="e2">Now you understand it.</div>
+    <div id="url">github.com/<em>epistex-dev</em>/explain-change</div>
+  </div>
+  <div class="vig"></div>
+</div>
+<script>
+const ST = {
+  done:           {label: 'Done',            icon: 'circle-check'},
+  done_needs_you: {label: 'Done, needs you', icon: 'triangle-alert'},
+  done_by_user:   {label: 'Done by you',     icon: 'user'},
+  in_progress:    {label: 'In progress',     icon: 'circle-dashed'},
+};
+const HARNESS = ['Claude Code', 'Copilot CLI', 'Codex', 'OpenCode', 'Gemini CLI', 'Cursor CLI', 'Cursor IDE'];
+const ic = id => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-${id}"/></svg>`;
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+
+/* ================= build ================= */
+const world = $('#world'), wires = $('#wires'), NS = 'http://www.w3.org/2000/svg';
+const px = o => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v + 'px']));
+const mk = (cls, html, css) => { const d = document.createElement('div'); d.className = cls; d.innerHTML = html; Object.assign(d.style, css); world.appendChild(d); return d; };
+const ghosts = [];
+const gh = (css, at = 4.6, inAt = null) => { const g = mk('gh', '', px(css)); g.dataset.at = at; if (inAt !== null) g.dataset.in = inAt; ghosts.push(g); };
+const cy = i => 175 + i * 66 + 27;
+const chips = HARNESS.map((h, i) => { gh({left: 64, top: 175 + i * 66, width: 230, height: 54}); return mk('chip', `<i></i>${h}`, px({left: 64, top: 175 + i * 66})); });
+gh({left: 420, top: 262, width: 250, height: 120}, 4.9); gh({left: 420, top: 418, width: 250, height: 120}, 5.1); gh({left: 790, top: 310, width: 190, height: 180}, 6.6);
+gh({left: 1590, top: 205, width: 270, height: 390}, 10.9, 9.9); /* the far cards show only once the camera is on its way to them, so none sits cut at the frame edge */
+const nTr = mk('node', `${ic('history')}Transcript`, px({left: 420, top: 262, width: 250, height: 120}));
+const nDf = mk('node', `${ic('branch')}Code diff`, px({left: 420, top: 418, width: 250, height: 120}));
+const nDoc = mk('node', `${ic('list')}Doc`, px({left: 790, top: 310, width: 190, height: 180}));
+const pCk = mk('panel', `<h3>${ic('shield-check')}Checks</h3>${['Quotes', 'Tool calls', 'Secrets masked'].map(t => `<div class="chk">${ic('circle-check')}${t}</div>`).join('')}`, px({left: 1110, top: 220, width: 340, height: 360}));
+const pg = mk('pg', `<div class="bar"></div>${DATA.themes.map(t => `<div class="r s-${t.status}"><i></i><b></b></div>`).join('')}<div class="lbl">One page</div>`, px({left: 1590, top: 205, width: 270, height: 390}));
+const P = (d, cls) => { const p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); p.setAttribute('class', cls); p.setAttribute('pathLength', '1'); wires.appendChild(p); return p; };
+const link = d => [P(d, 'w0'), P(d, 'w1')];
+const w1 = HARNESS.map((_, i) => link(`M294,${cy(i)} C357,${cy(i)} 357,322 420,322`));
+const w2 = [link('M670,322 C730,322 730,380 790,380'), link('M670,478 C730,478 730,420 790,420')];
+const w3 = link('M980,400 L1110,400'), w4 = link('M1450,400 L1590,400');
+
+/* chart + legend, status colour and icon come from each theme's status */
+const MAXEV = Math.max(...DATA.themes.map(t => t.events));
+$('#chart').innerHTML = DATA.themes.map(t => `<div class="row s-${t.status}" data-st="${t.status}">
+  <span class="si">${ic(ST[t.status].icon)}</span><span class="nm">${t.title}</span>
+  <span class="track"><span class="bar" style="width:${(t.events / MAXEV * 100).toFixed(1)}%"></span></span><b class="ct" data-v="${t.events}">${t.events}</b></div>`).join('');
+$('#legend').innerHTML = Object.keys(ST).map(k => `<div class="lgi s-${k}" data-st="${k}"><span class="si">${ic(ST[k].icon)}</span><span class="ll">${ST[k].label}</span><b>${DATA.statusCount[k]}</b></div>`).join('');
+$('#outdet').textContent = `${DATA.outward.kinds} kinds: ${DATA.outward.listed} on the list, ${DATA.outward.scratch} temp-folder cleanups`;
+$('#stj').innerHTML = [
+  [DATA.themes.length, 'themes', 'var(--t1)', 0, 0], [DATA.events, 'events', 'var(--t1)', 1, 0],
+  [DATA.blocked, 'hit a blocker', 'var(--rose)', 0, 1], [DATA.redirected, 'redirected', 'var(--amber)', 1, 1]]
+  .map(([n, l, c, x, y]) => `<div class="stat glass" style="left:${x * 230}px;top:${y * 174}px"><b style="color:${c}" data-v="${n}">${n}</b><span>${l}</span></div>`).join('');
+const HUDS = [
+  ['Step 1 · Input', 'Any of seven harnesses'], ['Step 2 · Read', 'Transcript and diff, read together'], ['Step 3 · Fold', 'Everything becomes one doc'],
+  ['Step 4 · Check', 'Every claim is checked'], ['Step 5 · Page', 'One page you can read']];
+$('#hud').innerHTML = HUDS.map(([k, t]) => `<div class="st"><div class="kick">${k}</div><div class="h2">${t}</div></div>`).join('');
+const RAIL = ['Input', 'Read', 'Doc', 'Check', 'Page'];
+$('#rail').innerHTML = RAIL.map(t => `<div class="ri"><i></i>${t}</div>`).join('');
+
+/* page crops are shown at 1.66x of the page's own size (its smallest text, 12 px, is then 19.9 px); heights follow the PNG sizes */
+const JR_H = Math.round(2685 / 1236 * 684), DEC_H = Math.round(687 / 1188 * 650), OUT_H = Math.round(1572 / 1188 * 650);
+/* ================= timeline: one paused, seekable GSAP timeline ================= */
+const tl = gsap.timeline({paused: true});
+const OUT = 'power3.out', IO = 'power3.inOut';
+const draw = (pair, at, d = .5) => {
+  gsap.set(pair, {opacity: 0}); tl.set(pair, {opacity: 1}, at);
+  tl.fromTo(pair[0], {strokeDasharray: 1, strokeDashoffset: 1}, {strokeDashoffset: 0, duration: d, ease: OUT}, at);
+  tl.fromTo(pair[1], {strokeDasharray: '0.14 1', strokeDashoffset: 0.14}, {strokeDashoffset: -1, duration: d + .35, ease: 'power1.inOut'}, at);
+  tl.to(pair[1], {opacity: 0, duration: .01}, at + d + .36);
+};
+const pop = (t, at, d = .55) => tl.fromTo(t, {opacity: 0, scale: .94, y: 14}, {opacity: 1, scale: 1, y: 0, duration: d, ease: OUT}, at);
+const count = (el, to) => { el.textContent = to; }; /* numbers are final the moment they appear: no count-up, so no frame shows a wrong value */
+
+/* backdrop glows drift for the whole clip */
+tl.fromTo('#g1', {opacity: 0, x: -60}, {opacity: .55, x: 40, duration: 5, ease: 'power1.out'}, 0)
+  .fromTo('#g2', {opacity: 0, x: 60}, {opacity: .5, x: -40, duration: 5, ease: 'power1.out'}, 0)
+  .to('#g1', {x: 300, y: -120, opacity: .4, duration: 12, ease: 'sine.inOut'}, 6)
+  .to('#g2', {x: -260, y: 220, opacity: .55, duration: 12, ease: 'sine.inOut'}, 6)
+  .fromTo('#g3', {opacity: 0}, {opacity: .35, duration: 3, ease: 'power1.out'}, 14)
+  .to('#g3', {x: 200, duration: 8, ease: 'sine.inOut'}, 14);
+
+/* 1. hook 0 to 3.4 */
+tl.fromTo('#hookglow', {opacity: 0, scale: .8}, {opacity: 1, scale: 1, duration: 2.2, ease: OUT}, .2)
+  .fromTo('#l1', {opacity: 0, y: 34}, {opacity: 1, y: 0, duration: .8, ease: OUT}, .15)
+  .fromTo('#l2', {opacity: 0, y: 34}, {opacity: 1, y: 0, duration: .9, ease: OUT}, .65)
+  .to(['#l1', '#l2'], {opacity: 0, y: -30, duration: .5, ease: 'power2.in', stagger: .06}, 3.0)
+  .to('#hookglow', {opacity: 0, duration: .5}, 3.0);
+
+/* 2. flow 3.1 to 13.3: the board is a tilted plane; the camera pans along it */
+tl.set('#cam', {rotationY: -11, rotationX: 6}, 0)
+  .fromTo('#world', {opacity: 0}, {opacity: 1, duration: 1}, 0)
+  .to('#cam', {rotationY: -6, rotationX: 3, duration: 10, ease: 'power1.inOut'}, 3)
+  ;
+ghosts.forEach((g, i) => tl.fromTo(g, {opacity: 0}, {opacity: 1, duration: .9, ease: OUT}, g.dataset.in ? +g.dataset.in : .3 + i * .03));
+ghosts.forEach(g => tl.to(g, {opacity: 0, duration: .5}, +g.dataset.at));
+chips.forEach((c, i) => tl.fromTo(c, {opacity: 0, x: -34, scale: .95}, {opacity: 1, x: 0, scale: 1, duration: .5, ease: OUT}, 3.4 + i * .1));
+/* held camera stops: every card on screen is whole (or fully out); the far ones appear only as the camera moves to them */
+const PAN = [[7.3, 780], [9.7, 1040]];
+gsap.set('#world', {x: 60});
+PAN.forEach(([t, x], i) => tl.to('#world', {x: 60 - x, duration: 1.7, ease: IO}, t));
+w1.forEach((p, i) => draw(p, 4.2 + i * .05, .5));
+pop(nTr, 4.7); pop(nDf, 4.95);
+w2.forEach((p, i) => draw(p, 6.0 + i * .06, .5));
+pop(nDoc, 6.5);
+draw(w3, 7.9, .45); pop(pCk, 8.4);
+$$('.chk').forEach((r, i) => {
+  tl.fromTo(r, {opacity: 0, x: -16}, {opacity: 1, x: 0, duration: .4, ease: OUT}, 8.8 + i * .45);
+  tl.fromTo(r.querySelector('.ic'), {scale: 0}, {scale: 1, duration: .45, ease: 'back.out(2.2)'}, 9.0 + i * .45);
+});
+draw(w4, 10.3, .5); pop(pg, 10.8, .6);
+$$('.pg .r').forEach((r, i) => tl.fromTo(r, {opacity: 0, x: -10}, {opacity: 1, x: 0, duration: .35, ease: OUT}, 11.1 + i * .07));
+tl.fromTo('.pg .bar', {opacity: 0}, {opacity: 1, duration: .3}, 11.0);
+/* step captions + progress rail */
+const hs = $$('#hud .st'), rs = $$('#rail .ri');
+const HT = [[3.2, 5.3], [5.4, 7.5], [7.6, 8.9], [9.0, 10.2], [10.3, 13.0]];
+tl.fromTo('#rail', {opacity: 0}, {opacity: 1, duration: .5}, 3.3).to('#rail', {opacity: 0, duration: .3}, 13.0);
+HT.forEach(([a, b], i) => {
+  tl.fromTo(hs[i], {opacity: 0, y: 16}, {opacity: 1, y: 0, duration: .55, ease: OUT}, a);
+  if (i < HT.length - 1) tl.to(hs[i], {opacity: 0, y: -12, duration: .25, ease: 'power1.in'}, b - .3);
+  tl.call(() => rs.forEach((r, j) => r.classList.toggle('on', j === i)), null, a);
+});
+/* the camera dives into the One page card; the chart opens from it */
+tl.set('#dive', {transformOrigin: '745px 400px'}, 12.9)
+  .to('#dive', {scale: 3, duration: 1.0, ease: IO}, 13.0)
+  .to('#cam', {rotationY: 0, rotationX: 0, duration: 1, ease: IO}, 13.0)
+  .to([chips, nTr, nDf, nDoc, pCk, '#wires'].flat(), {opacity: 0, duration: .35, ease: 'power1.in'}, 12.9)
+  .to('#dive', {opacity: 0, duration: .32, ease: 'power2.in'}, 13.55)
+  .to(hs[4], {opacity: 0, y: -12, duration: .3, ease: 'power1.in'}, 13.0);
+
+/* 3. chart 13.6 to 19.0 */
+tl.fromTo('#s3', {opacity: 0, scale: 1.1}, {opacity: 1, scale: 1, duration: .9, ease: OUT}, 13.7)
+  .fromTo('#cc', {rotationY: 16}, {rotationY: 5, duration: 1.3, ease: OUT}, 13.7)
+  .fromTo('#lg', {rotationY: -16}, {rotationY: -5, duration: 1.3, ease: OUT}, 13.8)
+  .fromTo(['#h3', '#sb3'], {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: .6, ease: OUT, stagger: .1}, 13.9);
+$$('#chart .row').forEach((r, i) => {
+  tl.fromTo(r, {opacity: 0, x: -14}, {opacity: 1, x: 0, duration: .4, ease: OUT}, 14.15 + i * .08);
+  tl.fromTo(r.querySelector('.bar'), {scaleX: 0}, {scaleX: 1, duration: .7, ease: OUT}, 14.2 + i * .08);
+  count(r.querySelector('.ct'), +r.querySelector('.ct').dataset.v, 14.2 + i * .08, .7);
+});
+tl.fromTo('#legend .lgi', {opacity: 0, y: 10}, {opacity: 1, y: 0, duration: .45, ease: OUT, stagger: .1}, 14.9)
+  .fromTo('#lg .tot', {opacity: 0, y: 12}, {opacity: 1, y: 0, duration: .5, ease: OUT}, 15.5);
+count($('#n-events'), DATA.events, 15.5, 1.1);
+/* spotlight: the one theme that needs you, then the one in progress */
+const spot = (st, at, d) => {
+  const rows = $$('#chart .row'), lg = $$('#legend .lgi');
+  tl.to(rows.filter(r => r.dataset.st !== st), {opacity: .28, duration: .35}, at)
+    .to(lg.filter(r => r.dataset.st !== st), {opacity: .3, duration: .35}, at)
+    .to([...rows, ...lg], {opacity: 1, duration: .35}, at + d);
+};
+spot('done_needs_you', 16.5, .9); spot('in_progress', 17.5, .7);
+tl.to(['#s3'], {opacity: 0, x: -50, duration: .5, ease: 'power2.in'}, 18.4);
+
+/* 4. real page: journey 19.4 to 23.0 */
+tl.fromTo('#s4', {opacity: 0}, {opacity: 1, duration: .7, ease: OUT}, 18.9)
+  .fromTo('#s4 .head > *', {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: .6, ease: OUT, stagger: .1}, 19.0)
+  .fromTo('#wj', {rotationY: 14, opacity: 0, x: -40}, {rotationY: 5, opacity: 1, x: 0, duration: 1.1, ease: OUT}, 18.9)
+  .fromTo('#imgj', {y: 0}, {y: -(JR_H - 490 + 10), duration: 3.0, ease: 'power1.inOut'}, 20.3);
+$$('#stj .stat').forEach((s, i) => {
+  tl.fromTo(s, {opacity: 0, y: 24, scale: .95}, {opacity: 1, y: 0, scale: 1, duration: .55, ease: OUT}, 19.5 + i * .18);
+  count(s.querySelector('b'), +s.querySelector('b').dataset.v, 19.7 + i * .18, .8);
+});
+tl.to('#s4', {opacity: 0, x: -50, duration: .45, ease: 'power2.in'}, 23.55);
+
+/* 5. decided + outward 23.9 to 27.3 */
+tl.fromTo('#s5', {opacity: 0}, {opacity: 1, duration: .6, ease: OUT}, 23.7)
+  .fromTo('#s5 .head > *', {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: .6, ease: OUT, stagger: .1}, 23.8)
+  .fromTo('#wd', {rotationY: -14, opacity: 0, x: 40}, {rotationY: -4, opacity: 1, x: 0, duration: 1.1, ease: OUT}, 23.7)
+  .fromTo('#bigout > *', {opacity: 0, y: 22}, {opacity: 1, y: 0, duration: .6, ease: OUT, stagger: .09}, 23.95);
+count($('#n-out'), DATA.outward.total, 24.1, 1.0);
+count($('#n-dec'), DATA.decided, 24.8, .7); count($('#n-irr'), DATA.irreversible, 24.95, .5);
+gsap.set('#imgd', {y: 0}); gsap.set('#imgo', {y: DEC_H});
+tl.to(['#imgd', '#imgo'], {y: '-=' + (DEC_H + OUT_H - 490), duration: 2.0, ease: 'power1.inOut'}, 25.2)
+  .to('#s5', {opacity: 0, x: -50, duration: .4, ease: 'power2.in'}, 27.25);
+
+/* 6. end card 27.8 to 30 */
+tl.fromTo('#end', {opacity: 0}, {opacity: 1, duration: .5, ease: OUT}, 27.5)
+  .fromTo('#logo', {opacity: 0, scale: .6, rotation: -8}, {opacity: 1, scale: 1, rotation: 0, duration: .8, ease: 'back.out(1.6)'}, 27.55)
+  .fromTo('#e1', {opacity: 0, y: 26}, {opacity: 1, y: 0, duration: .7, ease: OUT}, 27.85)
+  .fromTo('#e2', {opacity: 0, y: 26}, {opacity: 1, y: 0, duration: .7, ease: OUT}, 28.15)
+  .fromTo('#url', {opacity: 0, y: 18, scale: .96}, {opacity: 1, y: 0, scale: 1, duration: .6, ease: OUT}, 28.6)
+  .to('#logo', {boxShadow: '0 0 0 1.5px rgba(255,255,255,.28) inset,0 24px 50px -16px rgba(2,4,24,.9),0 0 120px 14px rgba(200,90,200,.6)', duration: 1.4, ease: 'sine.inOut'}, 28.4);
+
+tl.set({}, {}, 30);
+window.__timelines = window.__timelines || {};
+window.__timelines['intro'] = tl;
+/* ?at=<seconds> freezes one frame in a plain browser (QA stills); HyperFrames ignores it */
+const __at = new URLSearchParams(location.search).get('at'); if (__at !== null) tl.seek(+__at, false);
+</script>
+</body></html>
