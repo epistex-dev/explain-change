@@ -79,6 +79,87 @@ class Caught(unittest.TestCase):
         self.assertEqual(label, 'git push --force')
 
 
+BODIES = [  # what a commit message body holds; none of it is a command
+    "Fix the login, don't crash\n\nDetails follow.", "one apostrophe: it's here", "two: it's a 'quoted' word", 'an unbalanced ( paren', 'a ) alone', 'both ) and (',
+    'a "double quote', 'a $( opener', 'a `backtick', 'plain\n\n\nmore lines', 'back\\slash and \\) escaped paren', 'git push mentioned in the body',
+]
+TAILS = [(' && git push origin main', ['push']), ('; rm -rf dir', ['delete']), ('\ngh pr create --fill', ['pr']), (' && git push -f && vercel --prod', ['force_push', 'deploy'])]
+WRAPS = [  # (before the body, after it): a heredoc inside $(...), in double quotes or not, and with each way to write the delimiter
+    ("git add -A && git commit -m \"$(cat <<'EOF'\n", '\nEOF\n)"'), ('git commit -m "$(cat <<EOF\n', '\nEOF\n)"'),
+    ('git commit -m "$(cat <<"EOF"\n', '\nEOF\n)"'), ('git commit -m "$(cat <<-EOF\n', '\n\tEOF\n)"'),
+    ("msg=$(cat <<'EOF'\n", '\nEOF\n) && echo $msg'), ("git commit -m \"$(cat <<'END'\n", '\nEND\n)" -q'),
+]
+
+
+class AfterAHeredoc(unittest.TestCase):
+    """`$(cat <<'EOF' ... EOF)` is read as a shell reads it, so what follows is still found, once."""
+
+    def kinds(self, cmd):
+        return sorted(k for k, _ in outward.classify(cmd))
+
+    def test_every_kind_after_every_heredoc_form_is_caught_once(self):
+        for before, after in WRAPS:
+            for body in BODIES:
+                if 'git push' in body:
+                    continue  # a body that mentions a push is the benign test below
+                for tail, kinds in TAILS:
+                    cmd = before + body + after + tail
+                    with self.subTest(cmd=cmd):
+                        self.assertEqual(self.kinds(cmd), sorted(kinds), cmd)
+
+    def test_a_body_that_only_mentions_a_push_is_nothing(self):
+        for before, after in WRAPS:
+            for body in BODIES:
+                with self.subTest(body=body):
+                    self.assertEqual(outward.classify(before + body + after), [])
+        self.assertEqual(outward.classify("git commit -m \"$(cat <<'EOF'\nx\ngit push\nrm -rf /\nEOF)\""), [])  # the delimiter line is `EOF)`: never closed, so all body
+        self.assertEqual(outward.classify("git commit -m \"$(cat <<'EOF'\nx\ngit push\nEOF\n)\" && echo done"), [])
+
+    def test_a_push_after_a_body_that_mentions_one_is_counted_once(self):
+        for before, after in WRAPS:
+            cmd = before + 'git push in the body' + after + ' && git push'
+            with self.subTest(cmd=cmd):
+                self.assertEqual(self.kinds(cmd), ['push'], cmd)
+
+    def test_double_quotes_inside_the_substitution_hide_their_parens_and_apostrophes(self):
+        for inner in ('echo "it\'s (x" ', 'echo "a ) b" \'c\'', 'echo "a $(echo \')\') b"', 'echo \\" \\)', 'echo "x \\" ) y"', 'echo $(echo ")")', 'echo "a $(echo "b)") c"', "echo 'x ) y'", "echo '\"' ('z')"):
+            for tail, kinds in TAILS:
+                for cmd in ('git commit -m "$(%s)"%s' % (inner, tail), 'x=$(%s)%s' % (inner, tail)):
+                    with self.subTest(cmd=cmd):
+                        self.assertEqual(self.kinds(cmd), sorted(kinds), cmd)
+
+    def test_a_nested_substitution_in_a_string_does_not_end_the_string_early(self):
+        for cmd in ('z="$(echo "$(echo "x)" ) ;git push ")"', 'z="$(echo "a $(echo ")" ) ;git push ")"', 'z="$(echo "$(echo "x" ; echo ")") ;git push ")"'):
+            with self.subTest(cmd=cmd):
+                self.assertEqual(outward.classify(cmd), [], cmd)
+
+    def test_a_command_inside_the_substitution_is_still_found(self):
+        self.assertEqual(self.kinds("echo \"$(cat <<'EOF'\nbody\nEOF\n; git push)\""), ['push'])
+        self.assertEqual(self.kinds("x=$(git push; cat <<'EOF'\nit's\nEOF\n)"), ['push'])
+
+    def test_a_comment_inside_the_substitution_hides_its_quote(self):
+        self.assertEqual(self.kinds("x=$(ls # it's\n) && git push"), ['push'])
+        self.assertEqual(outward.classify('x=$(ls # ) && git push\n)'), [])
+
+    def test_worktree_adds_and_repo_paths_work_after_a_heredoc(self):
+        msg = "git -C /r commit -m \"$(cat <<'EOF'\nFix: don't ( crash\nEOF\n)\""
+        self.assertEqual(outward.worktree_adds(msg + ' && git -C /r worktree add /tmp/w -b topic'), [('/r', '/tmp/w')])
+        self.assertEqual(outward.worktree_adds(msg + '\ngit -C /r worktree add /tmp/w2'), [('/r', '/tmp/w2')])
+        self.assertEqual(outward.repo_paths(msg + ' && git -C /other push'), ['/r', '/other'])
+        self.assertEqual(outward.repo_paths(msg + '\ncd /elsewhere && git status'), ['/r', '/elsewhere'])
+
+    def test_a_long_body_is_read_in_linear_time(self):
+        body = "it's ( a line\n" * 50000
+        t = time.time()
+        out = outward.classify("git commit -m \"$(cat <<'EOF'\n" + body + 'EOF\n)" && git push')
+        self.assertLess(time.time() - t, 3)
+        self.assertEqual([k for k, _ in out], ['push'])
+        t = time.time()
+        outward.classify('x=$(' + '"$(' * 20000)
+        outward.classify('x=$(cat <<EOF\n' + 'a\n' * 100000)
+        self.assertLess(time.time() - t, 5)
+
+
 class Failed(unittest.TestCase):
     def test_a_failed_call_is_never_counted(self):
         self.assertEqual(outward.classify_call('git push', is_error=True, result='x'), [])

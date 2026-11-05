@@ -130,7 +130,7 @@ def _validate(doc, transcript_path, base_dir):
                 continue
             if e.get('kind') not in EVENT_KINDS:
                 err(ep + '.kind', 'one of %s' % (EVENT_KINDS,))
-            elif e['kind'] == 'outward':
+            elif e['kind'] == 'outward' and isinstance(tid, str):
                 outward_events.add(tid)
             line(e, 'text', ep)
             o = e.get('order')
@@ -153,8 +153,9 @@ def _validate(doc, transcript_path, base_dir):
 
     def theme_ref(obj, path):
         r = obj.get('theme') if isinstance(obj, dict) else None
-        if r not in ids:
+        if not isinstance(r, str) or r not in ids:
             err(path + '.theme', 'no theme with id %r (themes: %s)' % (r, ', '.join(map(str, ids)) or 'none'))
+            return None
         return r
 
     def block(name):
@@ -221,7 +222,7 @@ def _validate(doc, transcript_path, base_dir):
             err(p + '.themes', 'required list of theme ids')
         else:
             for t in ths:
-                if t not in ids:
+                if not isinstance(t, str) or t not in ids:
                     err(p + '.themes', 'no theme with id %r' % (t,))
                 elif t not in outward_events:
                     err(p + '.themes', 'theme %r has no event of kind outward' % t)

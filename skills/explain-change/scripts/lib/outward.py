@@ -86,25 +86,84 @@ def _run(text, depth, out, cwd=None):
         _simple(words, heredoc, depth, out, cur)
 
 
+def _heredoc_delim(text, i):
+    """(delimiter, strip_tabs, index after the delimiter word) for a heredoc whose `<<` ends just before text[i]."""
+    n = len(text)
+    strip = text[i:i + 1] == '-'
+    i += 1 if strip else 0
+    while i < n and text[i] in ' \t':
+        i += 1
+    j, delim = i, []
+    while j < n and text[j] not in ' \t\n;&|()<>':
+        if text[j] in '\'"':
+            k = text.find(text[j], j + 1)
+            k = n if k < 0 else k
+            delim.append(text[j + 1:k])
+            j = k + 1
+        else:
+            if text[j] == '\\' and j + 1 < n:
+                j += 1
+            delim.append(text[j])
+            j += 1
+    return ''.join(delim), strip, j
+
+
+def _heredoc_body(text, i, delim, strip):
+    """(body lines, index after the closing delimiter line) for a body that starts at text[i]; it runs to the end when no line closes it."""
+    n, body = len(text), []
+    while i < n:
+        j = text.find('\n', i)
+        j = n if j < 0 else j
+        line = text[i:j]
+        i = min(j + 1, n)
+        if (line.lstrip('\t') if strip else line).rstrip('\r') == delim:
+            break
+        body.append(line)
+    return body, i
+
+
 def _matching(s, i):
-    """Index of the `)` that closes the `(` before position i (s[i] is the first char inside); len(s) when there is none."""
-    depth, n = 1, len(s)
+    """Index of the `)` that closes the `$(` or `(` before position i (s[i] is the first char inside); len(s) when there is none. Reads like the shell:
+    single and double quotes, backslashes, nested `$(...)` and `(...)`, comments and heredoc bodies (a quote or paren in a body does not count)."""
+    stack, n, pend = ['p'], len(s), []  # 'p': inside (...) in command text; 'q': inside "..."
     while i < n:
         c = s[i]
         if c == '\\':
             i += 2
-            continue
-        if c == "'":
+        elif stack[-1] == 'q':
+            if c == '"':
+                stack.pop()
+            elif c == '$' and s[i + 1:i + 2] == '(':
+                stack.append('p')
+                i += 1
+            i += 1
+        elif c == "'":
             j = s.find("'", i + 1)
             i = n if j < 0 else j + 1
-            continue
-        if c == '(':
-            depth += 1
+        elif c == '"':
+            stack.append('q')
+            i += 1
+        elif c == '(':
+            stack.append('p')
+            i += 1
         elif c == ')':
-            depth -= 1
-            if depth == 0:
+            stack.pop()
+            if not stack:
                 return i
-        i += 1
+            i += 1
+        elif c == '#' and s[i - 1] in ' \t\n;&|()':
+            j = s.find('\n', i)
+            i = n if j < 0 else j
+        elif c == '<' and s.startswith('<<', i) and not s.startswith('<<<', i):
+            delim, strip, i = _heredoc_delim(s, i + 2)
+            pend.append((delim, strip))
+        elif c == '\n':
+            i += 1
+            while pend:
+                delim, strip = pend.pop(0)
+                i = _heredoc_body(s, i, delim, strip)[1]
+        else:
+            i += 1
     return n
 
 
@@ -186,15 +245,7 @@ def _split(text, depth):
             i += 1
             while pend_hd:  # the heredoc body starts on the next line
                 delim, strip = pend_hd.pop(0)
-                body = []
-                while i < n:
-                    j = text.find('\n', i)
-                    j = n if j < 0 else j
-                    line = text[i:j]
-                    i = min(j + 1, n)
-                    if (line.lstrip('\t') if strip else line).rstrip('\r') == delim:
-                        break
-                    body.append(line)
+                body, i = _heredoc_body(text, i, delim, strip)
                 hd_for[len(cmds) - 1] = '\n'.join(body)
                 if cmds:
                     cmds[-1] = (cmds[-1][0], hd_for[len(cmds) - 1])
@@ -209,25 +260,8 @@ def _split(text, depth):
                 i += 3
                 skip_next = True
             elif text.startswith('<<', i) and not text.startswith('<<<', i):
-                i += 2
-                strip = text[i:i + 1] == '-'
-                i += 1 if strip else 0
-                while i < n and text[i] in ' \t':
-                    i += 1
-                j, delim = i, []
-                while j < n and text[j] not in ' \t\n;&|()<>':
-                    if text[j] in '\'"':
-                        k = text.find(text[j], j + 1)
-                        k = n if k < 0 else k
-                        delim.append(text[j + 1:k])
-                        j = k + 1
-                    else:
-                        if text[j] == '\\' and j + 1 < n:
-                            j += 1
-                        delim.append(text[j])
-                        j += 1
-                pend_hd.append((''.join(delim), strip))
-                i = j
+                delim, strip, i = _heredoc_delim(text, i + 2)
+                pend_hd.append((delim, strip))
                 cur_hd.append(None)
             else:
                 i += 1

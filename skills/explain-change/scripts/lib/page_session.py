@@ -60,11 +60,11 @@ def shape_problems(doc):
     need(isinstance(th, list) and bool(th) and all(isinstance(t, dict) and isinstance(t.get('title'), str) and t.get('status') in STATUSES
                                                     and isinstance(t.get('outcome'), str) and isinstance(t.get('events'), list)
                                                     and all(isinstance(e, dict) and e.get('kind') in KINDS and isinstance(e.get('text'), str) for e in t['events'])
-                                                    for t in th), 'themes')
-    ids = {t.get('id') for t in th} if isinstance(th, list) else set()
+                                                    and isinstance(t.get('id'), str) for t in th), 'themes')
+    ids = {t.get('id') for t in th if isinstance(t, dict) and isinstance(t.get('id'), str)} if isinstance(th, list) else set()
     for key in ('needs_you', 'decided'):
         v = doc.get(key, [])
-        need(isinstance(v, list) and all(isinstance(x, dict) and isinstance(x.get('text'), str) and x.get('theme') in ids for x in v), key)
+        need(isinstance(v, list) and all(isinstance(x, dict) and isinstance(x.get('text'), str) and isinstance(x.get('theme'), str) and x['theme'] in ids for x in v), key)
     need(all(isinstance(x, dict) and x.get('kind') in outward.KINDS and isinstance(x.get('count'), int) and isinstance(x.get('themes'), list)
              for x in doc.get('outward', [])) if isinstance(doc.get('outward', []), list) else False, 'outward')
     return errs
@@ -147,7 +147,7 @@ class Builder:
             real = n - sc if k == 'delete' else n
             if real < 1:
                 continue
-            chips = ''.join(self.chip_theme(x) for x in o['themes'] if x in self.n_of)
+            chips = ''.join(self.chip_theme(x) for x in o['themes'] if isinstance(x, str) and x in self.n_of)
             cards.append('<div class="out"><span class="oi">%s</span><div><div class="big">%s</div><div class="chips">%s</div></div></div>'
                          % (ic(OUT_ICON[k]), esc(count(t, 'ses_o_' + k, real)), chips))
         concl = count(t, 'ses_out_h', len(cards)) if cards else t['ses_out_none']

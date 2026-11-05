@@ -12,7 +12,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from helpers2 import rec, tool_result, write_jsonl  # noqa: E402
 from helpers2 import tool_use as _tool_use  # noqa: E402
-from lib import check_session, session, transcript  # noqa: E402
+from lib import check_session, page_session, session, transcript  # noqa: E402
 
 SKILL = os.path.dirname(HERE)
 SAMPLE = os.path.join(SKILL, 'reference', 'examples', 'portal-day.session.json')
@@ -281,6 +281,95 @@ class Mutations(Case):
             json.dump({'schema': 'explain-session/1'}, fh)
         d['themes'][0]['change_doc'] = 'other.json'
         self.assertTrue(any('not an explain-change/2' in e for e in check_session.validate(d, None, base_dir=self.root)[0]))
+
+
+class IdTypes(Case):
+    """An id-valued field that is a list, a dict, a number or null is a `path: reason` line and exit 1, never a traceback."""
+    BAD = ([['backup']], {'a': 1}, 7, None)
+    # (path into the doc, the needle the error line must contain)
+    SITES = [
+        (('themes', 0, 'id'), 'themes[0].id'), (('themes', 2, 'id'), 'themes[2].id'),
+        (('themes', 0, 'status'), 'themes[0].status'), (('themes', 0, 'events', 1, 'kind'), 'events[1].kind'),
+        (('needs_you', 0, 'theme'), 'needs_you[0].theme'), (('decided', 0, 'theme'), 'decided[0].theme'),
+        (('outward', 0, 'themes', 0), 'outward[0].themes'), (('outward', 1, 'kind'), 'outward[1].kind'),
+        (('outward', 3, 'themes', 0), 'outward[3].themes'), (('outward', 0, 'themes'), 'outward[0].themes'),
+    ]
+
+    def put(self, d, path, v):
+        for k in path[:-1]:
+            d = d[k]
+        d[path[-1]] = v
+
+    def run_cli(self, script, doc, *args):
+        f = os.path.join(self.root, 'doc.json')
+        with open(f, 'w', encoding='utf-8') as fh:
+            json.dump(doc, fh)
+        p = subprocess.run([sys.executable, os.path.join(SKILL, 'scripts', script), f, '--transcript', self.transcript, *args],
+                           capture_output=True, text=True, env=dict(os.environ))
+        return p
+
+    def assert_clean_fail(self, p, needle):
+        self.assertNotIn('Traceback', p.stderr + p.stdout)
+        self.assertEqual(p.returncode, 1, p.stdout + p.stderr)
+        self.assertTrue(any(needle in ln and ': ' in ln for ln in p.stdout.splitlines()), (needle, p.stdout))
+
+    def test_a_list_as_needs_you_theme_names_the_value(self):
+        self.rejects(lambda d: d['needs_you'][0].update(theme=['backup']), "needs_you[0].theme: no theme with id ['backup']")
+
+    def test_a_list_as_decided_theme(self):
+        self.rejects(lambda d: d['decided'][0].update(theme=['polish']), "decided[0].theme: no theme with id ['polish']")
+
+    def test_a_list_in_outward_themes(self):
+        self.rejects(lambda d: d['outward'][0].update(themes=[['x']]), "outward[0].themes: no theme with id ['x']")
+
+    def test_a_theme_with_a_list_id_and_an_outward_event(self):
+        self.rejects(lambda d: d['themes'][0].update(id=[]), 'themes[0].id: required non-empty string')
+
+    def test_each_site_in_the_validator_and_both_scripts(self):
+        for path, needle in self.SITES:
+            for bad in self.BAD:
+                with self.subTest(path=path, bad=bad):
+                    d = good_doc()
+                    self.put(d, path, copy.deepcopy(bad))
+                    errs, _ = check_session.validate(d, self.transcript)  # raises on a TypeError
+                    self.assertTrue(any(needle in e and ': ' in e for e in errs), (needle, errs))
+        for path, needle in self.SITES[:2] + self.SITES[4:7]:
+            for bad in self.BAD:
+                with self.subTest(cli=path, bad=bad):
+                    d = good_doc()
+                    self.put(d, path, copy.deepcopy(bad))
+                    self.assert_clean_fail(self.run_cli('validate.py', d), needle)
+                    self.assert_clean_fail(self.run_cli('render.py', d, '--out', os.path.join(self.root, 'o.html')), needle)
+
+    def test_every_value_of_the_doc_replaced_never_raises(self):
+        def paths(o, pre=()):
+            yield pre
+            for k, v in (o.items() if isinstance(o, dict) else enumerate(o) if isinstance(o, list) else ()):
+                yield from paths(v, pre + (k,))
+        for path in paths(good_doc()):
+            if not path:
+                continue
+            for bad in self.BAD + ('', True, -1, 1.5):
+                d = good_doc()
+                self.put(d, path, copy.deepcopy(bad))
+                try:
+                    check_session.validate(copy.deepcopy(d), self.transcript)
+                    if not page_session.shape_problems(d):
+                        page_session.render(d)
+                except Exception as e:  # noqa: BLE001 - the point is that nothing raises
+                    self.fail('%s = %r raised %s: %s' % ('.'.join(map(str, path)), bad, type(e).__name__, e))
+
+    def test_no_validate_shape_check_survives_unhashable_ids(self):
+        for path, _ in self.SITES:
+            for bad in self.BAD:
+                with self.subTest(path=path, bad=bad):
+                    d = good_doc()
+                    self.put(d, path, copy.deepcopy(bad))
+                    p = self.run_cli('render.py', d, '--no-validate', '--out', os.path.join(self.root, 'o.html'))
+                    self.assertNotIn('Traceback', p.stderr + p.stdout)
+                    self.assertIn(p.returncode, (0, 1), p.stderr)
+                    if p.returncode == 1:
+                        self.assertTrue(any(': ' in ln for ln in p.stdout.splitlines()), p.stdout)
 
 
 class Digest(Case):
