@@ -29,16 +29,14 @@ def read(path):
 
 
 def blocks():
-    """{theme id: {property: value}} from session.css; navy is the :root of page2.css plus the helper tokens of the :root of session.css."""
-    css = read(CSS)
+    """{theme id: {property: value}} from page2.css, where navy is the :root and the other themes are one [data-theme] block each."""
+    css = read(BASE)
     out = {}
     for tid in page_session.THEMES[1:]:
         m = re.search(r'\[data-theme="%s"\]\{(.*?)\n\}' % tid, css, re.S)
         assert m, tid
         out[tid] = dict(re.findall(r'(--[\w-]+|color-scheme):([^;]+);', m.group(1)))
-    base = dict(re.findall(r'(--[\w-]+|color-scheme):([^;]+);', re.search(r':root\{(.*?)\n\}', read(BASE), re.S).group(1)))
-    base.update(re.findall(r'(--[\w-]+|color-scheme):([^;]+);', re.search(r':root\{--mk(.*?)\}\n', css, re.S).group(0)))
-    out['navy'] = {k: v.strip() for k, v in base.items()}
+    out['navy'] = dict(re.findall(r'(--[\w-]+|color-scheme):([^;]+);', re.search(r':root\{(.*?)\n\}', css, re.S).group(1)))
     return {t: {k: v.strip() for k, v in d.items()} for t, d in out.items()}
 
 
@@ -79,6 +77,17 @@ def measure(t):
     text = min(ratio(c(k), g) for k in ('text', 'text-2', 'text-3') for g in grounds + page_ground)
     status = min(ratio(c(k), g) for k in ('accent-text', 'ok', 'warn', 'bad', 'n-ui', 'n-service') for g in (grounds[0], grounds[2]))
     white = min(ratio((255, 255, 255), c(k)) for k in ('accent', 'ok-fill'))
+    ss = c('surface-solid')
+    ra, raa = rgb(t['raised-a'])
+    chip_ground = {'node': ss, 'card': over(ra, raa, ss)}
+    for fg, soft in (('ok', 'ok-soft'), ('warn', 'warn-soft'), ('bad', 'bad-soft'), ('accent-text', 'accent-soft')):  # a status chip: its colour on its own soft fill
+        sc, sa = rgb(t[soft])
+        text = min([text] + [ratio(c(fg), over(sc, sa, g)) for g in chip_ground.values()])
+        chv = t.get('chip-hl')
+        chv = chv if chv and 'var(' not in chv else 'rgba(%s,.6)' % t['well-rgb']  # on a highlighted card the chip sits on --chip-hl
+        cc, ca = rgb(chv)
+        text = min(text, ratio(c(fg), over(cc, ca, c('hl'))))
+    text = min([text] + [ratio(c(k), g) for k in ('n-data', 'n-test', 'n-external') for g in (ss, c('hl'))])  # map node icons, edge strokes: 3:1 would do, 4.5 holds
     mk = float(t['mk-ring'].rstrip('%')) / 100 if 'mk-ring' in t else .6
     ring = min(ratio(over(c(k), mk, grounds[0]), grounds[0]) for k in ('ok', 'bad', 'warn', 'n-ui', 'n-service'))
     return min(text, status), ring, white
@@ -86,7 +95,7 @@ def measure(t):
 
 class ThemeTokens(unittest.TestCase):
     def setUp(self):
-        self.css = read(CSS)
+        self.css = read(BASE)
         self.t = {k: {n.lstrip('-'): v for n, v in d.items()} for k, d in blocks().items()}
 
     def test_every_theme_is_one_data_theme_block_and_navy_is_the_default(self):
@@ -100,18 +109,23 @@ class ThemeTokens(unittest.TestCase):
                 self.assertIn('ses_theme_' + tid, STR2[lang])
 
     def test_no_literal_colour_outside_the_root_and_the_theme_blocks(self):
-        rules = re.sub(r':root\{--mk:32px.*?\n  --on-fill:[^}]*\}', '', self.css, flags=re.S)
-        rules = re.sub(r'\[data-theme="\w+"\]\{.*?\n\}', '', rules, flags=re.S)
-        rules = re.sub(r'/\*.*?\*/', '', rules, flags=re.S)
-        self.assertEqual(re.findall(r'#[0-9a-fA-F]{3,8}\b|rgba?\(\s*\d', rules), [])
+        """Both pages: page2.css (the change page, and the tokens of the session page) and session.css hold a colour only in :root and a [data-theme] block."""
+        for path in (BASE, CSS):
+            rules = re.sub(r'/\*.*?\*/', '', read(path), flags=re.S)
+            rules = re.sub(r'\[data-theme="\w+"\]\{.*?\n\}', '', rules, flags=re.S)
+            rules = re.sub(r'(?m)^:root\{.*?^\}', '', rules, flags=re.S) if path == BASE else re.sub(r'^:root\{[^}]*\}', '', rules, flags=re.M)
+            self.assertEqual(re.findall(r'#[0-9a-fA-F]{3,8}\b|rgba?\(\s*\d|hsla?\(', rules), [], os.path.basename(path))
 
-    def test_every_theme_sets_every_property_navy_sets(self):
-        need = {k for k in self.t['navy'] if k not in ('muted', 'glow', 'shadow-float', 'n-data', 'n-test', 'n-external', 'warn-soft', 'font', 'mono', 'on-fill')
-                and not re.match(r'(fs|r|s|t|mk|lane)-?', k) and k not in ('ease', 'mk', 'mk-gap', 'lane-h', 'kdot-ring', 'mk-ring')}
+    COLOUR = ('bg-0 bg-1 bg-2 dot surface surface-solid raised raised-a hl ring ring-strong text text-2 text-3 accent accent-bar accent-text accent-soft ok-fill ok-fill-hover ok ok-soft '
+              'warn warn-soft bad bad-soft n-ui n-service n-data n-test n-external shadow glow-a glow-b ok-rgb accent-rgb bar-rgb bad-rgb ui-rgb ring-rgb surf-rgb well-rgb zone').split()
+
+    def test_every_theme_sets_every_colour_token(self):
         for tid in page_session.THEMES[1:]:
-            self.assertEqual(sorted(need - set(self.t[tid])), [], tid)
+            self.assertEqual(sorted(set(self.COLOUR) - set(self.t[tid])), [], tid)
+        self.assertEqual(sorted(set(self.COLOUR) - set(self.t['navy'])), [])
 
     def test_wcag_aa_text_and_rings_in_every_theme(self):
+        self.assertRegex(read(BASE), r'\.hl \.chip,\.ba\.after \.chip\{background:var\(--chip-hl\)\}')  # the rule the measured chip ground comes from
         for tid in page_session.THEMES:
             text, ring, white = measure(self.t[tid])
             self.assertGreaterEqual(text, 4.5, (tid, 'text'))

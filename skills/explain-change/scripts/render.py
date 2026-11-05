@@ -6,8 +6,8 @@ Schema v1 renders the report page, schema v2 the layout-2 page, explain-session/
 A session theme with a change_doc also gets its v2 page, written next to the session page (<change_doc without .json>.html) and linked from the theme's panel.
 A validation problem prints the same lines as validate.py, writes nothing, exits 1.
 On success prints the absolute path of the page. --text also writes <page>.txt, the words of a v2 page, for the cold-read gate.
---theme ID sets the colour theme a session page opens in (navy, ocean, plum, graphite or pearl; default navy); the reader can still pick another on the page.
-An unknown id exits 1 with one line naming the valid ids. Other pages ignore it.
+--theme ID sets the colour theme a session page or a change page (v2) opens in (navy, ocean, plum, graphite or pearl; default navy); the reader can still pick another on the page,
+and the pick carries across both pages. An unknown id exits 1 with one line naming the valid ids. The v1 report page ignores it.
 --arch and --no-validate (v2 only) render an archived doc whose git range is gone: nothing is checked, the page says validated=no.
 """
 import argparse
@@ -106,7 +106,7 @@ def render_session(a, out):
             continue
         name = page_session.change_page_name(cd)
         sub = argparse.Namespace(explain_json=os.path.join(here, cd), repo=a.repo, out=os.path.join(os.path.dirname(out), name), transcript=None, format=a.format,
-                                 arch=a.arch, no_validate=a.no_validate, text=a.text)
+                                 arch=a.arch, no_validate=a.no_validate, text=a.text, theme=a.theme)
         try:
             code = render_v2(sub, sub.out)
         except (OSError, ValueError) as e:  # the doc is missing or is not JSON
@@ -157,7 +157,7 @@ def render_v2(a, out):
             print('warning: ' + w, file=sys.stderr)
         repo = a.repo or gitio.toplevel(here)
         arch = archmod.Architecture(a.arch) if a.arch else collect2.load_arch(repo)
-    body = page2.render(doc, repo, arch=arch, validated=not a.no_validate, session_checked=False if a.no_validate else bool(stats.get('transcript')))
+    body = page2.render(doc, repo, arch=arch, validated=not a.no_validate, session_checked=False if a.no_validate else bool(stats.get('transcript')), theme=a.theme)
     if len(body.encode('utf-8')) > page2.MAX_BYTES:
         print('error: page is %d KB, over the %d KB limit of html_preview' % (len(body.encode('utf-8')) // 1024, page2.MAX_BYTES // 1024), file=sys.stderr)
         return 2
