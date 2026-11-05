@@ -7,7 +7,8 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
-- Five colour themes for the session page (navy, ocean, plum, graphite, pearl), a "Theme" picker in its header that remembers the pick in `localStorage`, and `render.py --theme <id>` to set the theme the page opens in. An unknown id exits 1 with one line naming the valid ids.
+- Transcript readers for GitHub Copilot CLI, Codex, OpenCode (database and JSON tree), Gemini CLI, Cursor CLI and Cursor IDE, each limited to its harness's own transcript folder, with fixtures, guards in the red check, and sharded, time-limited `red_check.py` runs.
+- Five colour themes for the session page (navy, ocean, plum, graphite, pearl), an "Appearance" picker in its header that remembers the pick in `localStorage`, and `render.py --theme <id>` to set the theme the page opens in. An unknown id exits 1 with one line naming the valid ids.
 - Session mode: `explain-session/1` docs, `collect.py --session`, and a swimlane page (`render.py` on a session doc) with a strip, one lane per theme, a side panel and a link to each theme's change page. Real deletes show as outward actions; deletes under `/tmp/` or `$TMPDIR` show as one count line. A worktree made by `git worktree add` in the transcript counts as its repo.
 - `install.sh`: installs the skill for Claude Code, Codex, Gemini CLI, Copilot, Cursor, OpenCode, Goose, Amp, Kiro, Windsurf, Cline and Roo (`--harness`, `--copy`, `--project`, `--uninstall`, `--dry-run`, `--force`).
 - `gemini-extension.json` (Gemini CLI extension) and a portable `plugin.json` (Agent Plugins manifest, read by Codex).

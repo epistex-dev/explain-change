@@ -49,6 +49,10 @@ A claim without a source is labelled `inferred` on the page. Everything else is 
 
 Details: [`references/explain-schema.md`](skills/explain-change/references/explain-schema.md).
 
+### Transcript readers
+
+Besides Claude Code, the skill has readers for the session files of GitHub Copilot CLI, Codex, OpenCode (database and the older JSON tree), Gemini CLI, Cursor CLI and Cursor IDE (`skills/explain-change/scripts/lib/adapters/`). Each reader turns its harness's records into one model (user messages, tool calls with their exit codes, outputs) and reads only under that harness's own transcript folder after resolving symlinks, so a file the agent wrote itself cannot ground a claim. No environment variable or flag moves that folder. `collect.py`, `validate.py` and `render.py` still take a Claude Code transcript. The readers are ported from open-source projects: see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
 ## Install
 
 The skill is a folder with a `SKILL.md`, the [Agent Skills](https://agentskills.io/specification) format, so one install script puts it where each harness looks.
