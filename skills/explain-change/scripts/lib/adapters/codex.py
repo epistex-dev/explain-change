@@ -215,8 +215,7 @@ def _output(value):
 
 def _header_exit(text):
     """The exit code a shell output states in its header lines (the part before the `Output:` line)."""
-    head = re.split(r'^Output:\s*$', text, maxsplit=1, flags=re.M)[0] if len(text) > 400 else text
-    head = re.split(r'^Output:\s*$', head, maxsplit=1, flags=re.M)[0]
+    head = re.split(r'^Output:\s*$', text, maxsplit=1, flags=re.M)[0]
     for rx in EXIT_HEADER:
         m = rx.search(head)
         if m:

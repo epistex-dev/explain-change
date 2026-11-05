@@ -490,7 +490,7 @@ MUTATIONS += [
     ('codex: item_completed user messages are read', CXX, "    if t == 'item_completed':", '    if False:', T + 'CodexOutputs.test_item_completed_user_message'),
     ('codex: exec_command_end sets the exit code', CXX, 'if cid in ended:\n                    code = ended[cid]', 'if False:\n                    code = ended[cid]',
      T + 'CodexOutputs.test_exec_command_end_wins_whenever_it_arrives'),
-    ('codex: exit code is read from the output header only', CXX, "    head = re.split(r'^Output:\\s*$', head, maxsplit=1, flags=re.M)[0]\n", '',
+    ('codex: exit code is read from the output header only', CXX, "    head = re.split(r'^Output:\\s*$', text, maxsplit=1, flags=re.M)[0]\n", "    head = text\n",
      T + 'CodexOutputs.test_exit_text_in_the_body_is_not_the_exit_code'),
     ('codex: Process exited with code N', CXX, "re.compile(r'^Process exited with code (-?\\d+)\\s*$', re.M), ", '',
      T + 'CodexOutputs.test_header_exit_code_forms'),
