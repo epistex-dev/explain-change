@@ -13,13 +13,15 @@ Set once, as absolute paths: `S`, the folder of this SKILL.md; `REPO`, the git r
 python3 $S/scripts/collect.py --v2 [<base>..<head> | <commit>] [--path <dir or file>]... [--slug <text>]
 ```
 
-No argument means uncommitted changes, else the last commit. It prints the changed files per module (the architecture's, or with no `floorplan/architecture.json` one per child directory of the files' common directory), the unchanged neighbours you may draw, `RUN_DIR=…`, and the newest session transcripts. Exit 3 means no changes: tell the user and stop. `--path` (repeatable, repo-relative) keeps only the files of the task you explain, so other work in the range never needs a module; `--slug` names the run folder after that task.
+No argument means uncommitted changes, else the last commit. It prints the changed files per module (the architecture's, or with no `floorplan/architecture.json` one per child directory of the files' common directory), the unchanged neighbours you may draw, `RUN_DIR=…`, and the newest Claude Code session transcripts (none in other harnesses). Exit 3 means no changes: tell the user and stop. `--path` (repeatable, repo-relative) keeps only the files of the task you explain, so other work in the range never needs a module; `--slug` names the run folder after that task.
 
 Done when you hold `RUN_DIR` and can say which module each changed file belongs to.
 
 ## 2. Read the session
 
-Pick the transcript whose first user message and time span match this task (collect lists only the 3 newest; when none fits, list `~/.claude/projects/<slug>/` by time and open the likely files), then rerun with `--transcript <file>` (the digest lists the user's messages, test-like tool calls and worker ids). Open the code behind each module that changed. Without any transcript, write `"transcript_unavailable": "<reason>"`; quotes then stay unchecked and say so.
+Only Claude Code transcripts are readable today. Where collect lists some, pick the one whose first user message and time span match this task (it lists only the 3 newest; when none fits, list `~/.claude/projects/<slug>/` by time and open the likely files), then rerun with `--transcript <file>` (the digest lists the user's messages, test-like tool calls and worker ids). Open the code behind each module that changed.
+
+No transcript (any other harness, or none matches): write `"transcript_unavailable": "<reason>"` and take the user's words and the commands you ran from your own context. Steps 4 and 5 then run without `--transcript`, and the page says it was not checked against the session.
 
 Done when each user request has its words in front of you and each claim of "ran X" has the tool call that ran it. Text holding a password or token never goes into the doc, but its other words still can: the digest masks the value as `[ẩn]`, so quote the part before the label or after the value.
 
@@ -39,7 +41,7 @@ Done when each of the five blocks has content and every module in the map has a 
 ## 4. Validate
 
 ```
-python3 $S/scripts/validate.py $RUN_DIR/explain.json --transcript <file>
+python3 $S/scripts/validate.py $RUN_DIR/explain.json [--transcript <file>]
 ```
 
 Each problem prints as `path: reason`. Fix the claim itself, not the quote. Done when it prints `ok`. Tell the user the number of worker reports it counts: those items rest on a worker's word.
@@ -47,14 +49,20 @@ Each problem prints as `path: reason`. Fix the claim itself, not the quote. Done
 ## 5. Render
 
 ```
-python3 $S/scripts/render.py $RUN_DIR/explain.json --transcript <file> --text
+python3 $S/scripts/render.py $RUN_DIR/explain.json --text (--transcript <file> | --no-validate)
 ```
 
-Writes `$RUN_DIR/index.html` (one file, fonts inlined, under 512 KB) and `index.html.txt`, the page's words. Done when it prints the page path.
+Pass `--transcript <file>` when step 2 found one, else `--no-validate`. Writes `$RUN_DIR/index.html` (one file, fonts inlined, under 512 KB) and `index.html.txt`, the page's words. Done when it prints the page path.
 
 ## 6. Cold-read gate
 
-Start a fresh subagent (no subagent tool: `claude -p --tools "" --no-session-persistence < prompt-file`). Give it `index.html.txt` and nothing else, and ask it to answer, from the page alone:
+The reader is fresh: it holds `index.html.txt` and nothing else. Take the first that exists:
+
+1. A new subagent of your harness.
+2. The command in env `EXPLAIN_COLDREAD_CMD`: it reads a prompt on stdin and prints its answers on stdout (run it as `sh -c "$EXPLAIN_COLDREAD_CMD" < prompt-file`).
+3. Neither: skip the gate and say so in your final reply.
+
+Ask the reader to answer, from the page alone:
 
 1. What did the user ask, and what came of each request?
 2. Which parts of the system changed, and which stayed as they were?
@@ -62,11 +70,11 @@ Start a fresh subagent (no subagent tool: `claude -p --tools "" --no-session-per
 4. Why this way, and which options were rejected?
 5. What was proven, and what was not?
 
-Compare each answer with the doc. Where one is wrong or empty, the page text is at fault: rewrite that field, rerun steps 4 and 5, and use a new fresh subagent. Done when all five answers match the doc; after 3 rounds without a match, report the gap to the user.
+Compare each answer with the doc. Where one is wrong or empty, the page text is at fault: rewrite that field, rerun steps 4 and 5, and use a new fresh reader. Done when all five answers match the doc, or the gate was skipped under option 3; after 3 rounds without a match, report the gap to the user.
 
 ## 7. Show
 
-Give the user the absolute path of `index.html` and the validate counts line. Open it with `html_preview` then `html_render` (the page fits their 512 KB limit). With no such tool, serve `$RUN_DIR` with `python3 -m http.server <free port> --bind 127.0.0.1 --directory $RUN_DIR &`, open `http://127.0.0.1:<port>/index.html` in a preview tab, and name the server's pid and port in your report.
+Give the user the absolute path of `index.html` and the validate counts line. Open it with your harness's HTML preview tool if it has one (the page fits a 512 KB limit). With no such tool, serve `$RUN_DIR` with `python3 -m http.server <free port> --bind 127.0.0.1 --directory $RUN_DIR &`, open `http://127.0.0.1:<port>/index.html` in a browser tab if you can, and name the server's pid and port in your report.
 
 Done when the user holds the path and the page is open, or no preview tool exists and you said so.
 
